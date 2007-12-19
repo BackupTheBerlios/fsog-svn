@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?><!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_1.dtd'><nta><declaration>// Place global declarations here.
+
+const int MIN_TRANSFER_TIME = 1;
+const int MAX_TRANSFER_TIME = 3000;
+
+//Clients have IDs ranging from 0 to MAX_CLIENT
+const int MAX_CLIENT = 9;
+const int NUMBER_OF_CLIENTS = MAX_CLIENT+1;
+
+chan client_sends[NUMBER_OF_CLIENTS],client_receives[NUMBER_OF_CLIENTS],server_sends,server_receives;
+
+const int LOG_IN = 1, LOG_IN_CORRECT = 2;
+
+//Value passing:
+
+int vp_message_type = 0;
+int vp_client_id = 0;
+
+	//send_LOG_IN,deliver_LOG_IN,
+	//send_LOG_IN_CORRECT,deliver_LOG_IN_CORRECT,
+	//send_LOG_IN_INCORRECT,deliver_LOG_IN_INCORRECT;
+</declaration><template><name x="5" y="5">Client</name><parameter>int client_id</parameter><declaration>clock x;
+
+int message_type = 0;
+
+void send(const int message_type)
+{
+	vp_message_type = message_type;
+}
+
+void receive()
+{
+	message_type = vp_message_type;
+	vp_message_type = 0;
+}
+</declaration><location id="id0" x="-1008" y="-704"><label kind="invariant" x="-1018" y="-689">x&lt;=1000</label><label kind="comments">Random initial delay.</label></location><location id="id1" x="-840" y="-400"><name x="-816" y="-424">Logged_In</name><label kind="invariant" x="-816" y="-408">message_type==LOG_IN_CORRECT</label></location><location id="id2" x="-840" y="-544"></location><location id="id3" x="-840" y="-704"><committed/></location><init ref="id0"/><transition><source ref="id0"/><target ref="id3"/></transition><transition><source ref="id2"/><target ref="id1"/><label kind="synchronisation" x="-832" y="-512">client_receives[client_id]?</label><label kind="assignment" x="-832" y="-496">receive()</label></transition><transition><source ref="id3"/><target ref="id2"/><label kind="synchronisation" x="-832" y="-680">client_sends[client_id]!</label><label kind="assignment" x="-832" y="-664">send(LOG_IN)</label></transition></template><template><name>Server</name><declaration>//Who just sent us a message/Who do we send a message to:
+int client_id;
+//What message was just sent to us/What message do we send:
+int message_type;
+
+void receive()
+{
+	client_id=vp_client_id;
+	vp_client_id = 0;
+	message_type=vp_message_type;
+	vp_message_type=0;
+}
+
+void send(const int sending_message_type)
+{
+	vp_client_id=client_id;
+	vp_message_type=sending_message_type;
+}
+</declaration><location id="id4" x="-248" y="-264"></location><location id="id5" x="-248" y="-136"><urgent/></location><init ref="id4"/><transition><source ref="id5"/><target ref="id4"/><label kind="guard" x="-240" y="-102">message_type==LOG_IN</label><label kind="synchronisation" x="-240" y="-87">server_sends!</label><label kind="assignment" x="-240" y="-72">send(LOG_IN_CORRECT)</label><nail x="-248" y="-8"/><nail x="-368" y="-8"/><nail x="-368" y="-264"/></transition><transition><source ref="id4"/><target ref="id5"/><label kind="synchronisation" x="-240" y="-216">server_receives?</label><label kind="assignment" x="-240" y="-200">receive()</label></transition></template><template><name>UpChannel</name><parameter>const int id</parameter><declaration>clock x;
+
+int message_type = 0;
+
+void receive()
+{
+	message_type = vp_message_type;
+	vp_message_type = 0;
+}
+
+void deliver()
+{
+	vp_client_id=id;
+	vp_message_type = message_type;
+}
+</declaration><location id="id6" x="-304" y="-32"><name x="-288" y="-40">Transfer</name><label kind="invariant" x="-288" y="-24">x&lt;=MAX_TRANSFER_TIME</label></location><location id="id7" x="-304" y="-216"></location><init ref="id7"/><transition><source ref="id6"/><target ref="id7"/><label kind="guard" x="-584" y="-168">x&gt;=MIN_TRANSFER_TIME</label><label kind="synchronisation" x="-584" y="-144">server_receives!</label><label kind="assignment" x="-584" y="-120">deliver(),
+x=0</label><label kind="comments">Message delivered/duplicated.</label><nail x="-592" y="-32"/><nail x="-592" y="-216"/></transition><transition><source ref="id7"/><target ref="id6"/><label kind="synchronisation" x="-296" y="-168">client_sends[id]?</label><label kind="assignment" x="-296" y="-152">receive(),
+x=0</label></transition></template><template><name>DownChannel</name><parameter>const int id</parameter><declaration>clock x;
+
+int message_type = 0;
+int client_id = 0;
+
+void receive()
+{
+	client_id=vp_client_id;
+	vp_client_id=0;
+	message_type=vp_message_type;
+	vp_message_type=0;
+}
+
+void deliver()
+{
+	vp_message_type = message_type;
+}
+</declaration><location id="id8" x="0" y="56"><label kind="invariant" x="-10" y="71">x&lt;=MAX_TRANSFER_TIME &amp;&amp; client_id==id</label></location><location id="id9" x="0" y="-72"></location><init ref="id9"/><transition><source ref="id8"/><target ref="id9"/><label kind="guard" x="-288" y="-48">x&gt;=MIN_TRANSFER_TIME</label><label kind="synchronisation" x="-288" y="-32">client_receives[id]!</label><label kind="assignment" x="-288" y="-8">deliver(),
+x=0</label><nail x="-296" y="56"/><nail x="-296" y="-72"/></transition><transition><source ref="id9"/><target ref="id8"/><label kind="synchronisation" x="8" y="-47">server_sends?</label><label kind="assignment" x="8" y="-32">receive()</label></transition></template><system>// Place template instantiations here.
+client0 = Client(0);
+client1 = Client(1);
+server = Server();
+upChannel0 = UpChannel(0);
+upChannel1 = UpChannel(1);
+downChannel0 = DownChannel(0);
+downChannel1 = DownChannel(1);
+
+
+// List one or more processes to be composed into a system.
+system client0,client1,server,upChannel0,upChannel1,downChannel0,downChannel1;
+</system></nta>

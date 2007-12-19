@@ -1,0 +1,10 @@
+////////////////////////
+Generator:
+
+Javadoc generation.
+
+////////////////////////////
+Thousand:
+
+Read wiki for more game options.
+
