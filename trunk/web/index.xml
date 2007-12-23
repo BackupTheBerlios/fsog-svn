@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <title>FSOG</title>
+  <meta name="GENERATOR" content="Quanta Plus" />
+  <meta name="AUTHOR" content="Bartlomiej Antoni Szymczak" />
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta name="KEYWORDS" content="free software,game" />
+</head>
+<body>
+
+<h1>FSOG</h1>
+
+<h2>Introduction</h2>
+<p>This is the website describing the FSOG project. FSOG stands for Free Software Online Games.</p>
+
+<p>The
+purpose of FSOG is to create a lightweight online multi-player game
+system. FSOG should support simple board and card games. FSOG should
+consist of three main parts: server, client and a protocol.</p>
+
+<h2>Goals of FSOG</h2>
+<p>The goals of
+FSOG, listed in the order of decreasing importance:
+</p>
+<dl>
+
+<dt>Free implementation.</dt>
+<dd>All the components shall be free software (like in
+freedom). In contrast, current popular systems are not free software.</dd>
+
+<dt>Accessibility of client software.</dt>
+<dd>Current systems often are not
+accessible enough. E.g. cards drawn in many card games look ridiculously
+small on 1920x1200 15'' screen. This makes it impossible to read the
+card value for people with bad sight. FSOG should display the cards and
+other elements in an accessible way.</dd>
+
+<dt>Support for partner search.</dt>
+<dd>Current popular online game systems work using the concept of rooms and
+tables, where people have to manually go through rooms to find
+partner(s) they like. This process can take a long time. Instead, FSOG
+will allow users to search for partners by means of specifying arbitrary
+search criteria.</dd>
+
+<dt>Small bandwidth and CPU requirements.</dt>
+<dd>FSOG will avoid
+hugely inefficient general protocols, e.g. XML-based RPC mechanisms.
+Instead, a simple binary protocol will be used. In this way sending a
+move in a game can take few bytes instead of few kilobytes of network
+bandwidth. Similarly, decoding such a message should take considerably
+less CPU power. In this way it should be possible to run the game server
+for few thousand simultaneous users on an inexpensive hardware with
+cheap broadband connection. The protocol is very general,
+with automatically generated serializers and
+deserializers for C++ and Java. It allows arbitrary Java and C++
+programs to talk to each other using an extremely bandwidth-efficient
+protocol. It is already implemented (at least the beta version). I
+hope this protocol can be adopted by few other projects, which would
+cut the bandwidth requirements by a factor of 100 or even a 1000
+sometimes when compared with XML-based protocols.</dd>
+
+<dt>Simplicity and user-friendliness of the client.</dt>
+<dd>FSOG client software should be easy to use for unexperienced
+computer users.</dd>
+
+<dt>Customization of the client.</dt>
+<dd>Even though FSOG client
+software should be easy to use, advanced users should be able to
+customize it to a large extent.</dd>
+
+</dl>
+
+<h2>Development</h2>
+<p>Feel free to visit <a href="https://developer.berlios.de/projects/fsog/">FSOG development website.</a></p>
+
+<p>The project is hosted at berliOS <a href="http://developer.berlios.de" title="BerliOS Developer"> <img src="http://developer.berlios.de/bslogo.php?group_id=9116" alt="BerliOS Developer Logo" width="124px" height="32px" style="border: none;" /></a>.</p>
+</body>
+</html>
