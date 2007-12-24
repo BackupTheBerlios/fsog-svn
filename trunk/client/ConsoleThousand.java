@@ -63,16 +63,16 @@ public class ConsoleThousand {
         + " -p <password>";
 
     private static void missingValue(final String key){
-        System.out.println("Missing value for the "+key+" key.");
-        System.out.println(usage);
+        e("Missing value for the "+key+" key.");
+        e(usage);
         System.exit(1);
     }
 
     private static void checkMissingKey(final String key,
                                         final String value){
         if(value==null){
-            System.out.println("You have forgotten about the "+key+" key.");
-            System.out.println(usage);
+            e("You have forgotten about the "+key+" key.");
+            e(usage);
             System.exit(1);
         }
     }
@@ -91,8 +91,8 @@ public class ConsoleThousand {
             final String option = args[i];
             
             if(!options.containsKey(option)){
-                System.out.println("Unrecognized option: "+args[i]);
-                System.out.println(usage);
+                e("Unrecognized option: "+args[i]);
+                e(usage);
                 System.exit(1);
             }
 
@@ -118,19 +118,69 @@ public class ConsoleThousand {
         consoleThousand.run();
     }
 
+    /** Debug */
+    private static void d(final String message){
+        System.out.println(message);
+    }
+
+    /** Error */
+    private static void e(final String message){
+        System.out.println(message);
+    }
+
+    /** Information */
+    private static void i(final String message){
+        System.out.println(message);
+    }
+
+    /** Warning */
+    private static void w(final String message){
+        System.out.println(message);
+    }
+
+
+    private final static float[] timeouts = {0.1F,0.25F,0.5F,1.0F,2.0F,5.0F,10.0F};
+
+    /**
+       Send message and await for response of type within types. This
+       will work as long as necessary, even forever.
+     */
+    private Message sendAndReceive(final Message message,
+                                   Protocol.MessageType... types){
+
+        d("sendAndReceive: "+message+"MessageType types: "+types);
+        sending: for(int i=0;;i=Math.min(i+1,timeouts.length-1)){
+            final float timeout = timeouts[i];
+            try{
+                d("Sending...");
+                mySocket.sendMessage(message,this.serverAddress);
+                
+                d("Receiving with timeout "+timeout+"s...");
+                final Message r = mySocket.receiveMessage(timeout);
+                if(r==null){
+                    d("No response. Datagram lost? Network OK? Server running?");
+                    continue;
+                }
+                for(Protocol.MessageType type : types)
+                    if(type.equals(Protocol.lookupMessageType(r))){
+                        d("Correct response: "+r);
+                        return r;
+                    }
+                w("UNEXPECTED message received: "+r);
+            }catch(final Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void run() throws Exception{
 
         final Message logIn = Protocol.serialize_1_LOG_IN("nick","password");
 
-        System.out.println("Sending logIn...");
-        mySocket.sendMessage(logIn,serverAddress);
-        System.out.println("logIn sent.");
+        final Message r = sendAndReceive(logIn,
+                                         Protocol.MessageType.LOG_IN_CORRECT_1,
+                                         Protocol.MessageType.LOG_IN_INCORRECT_1);
 
-        System.out.println("Receiving r...");
-        final Message r = mySocket.receiveMessage();
-
-        System.out.println("Message received: "+r);
-        
         mySocket.close();
     }
 }

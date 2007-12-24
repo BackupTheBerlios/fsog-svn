@@ -74,21 +74,35 @@ public class ClientUDPSocket{
         this.mySocket.send(packet);
     }
 
-    final Message receiveMessage()
-        throws IOException
-    {
+    final static float minimalTimeout = 0.1F;
 
-        final DatagramPacket packet
-            = new DatagramPacket(this.buffer,this.buffer.length);
-        
-        this.mySocket.receive(packet);
+    /**
+       @param timeout Timeout in seconds. Minimal timeout is
+       minimalTimeout. If the specified timeout is smaller, it will be
+       set to minimalTimeout.
+       @return Returns null if timeout expired or other socket-related
+       problem was found. Otherwise, returns an instance of Message.
+     */
+    final Message receiveMessage(final float timeout){
+        try{
+            final DatagramPacket packet
+                = new DatagramPacket(this.buffer,this.buffer.length);
 
-        // display response
-        //final String received
-        //    = new String(packet.getData(), 0, packet.getLength());
-        //System.out.println("The received packet: " + received);
+            final int timeout_m
+                = (int)(1000*Math.max(timeout,minimalTimeout));
+            this.mySocket.setSoTimeout(timeout_m);
 
-        return new Message(this.buffer,packet.getLength());
+            this.mySocket.receive(packet);
+
+            // display response
+            //final String received
+            //    = new String(packet.getData(), 0, packet.getLength());
+            //System.out.println("The received packet: " + received);
+
+            return new Message(this.buffer,packet.getLength());
+        }catch(Exception e){
+            return null;
+        }
     }
 
     final void close(){
