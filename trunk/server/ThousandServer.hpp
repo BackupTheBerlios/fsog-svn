@@ -64,8 +64,13 @@ private:
   //Games:
   std::list<Thousand> games;
   //All users:
+  std::list<User> users;
   //When you get a packet, you can see which user it is.
-  std::map<Address,User> users;
+  std::map<Address,std::list<User>::iterator> addressToUser;
+  //Map nicks to User iterator.
+  std::map<std::string,std::list<User>::iterator> nickToUser;
+  //
+  Address address;
 
   //const std::list<Thousand>::iterator dummyGame;
   //const std::map<Address,User>::iterator dummyUser;
@@ -73,7 +78,8 @@ private:
   //Temporary iterators to game and user:
   std::list<Thousand>::iterator game;
   bool gameKnown;
-  std::map<Address,User>::iterator user;
+  std::list<User>::iterator user;
+  std::map<Address,std::list<User>::iterator>::iterator addressToUserIterator;
   
   //People searching for games:
   std::list<Searcher> searchers;
@@ -91,7 +97,7 @@ private:
   //confirmation, we insert a pair into this map, where first
   //is the timeout before which the user should reply and the
   //second is the iterator to the user herself.
-  std::multimap<uint64_t,std::map<Address,User>::iterator> timeouts;
+  std::multimap<uint64_t,std::list<User>::iterator> timeouts;
 
   //Functions:
 
@@ -102,7 +108,7 @@ private:
   //Protocol::UNKNOWN_MESSAGE, it means that the server doesn't expect
   //any particular message, but client should send any message before
   //timeout elapses. seconds must be positive.
-  void sendMessage(std::map<Address,User>::iterator destinationUser,
+  void sendMessage(std::list<User>::iterator destinationUser,
                    const Protocol::MessageType messageType
                    = Protocol::UNKNOWN_MESSAGE_1,
                    const uint_fast16_t seconds = 15*60) throw();
@@ -113,7 +119,7 @@ private:
 
   void checkTimeouts() throw();
 
-  void removeFromSearchers(const std::map<Address,User>::iterator& userIterator)
+  void removeFromSearchers(const std::list<User>::iterator& userIterator)
     throw();
 
   bool intersectCryteria(const Protocol::Deserialized_1_SEARCH_GAME& cryteria)

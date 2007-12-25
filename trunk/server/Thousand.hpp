@@ -63,7 +63,7 @@ public:
   const char numberOfPlayers;
 
   //Set of players:
-  std::vector<std::map<Address,User>::iterator> players;
+  std::vector<std::list<User>::iterator> players;
 
 private:  
   //Who's dealing the cards:

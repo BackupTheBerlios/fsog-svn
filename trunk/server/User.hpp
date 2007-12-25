@@ -48,8 +48,8 @@ class Thousand;
 class User
 {
 public:
-  //Unique nick of the player.
-  const std::string nick;
+  std::map<Address,std::list<User>::iterator>::iterator myAddressToUserIterator;
+  std::map<std::string,std::list<User>::iterator>::iterator myNickToUserIterator;
   //Iterator pointing to the game in the list of games of
   //which this user is a member. If not member of any game, it
   //will point to the end of the list of games.
@@ -76,12 +76,11 @@ public:
   Protocol::MessageType serverAwaits;
   //Iterator to entry in timeouts. This iterator is only valid if
   //this->serverAwaits!=UNKNOWN_MESSAGE
-  std::multimap<uint64_t,std::map<Address,User>::iterator>::iterator myTimeout;
+  std::multimap<uint64_t,std::list<User>::iterator>::iterator myTimeout;
 
   //ctor
-  User(const std::string& nick) throw()
-    :nick(nick),
-     nextAcknowledgeSecret(1),
+  User() throw()
+    :nextAcknowledgeSecret(1),
      pressedStart(false),
      serverAwaits(Protocol::UNKNOWN_MESSAGE_1)
   {

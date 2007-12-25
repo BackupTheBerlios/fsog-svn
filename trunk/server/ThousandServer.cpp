@@ -76,16 +76,21 @@ void ThousandServer::readAndInterpretMessage() throw()
   if(!somethingRead)
     return;
 
+  this->address = this->socket.getClientAddress();
+
   //See which user sent the message:
-  this->user
-    = this->users.find(this->socket.getClientAddress());
+  this->addressToUserIterator
+    = this->addressToUser.find(this->address);
 
   const bool userKnown
-    = (this->user!=this->users.end());
+    = (this->addressToUserIterator != this->addressToUser.end());
+
+  if(userKnown)
+    this->user = this->addressToUserIterator->second;
 
   this->game
     = (userKnown
-       ?this->user->second.game
+       ?this->user->game
        :this->games.end());
 
   this->gameKnown
@@ -97,41 +102,50 @@ void ThousandServer::readAndInterpretMessage() throw()
   switch (messageType)
     {
     case Protocol::LOG_IN_1:
-      if(!Protocol::deserialize_1_LOG_IN(this->inputMessage,
-                                         this->temporary_LOG_IN))
-        {
-          std::cerr
-            <<"Couldn't deserialize message."<<std::endl
-            <<this->inputMessage.toString()<<std::endl;
-          break;
-        }
-      
-      //If somebody already uses this IP+port, drop
-      //packet. The conflicting new client should change port
-      //number to a new random one.
-      if(userKnown)
-        break;
-      
-      //TODO: if user re-connected after a crash, we should
-      //remove previous user.
-
-      //TODO: check password in database.
-
-      //Create new user:
-      //std::pair<std::map<Address,User>::iterator,bool> tempPair
-      this->user
-        = this->users.insert
-        (std::make_pair(this->socket.getClientAddress(),
-                        User(this->temporary_LOG_IN.nick))
-         ).first;
-
-      Protocol::serialize_1_LOG_IN_CORRECT(this->outputMessage);
-
-      //If undelivered, client has to ask again.
-      this->sendMessage(this->user);
-
+      {
+        if(!Protocol::deserialize_1_LOG_IN(this->inputMessage,
+                                           this->temporary_LOG_IN))
+          {
+            std::cerr
+              <<"Couldn't deserialize message."<<std::endl
+              <<this->inputMessage.toString()<<std::endl;
+            break;
+          }
+        
+        //TODO: if user re-connected after a crash, we should
+        //do something good.
+        
+        //See whether the user was already logged in from some address:
+        std::map<std::string,std::list<User>::iterator>::iterator nickToUserIterator
+          = this->nickToUser.find(this->temporary_LOG_IN.nick);
+        
+        //Remove the previous address association:
+        //if(nickToUserIterator!=nickToUser.end())
+        //  nickToUser.remove(nickToUserIterator);
+        
+        //TODO: check password in database.
+        
+        //Create new user:
+        //std::pair<std::map<Address,User>::iterator,bool> tempPair
+        this->users.push_front(User());
+        this->user = this->users.begin();
+        
+        this->user->myAddressToUserIterator
+          = this->addressToUser.insert(std::make_pair(this->address,
+                                                      this->user)
+                                       ).first;
+        
+        this->user->myNickToUserIterator
+          = this->nickToUser.insert(std::make_pair(this->temporary_LOG_IN.nick,
+                                                   this->user)
+                                    ).first;
+        
+        Protocol::serialize_1_LOG_IN_CORRECT(this->outputMessage);
+        
+        //If undelivered, client has to ask again.
+        this->sendMessage(this->user);
+      }
       break; //End of LOG_IN
-
     case Protocol::GET_STATISTICS_1:
       if(!Protocol::deserialize_1_GET_STATISTICS(this->inputMessage))
         {
@@ -170,7 +184,7 @@ void ThousandServer::readAndInterpretMessage() throw()
       //client probably didn't get our response. Send the
       //response and that's it.
       if(binary_equal(this->temporary_SEARCH_GAME,
-                      this->user->second.last_SEARCH_GAME))
+                      this->user->last_SEARCH_GAME))
         {
           this->send_SEARCH_GAME_response(false);
           break;
@@ -178,7 +192,7 @@ void ThousandServer::readAndInterpretMessage() throw()
 
       //Remember the search in case of C->S duplicate packets
       //and S->C lost packets.
-      user->second.last_SEARCH_GAME=this->temporary_SEARCH_GAME;
+      user->last_SEARCH_GAME=this->temporary_SEARCH_GAME;
 
       //Remove player from all searches (in case this is second search).
       this->removeFromSearchers(this->user);
@@ -213,13 +227,13 @@ void ThousandServer::readAndInterpretMessage() throw()
           break;
         }
 
-      if(this->user->second.serverAwaits
+      if(this->user->serverAwaits
          ==Protocol::ACKNOWLEDGE_PROPOSED_GAME_1)
         {
           //Server was waiting for this message from the user.
           //Check if ack secret is OK:
           if(this->temporary_ACKNOWLEDGE_PROPOSED_GAME.secret
-             == this->user->second.nextAcknowledgeSecret)
+             == this->user->nextAcknowledgeSecret)
             {
               //Now we know the user received PROPOSED_GAME.
               this->acknowledgementReceived();
@@ -244,11 +258,11 @@ void ThousandServer::readAndInterpretMessage() throw()
             break;
           }
         
-        this->user->second.pressedStart=true;
+        this->user->pressedStart=true;
         
         bool allStarted = true;
         for(char i=0;i<this->game->numberOfPlayers;i++)
-          if(!this->game->players[i]->second.pressedStart)
+          if(!this->game->players[i]->pressedStart)
             {
               allStarted = false;
               break;
@@ -282,7 +296,7 @@ int main(const int argc,
   gameServer.mainLoop();
 }
 
-void ThousandServer::removeFromSearchers(const std::map<Address,User>::iterator&userToBeRemoved)
+void ThousandServer::removeFromSearchers(const std::list<User>::iterator&userToBeRemoved)
   throw()
 {
   //Remove from tripples:
@@ -432,10 +446,10 @@ void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searc
   }
 
   //Let each user remember her game iterator:
-  this->game->players[0]->second.game=this->game;
-  this->game->players[1]->second.game=this->game;
-  this->game->players[2]->second.game=this->game;
-  this->game->players[3]->second.game=this->game;
+  this->game->players[0]->game=this->game;
+  this->game->players[1]->game=this->game;
+  this->game->players[2]->game=this->game;
+  this->game->players[3]->game=this->game;
 
   //Now remove all users from searcher sets. WARNING! The
   //iterator passed to this function will be now invalidated,
@@ -464,9 +478,9 @@ void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searc
   }
 
   //Let each user remember her game iterator:
-  this->game->players[0]->second.game=this->game;
-  this->game->players[1]->second.game=this->game;
-  this->game->players[2]->second.game=this->game;
+  this->game->players[0]->game=this->game;
+  this->game->players[1]->game=this->game;
+  this->game->players[2]->game=this->game;
 
   //Now remove all users from searcher sets. WARNING! The
   //iterator passed to this function will be now invalidated,
@@ -493,8 +507,8 @@ void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searc
   }
 
   //Let each user remember her game iterator:
-  this->game->players[0]->second.game=this->game;
-  this->game->players[1]->second.game=this->game;
+  this->game->players[0]->game=this->game;
+  this->game->players[1]->game=this->game;
 
   //Now remove all users from searcher sets. WARNING! The
   //iterator passed to this function will be now invalidated,
@@ -618,32 +632,32 @@ void ThousandServer::send_SEARCH_GAME_response(const bool toAll) throw()
         {
         case 4:
           Protocol::serialize_1_PROPOSED_GAME
-            (game->players[0]->second.nick,
-             game->players[1]->second.nick,
-             game->players[2]->second.nick,
-             game->players[3]->second.nick,
+            (game->players[0]->myNickToUserIterator->first,
+             game->players[1]->myNickToUserIterator->first,
+             game->players[2]->myNickToUserIterator->first,
+             game->players[3]->myNickToUserIterator->first,
              game->flags,
-             user->second.nextAcknowledgeSecret++,
+             user->nextAcknowledgeSecret++,
              this->outputMessage);
           break;
         case 3:
           Protocol::serialize_1_PROPOSED_GAME
-            (game->players[0]->second.nick,
-             game->players[1]->second.nick,
-             game->players[2]->second.nick,
+            (game->players[0]->myNickToUserIterator->first,
+             game->players[1]->myNickToUserIterator->first,
+             game->players[2]->myNickToUserIterator->first,
              "",
              game->flags,
-             user->second.nextAcknowledgeSecret++,
+             user->nextAcknowledgeSecret++,
              this->outputMessage);
           break;
         case 2:
           Protocol::serialize_1_PROPOSED_GAME
-            (game->players[0]->second.nick,
-             game->players[1]->second.nick,
+            (game->players[0]->myNickToUserIterator->first,
+             game->players[1]->myNickToUserIterator->first,
              "",
              "",
              game->flags,
-             user->second.nextAcknowledgeSecret++,
+             user->nextAcknowledgeSecret++,
              this->outputMessage);
           break;
         }
@@ -668,28 +682,28 @@ void ThousandServer::send_SEARCH_GAME_response(const bool toAll) throw()
     }
 }
 
-void ThousandServer::sendMessage(std::map<Address,User>::iterator destinationUser,
+void ThousandServer::sendMessage(std::list<User>::iterator destinationUser,
                                  const Protocol::MessageType messageType,
                                  const uint_fast16_t seconds) throw()
 {
   //Send the message first:
   this->socket.sendMessage(this->outputMessage,
-                           destinationUser->first);
+                           destinationUser->myAddressToUserIterator->first);
 
   //Add timeout:
-  destinationUser->second.myTimeout
+  destinationUser->myTimeout
     = this->timeouts.insert(std::make_pair(timeMicro(seconds),
                                            destinationUser));
       
-  destinationUser->second.serverAwaits = messageType;
+  destinationUser->serverAwaits = messageType;
 }
 
 void ThousandServer::acknowledgementReceived() throw()
 {
   //Now the user is not awaiting anything:
-  this->user->second.serverAwaits = Protocol::UNKNOWN_MESSAGE_1;
+  this->user->serverAwaits = Protocol::UNKNOWN_MESSAGE_1;
   //Remove timeout:
-  this->timeouts.erase(this->user->second.myTimeout);
+  this->timeouts.erase(this->user->myTimeout);
 }
 
 void ThousandServer::dealCards() throw()
@@ -702,13 +716,13 @@ void ThousandServer::dealCards() throw()
   for(char i=0;i<this->game->numberOfPlayers;i++)
     {
       Protocol::serialize_1_GAME_DEAL_7_CARDS
-        (this->game->players[i]->second.cards[0],
-         this->game->players[i]->second.cards[1],
-         this->game->players[i]->second.cards[2],
-         this->game->players[i]->second.cards[3],
-         this->game->players[i]->second.cards[4],
-         this->game->players[i]->second.cards[5],
-         this->game->players[i]->second.cards[6],
+        (this->game->players[i]->cards[0],
+         this->game->players[i]->cards[1],
+         this->game->players[i]->cards[2],
+         this->game->players[i]->cards[3],
+         this->game->players[i]->cards[4],
+         this->game->players[i]->cards[5],
+         this->game->players[i]->cards[6],
          this->outputMessage);
       this->sendMessage(this->game->players[i]);
     }

@@ -45,12 +45,12 @@
 class Searcher
 {
 public:
-  Searcher(const std::map<Address,User>::iterator& user,
+  Searcher(const std::list<User>::iterator& user,
            const Protocol::Deserialized_1_SEARCH_GAME&cryteria)
     :user(user),
      cryteria(cryteria)
   {}
 
-  const std::map<Address,User>::iterator user;
+  const std::list<User>::iterator user;
   const Protocol::Deserialized_1_SEARCH_GAME cryteria;
 };

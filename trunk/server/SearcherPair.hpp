@@ -48,14 +48,14 @@ class SearcherPair
 {
 public:
   SearcherPair(const Searcher&searcher,
-               const std::map<Address,User>::iterator newUser,
+               const std::list<User>::iterator newUser,
                const Protocol::Deserialized_1_SEARCH_GAME&cryteria)
     :user0(searcher.user),
      user1(newUser),
      cryteria(cryteria)
   {}
 
-  const std::map<Address,User>::iterator user0;
-  const std::map<Address,User>::iterator user1;
+  const std::list<User>::iterator user0;
+  const std::list<User>::iterator user1;
   const Protocol::Deserialized_1_SEARCH_GAME cryteria;
 };

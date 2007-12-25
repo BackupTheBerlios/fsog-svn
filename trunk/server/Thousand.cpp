@@ -87,21 +87,21 @@ void Thousand::deal() throw()
           const char playing1 = (this->dealer+2)%4;
           const char playing2 = (this->dealer+3)%4;
           
-          this->players[playing0]->second.cards.resize(0);
-          this->players[playing0]->second.cards.insert
-            (this->players[playing0]->second.cards.end(),
+          this->players[playing0]->cards.resize(0);
+          this->players[playing0]->cards.insert
+            (this->players[playing0]->cards.end(),
              deckBegin,
              deckBegin+7);
           
-          this->players[playing1]->second.cards.resize(0);
-          this->players[playing1]->second.cards.insert
-            (this->players[playing1]->second.cards.end(),
+          this->players[playing1]->cards.resize(0);
+          this->players[playing1]->cards.insert
+            (this->players[playing1]->cards.end(),
              deckBegin+7,
              deckBegin+14);
           
-          this->players[playing2]->second.cards.resize(0);
-          this->players[playing2]->second.cards.insert
-            (this->players[playing2]->second.cards.end(),
+          this->players[playing2]->cards.resize(0);
+          this->players[playing2]->cards.insert
+            (this->players[playing2]->cards.end(),
              deckBegin+14,
              deckBegin+21);
           
@@ -112,21 +112,21 @@ void Thousand::deal() throw()
           break;
         }
     case 3:
-      this->players[0]->second.cards.resize(0);
-      this->players[0]->second.cards.insert
-        (this->players[0]->second.cards.end(),
+      this->players[0]->cards.resize(0);
+      this->players[0]->cards.insert
+        (this->players[0]->cards.end(),
          deckBegin,
          deckBegin+7);
       
-      this->players[1]->second.cards.resize(0);
-      this->players[1]->second.cards.insert
-        (this->players[1]->second.cards.end(),
+      this->players[1]->cards.resize(0);
+      this->players[1]->cards.insert
+        (this->players[1]->cards.end(),
          deckBegin+7,
          deckBegin+14);
       
-      this->players[2]->second.cards.resize(0);
-      this->players[2]->second.cards.insert
-        (this->players[2]->second.cards.end(),
+      this->players[2]->cards.resize(0);
+      this->players[2]->cards.insert
+        (this->players[2]->cards.end(),
          deckBegin+14,
          deckBegin+21);
       
@@ -139,12 +139,12 @@ void Thousand::deal() throw()
     case 2:
 
       //Two players:
-      this->players[0]->second.cards.resize(0);
-      this->players[0]->second.cards.insert(this->players[0]->second.cards.end(),
+      this->players[0]->cards.resize(0);
+      this->players[0]->cards.insert(this->players[0]->cards.end(),
                                     deckBegin,
                                     deckBegin+10);
-      this->players[1]->second.cards.resize(0);
-      this->players[1]->second.cards.insert(this->players[1]->second.cards.end(),
+      this->players[1]->cards.resize(0);
+      this->players[1]->cards.insert(this->players[1]->cards.end(),
                                     deckBegin+10,
                                     deckBegin+20);
       this->smallMust1.resize(0);

@@ -46,7 +46,7 @@ class SearcherTripple
 {
 public:
   SearcherTripple(const SearcherPair&pair,
-                  const std::map<Address,User>::iterator newUser,
+                  const std::list<User>::iterator newUser,
                   const Protocol::Deserialized_1_SEARCH_GAME&cryteria)
     :user0(pair.user0),
      user1(pair.user1),
@@ -55,8 +55,8 @@ public:
   {}
 
   //TODO maybe reference to SearcherPair, so we don't need 3, but 2.
-  const std::map<Address,User>::iterator user0;
-  const std::map<Address,User>::iterator user1;
-  const std::map<Address,User>::iterator user2;
+  const std::list<User>::iterator user0;
+  const std::list<User>::iterator user1;
+  const std::list<User>::iterator user2;
   const Protocol::Deserialized_1_SEARCH_GAME cryteria;
 };
