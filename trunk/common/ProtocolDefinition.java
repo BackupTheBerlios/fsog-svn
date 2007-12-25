@@ -450,7 +450,7 @@ public class ProtocolDefinition{
                  +messageDefinition.name+"\n"
                  +"  {\n"
                  +"  public:\n");
-        javaWrite("  class Deserialized_"+this.protocolVersion+"_"
+        javaWrite("  public static class Deserialized_"+this.protocolVersion+"_"
                   +messageDefinition.name+"{\n");
                 
         for(int i=0;i<messageDefinition.pieceDefinitions.length;i++){

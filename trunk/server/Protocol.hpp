@@ -419,8 +419,11 @@ public:
   //Sent by server when returning info about 'room' stats.
 
   static void serialize_1_RETURN_STATISTICS(
-        //Number of people playing in the 'room'.
-        const int32_t numberOfPlayers,
+        //Number of people logged in.
+        const int32_t numberOfUsers,
+
+        //Number of games being played in the 'room'.
+        const int32_t numberOfGames,
 
         //Number of people searching in the 'room'.
         const int32_t numberOfSearchers,
@@ -433,8 +436,10 @@ public:
     //Let the receiver know what kind of message this is:
     outputMessage.append1Byte(5);
 
-    //Serialize numberOfPlayers:
-    outputMessage.append4Bytes(numberOfPlayers);
+    //Serialize numberOfUsers:
+    outputMessage.append4Bytes(numberOfUsers);
+    //Serialize numberOfGames:
+    outputMessage.append4Bytes(numberOfGames);
     //Serialize numberOfSearchers:
     outputMessage.append4Bytes(numberOfSearchers);
   }
@@ -442,8 +447,10 @@ public:
   class Deserialized_1_RETURN_STATISTICS
   {
   public:
-    //Number of people playing in the 'room'.
-    int32_t numberOfPlayers;
+    //Number of people logged in.
+    int32_t numberOfUsers;
+    //Number of games being played in the 'room'.
+    int32_t numberOfGames;
     //Number of people searching in the 'room'.
     int32_t numberOfSearchers;
   };
@@ -473,8 +480,11 @@ public:
 
     //Deserialize pieces:
 
-    //Deserialize numberOfPlayers:
-    if(!Message::read4Bytes(it,messageEnd,output.numberOfPlayers))
+    //Deserialize numberOfUsers:
+    if(!Message::read4Bytes(it,messageEnd,output.numberOfUsers))
+      return false;
+    //Deserialize numberOfGames:
+    if(!Message::read4Bytes(it,messageEnd,output.numberOfGames))
       return false;
     //Deserialize numberOfSearchers:
     if(!Message::read4Bytes(it,messageEnd,output.numberOfSearchers))

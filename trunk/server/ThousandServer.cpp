@@ -155,7 +155,8 @@ void ThousandServer::readAndInterpretMessage() throw()
           break;
         }
 
-      Protocol::serialize_1_RETURN_STATISTICS(this->games.size(),
+      Protocol::serialize_1_RETURN_STATISTICS(this->users.size(),
+                                              this->games.size(),
                                               this->searchers.size(),
                                               this->outputMessage);
 

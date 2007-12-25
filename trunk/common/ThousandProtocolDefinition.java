@@ -85,8 +85,10 @@ public class ThousandProtocolDefinition{
             ("RETURN_STATISTICS",
              "Sent by server when returning info about 'room' stats.",
              Sender.SERVER,
-             new PieceDefinition(PieceType.INT32,"numberOfPlayers",
-                                 "Number of people playing in the 'room'."),
+             new PieceDefinition(PieceType.INT32,"numberOfUsers",
+                                 "Number of people logged in."),
+             new PieceDefinition(PieceType.INT32,"numberOfGames",
+                                 "Number of games being played in the 'room'."),
              new PieceDefinition(PieceType.INT32,"numberOfSearchers",
                                  "Number of people searching in the 'room'."));
 

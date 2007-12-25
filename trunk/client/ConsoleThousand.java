@@ -177,9 +177,30 @@ public class ConsoleThousand {
 
         final Message logIn = Protocol.serialize_1_LOG_IN("nick","password");
 
-        final Message r = sendAndReceive(logIn,
-                                         Protocol.MessageType.LOG_IN_CORRECT_1,
-                                         Protocol.MessageType.LOG_IN_INCORRECT_1);
+        final Message logInReply = sendAndReceive(logIn,
+                                                  Protocol.MessageType.LOG_IN_CORRECT_1,
+                                                  Protocol.MessageType.LOG_IN_INCORRECT_1);
+
+        if(Protocol.lookupMessageType(logInReply)
+           .equals(Protocol.MessageType.LOG_IN_INCORRECT_1)){
+            i("Could not log in. Reason: "
+              +(new Protocol.Deserialized_1_LOG_IN_INCORRECT(logInReply)).reason);
+        }
+
+        i("Logged in.");
+
+        final Message getStatistics = Protocol.serialize_1_GET_STATISTICS();
+
+        final Message statisticsReply
+            = sendAndReceive(getStatistics,
+                             Protocol.MessageType.RETURN_STATISTICS_1);
+
+        final Protocol.Deserialized_1_RETURN_STATISTICS statistics
+            = new Protocol.Deserialized_1_RETURN_STATISTICS(statisticsReply);
+
+        i("Number of logged in players: "+statistics.numberOfUsers);
+        i("Number of games: "+statistics.numberOfGames);
+        i("Number of partner-searching players: "+statistics.numberOfSearchers);
 
         mySocket.close();
     }

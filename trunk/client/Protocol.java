@@ -215,7 +215,7 @@ public class Protocol{
 
   /* Message sent by CLIENT only,
      no need to serialize on other side (here).
-  class Deserialized_1_LOG_IN{
+  public static class Deserialized_1_LOG_IN{
     //Unique nick.
     public final String nick;
     //User's password.
@@ -269,7 +269,7 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_LOG_IN_CORRECT{
+  public static class Deserialized_1_LOG_IN_CORRECT{
     public Deserialized_1_LOG_IN_CORRECT(final Message inputMessage)
       throws MessageDeserializationException{
       try{
@@ -317,7 +317,7 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_LOG_IN_INCORRECT{
+  public static class Deserialized_1_LOG_IN_INCORRECT{
     //Why login failed.
     public final String reason;
     public Deserialized_1_LOG_IN_INCORRECT(final Message inputMessage)
@@ -363,7 +363,7 @@ public class Protocol{
 
   /* Message sent by CLIENT only,
      no need to serialize on other side (here).
-  class Deserialized_1_GET_STATISTICS{
+  public static class Deserialized_1_GET_STATISTICS{
     public Deserialized_1_GET_STATISTICS(final Message inputMessage)
       throws MessageDeserializationException{
       try{
@@ -396,8 +396,10 @@ public class Protocol{
   /* Message sent by SERVER only,
      no need to serialize on other side (here).
   public static Message serialize_1_RETURN_STATISTICS(
-        //Number of people playing in the 'room'.
-        final int numberOfPlayers,
+        //Number of people logged in.
+        final int numberOfUsers,
+        //Number of games being played in the 'room'.
+        final int numberOfGames,
         //Number of people searching in the 'room'.
         final int numberOfSearchers){
     final Message outputMessage
@@ -408,8 +410,10 @@ public class Protocol{
     //Let the receiver know what kind of message this is:
     outputMessage.append1Byte(5);
 
-    //Serialize numberOfPlayers:
-    outputMessage.append4Bytes(numberOfPlayers);
+    //Serialize numberOfUsers:
+    outputMessage.append4Bytes(numberOfUsers);
+    //Serialize numberOfGames:
+    outputMessage.append4Bytes(numberOfGames);
     //Serialize numberOfSearchers:
     outputMessage.append4Bytes(numberOfSearchers);
     return outputMessage;
@@ -417,9 +421,11 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_RETURN_STATISTICS{
-    //Number of people playing in the 'room'.
-    public final int numberOfPlayers;
+  public static class Deserialized_1_RETURN_STATISTICS{
+    //Number of people logged in.
+    public final int numberOfUsers;
+    //Number of games being played in the 'room'.
+    public final int numberOfGames;
     //Number of people searching in the 'room'.
     public final int numberOfSearchers;
     public Deserialized_1_RETURN_STATISTICS(final Message inputMessage)
@@ -436,8 +442,10 @@ public class Protocol{
         if(iterator.next()!=5)
           throw new MessageDeserializationException();
 
-    //Deserialize numberOfPlayers:
-      this.numberOfPlayers = Message.read4Bytes(iterator);
+    //Deserialize numberOfUsers:
+      this.numberOfUsers = Message.read4Bytes(iterator);
+    //Deserialize numberOfGames:
+      this.numberOfGames = Message.read4Bytes(iterator);
     //Deserialize numberOfSearchers:
       this.numberOfSearchers = Message.read4Bytes(iterator);
       }catch(NoSuchElementException e){
@@ -475,7 +483,7 @@ public class Protocol{
 
   /* Message sent by CLIENT only,
      no need to serialize on other side (here).
-  class Deserialized_1_SEARCH_GAME{
+  public static class Deserialized_1_SEARCH_GAME{
     //Minimum ranking of the oponent, measured in 50 points. E.g. 60 means 60*50=3000 points.
     public final byte minimumOponentRanking50;
     //Have a look at ThousandFlags.
@@ -529,7 +537,7 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_AWAIT_GAME{
+  public static class Deserialized_1_AWAIT_GAME{
     public Deserialized_1_AWAIT_GAME(final Message inputMessage)
       throws MessageDeserializationException{
       try{
@@ -597,7 +605,7 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_PROPOSED_GAME{
+  public static class Deserialized_1_PROPOSED_GAME{
     //The username (nick) of player #0. Empty string means no player at this side of the table.
     public final String player0Username;
     //The username (nick) of player #1. Empty string means no player at this side of the table.
@@ -667,7 +675,7 @@ public class Protocol{
 
   /* Message sent by CLIENT only,
      no need to serialize on other side (here).
-  class Deserialized_1_ACKNOWLEDGE_PROPOSED_GAME{
+  public static class Deserialized_1_ACKNOWLEDGE_PROPOSED_GAME{
     //Protection against very old duplicate packets.
     public final byte secret;
     public Deserialized_1_ACKNOWLEDGE_PROPOSED_GAME(final Message inputMessage)
@@ -715,7 +723,7 @@ public class Protocol{
 
   /* Message sent by CLIENT only,
      no need to serialize on other side (here).
-  class Deserialized_1_GAME_START{
+  public static class Deserialized_1_GAME_START{
     public Deserialized_1_GAME_START(final Message inputMessage)
       throws MessageDeserializationException{
       try{
@@ -789,7 +797,7 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_GAME_DEAL_7_CARDS{
+  public static class Deserialized_1_GAME_DEAL_7_CARDS{
     //First card.
     public final byte card0;
     //Second card.
@@ -867,7 +875,7 @@ public class Protocol{
 
   /* Message sent by CLIENT only,
      no need to serialize on other side (here).
-  class Deserialized_1_GAME_BID{
+  public static class Deserialized_1_GAME_BID{
     //Which game this is about.
     public final short gameIdentifier;
     //This is actually 10% of the bid. Multiply by 10 to get the real value.
@@ -929,7 +937,7 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_GAME_BID_MADE{
+  public static class Deserialized_1_GAME_BID_MADE{
     //Which game this is about.
     public final short gameId;
     //This is actually 10% of the bid. Multiply by 10 to get the real value.
@@ -985,7 +993,7 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_GAME_BID_END_HIDDEN_MUST{
+  public static class Deserialized_1_GAME_BID_END_HIDDEN_MUST{
     //Which game this is about.
     public final short gameIdenitfier;
     public Deserialized_1_GAME_BID_END_HIDDEN_MUST(final Message inputMessage)
@@ -1049,7 +1057,7 @@ public class Protocol{
 
   */
 
-  class Deserialized_1_GAME_BID_END_SHOW_MUST{
+  public static class Deserialized_1_GAME_BID_END_SHOW_MUST{
     //Which game this is about.
     public final short gameIdenitfier;
     //First must card.
