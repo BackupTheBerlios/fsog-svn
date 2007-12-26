@@ -1,3 +1,3 @@
 #!/bin/bash
 
-g++ -pedantic -Wall -Wextra -o thousandServer *.cpp
+g++ -ggdb -pedantic -Wall -Wextra -o thousandServer *.cpp

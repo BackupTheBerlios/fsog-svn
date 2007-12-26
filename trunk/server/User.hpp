@@ -79,12 +79,14 @@ public:
   std::multimap<uint64_t,std::list<User>::iterator>::iterator myTimeout;
 
   //ctor
-  User() throw()
-    :nextAcknowledgeSecret(1),
+  User(std::list<Thousand>::iterator game) throw()
+    :game(game),
+     nextAcknowledgeSecret(1),
      pressedStart(false),
      serverAwaits(Protocol::UNKNOWN_MESSAGE_1)
   {
     //Some versions of the game might need so much.
+    //TODO: better reservation management.
     this->cards.reserve(12);
   }
 };

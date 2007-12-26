@@ -148,7 +148,9 @@ public class ConsoleThousand {
     private Message sendAndReceive(final Message message,
                                    Protocol.MessageType... types){
 
-        d("sendAndReceive: "+message+"MessageType types: "+types);
+        d("sendAndReceive(...). Sending "+Protocol.lookupMessageType(message)
+          +", awaiting "+Arrays.toString(types));
+
         sending: for(int i=0;;i=Math.min(i+1,timeouts.length-1)){
             final float timeout = timeouts[i];
             try{
@@ -163,7 +165,7 @@ public class ConsoleThousand {
                 }
                 for(Protocol.MessageType type : types)
                     if(type.equals(Protocol.lookupMessageType(r))){
-                        d("Correct response: "+r);
+                        d("Correct response: "+Protocol.lookupMessageType(r));
                         return r;
                     }
                 w("UNEXPECTED message received: "+r);
@@ -201,6 +203,23 @@ public class ConsoleThousand {
         i("Number of logged in players: "+statistics.numberOfUsers);
         i("Number of games: "+statistics.numberOfGames);
         i("Number of partner-searching players: "+statistics.numberOfSearchers);
+
+        final Message search
+            = Protocol.serialize_1_SEARCH_GAME((byte)0,
+                                               Protocol.THREE_PLAYERS
+                                               |Protocol.NO_BOMBS
+                                               |Protocol.BID_INCREMENT_10
+                                               |Protocol.SHOW_MUST_100
+                                               |Protocol.PUBLIC
+                                               |Protocol.RANKING_GAME
+                                               |Protocol.TIME_15);
+                                               
+
+        final Message searchReply
+            = sendAndReceive(search,
+                             Protocol.MessageType.PROPOSED_GAME_1,
+                             Protocol.MessageType.AWAIT_GAME_1);
+
 
         mySocket.close();
     }

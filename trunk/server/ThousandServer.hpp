@@ -117,6 +117,10 @@ private:
 
   void readAndInterpretMessage() throw();
 
+  inline bool userKnown() throw();
+
+  void handle_SEARCH_GAME() throw();
+  
   void checkTimeouts() throw();
 
   void removeFromSearchers(const std::list<User>::iterator& userIterator)

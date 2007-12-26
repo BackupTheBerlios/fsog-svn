@@ -66,6 +66,11 @@ void ThousandServer::mainLoop() throw()
     }
 }
 
+bool ThousandServer::userKnown() throw()
+{
+  return this->addressToUserIterator != this->addressToUser.end();
+}
+
 void ThousandServer::readAndInterpretMessage() throw()
 {
 
@@ -82,14 +87,11 @@ void ThousandServer::readAndInterpretMessage() throw()
   this->addressToUserIterator
     = this->addressToUser.find(this->address);
 
-  const bool userKnown
-    = (this->addressToUserIterator != this->addressToUser.end());
-
-  if(userKnown)
+  if(this->userKnown())
     this->user = this->addressToUserIterator->second;
 
   this->game
-    = (userKnown
+    = (this->userKnown()
        ?this->user->game
        :this->games.end());
 
@@ -127,7 +129,7 @@ void ThousandServer::readAndInterpretMessage() throw()
         
         //Create new user:
         //std::pair<std::map<Address,User>::iterator,bool> tempPair
-        this->users.push_front(User());
+        this->users.push_front(User(this->games.end()));
         this->user = this->users.begin();
         
         this->user->myAddressToUserIterator
@@ -166,55 +168,12 @@ void ThousandServer::readAndInterpretMessage() throw()
       break;
 
     case Protocol::SEARCH_GAME_1:
-      //User must be logged in!
-      //Drop the packet if user is unknown.
-      if(!userKnown)
-        break;
-
-      //Try to deserialize the message:
-      if(!Protocol::deserialize_1_SEARCH_GAME(this->inputMessage,
-                                              this->temporary_SEARCH_GAME))
-        {
-          std::cerr
-            <<"Couldn't deserialize message."<<std::endl
-            <<this->inputMessage.toString()<<std::endl;
-          break;
-        }
-
-      //If this search is exactly the same as previous one,
-      //client probably didn't get our response. Send the
-      //response and that's it.
-      if(binary_equal(this->temporary_SEARCH_GAME,
-                      this->user->last_SEARCH_GAME))
-        {
-          this->send_SEARCH_GAME_response(false);
-          break;
-        }
-
-      //Remember the search in case of C->S duplicate packets
-      //and S->C lost packets.
-      user->last_SEARCH_GAME=this->temporary_SEARCH_GAME;
-
-      //Remove player from all searches (in case this is second search).
-      this->removeFromSearchers(this->user);
-
-      //Search searchers and if matches, start game.
-      if(this->searchAndStartGame())
-        {
-          //Send info to all players.
-          this->send_SEARCH_GAME_response(true);
-        }
-      else
-        {
-          this->registerInSearchers();
-          this->send_SEARCH_GAME_response(false);
-        }
+      this->handle_SEARCH_GAME();
       break;
-
     case Protocol::ACKNOWLEDGE_PROPOSED_GAME_1:
       //User must be logged in!
       //Drop the packet if user is unknown.
-      if(!userKnown)
+      if(!userKnown())
         break;
 
       //Try to deserialize the message:
@@ -247,7 +206,7 @@ void ThousandServer::readAndInterpretMessage() throw()
       {
         //User must be logged in!
         //Drop the packet if user is unknown.
-        if(!userKnown)
+        if(!userKnown())
           break;
         
         //Try to deserialize the message:
@@ -280,6 +239,53 @@ void ThousandServer::readAndInterpretMessage() throw()
         <<"Unknown message type."<<std::endl
         <<this->inputMessage.toString()<<std::endl;
       break;
+    }
+}
+
+void ThousandServer::handle_SEARCH_GAME() throw()
+{
+  //User must be logged in!
+  //Drop the packet if user is unknown.
+  if(!this->userKnown())
+    return;
+
+  //Try to deserialize the message:
+  if(!Protocol::deserialize_1_SEARCH_GAME(this->inputMessage,
+                                          this->temporary_SEARCH_GAME))
+    {
+      std::cerr
+        <<"Couldn't deserialize message."<<std::endl
+        <<this->inputMessage.toString()<<std::endl;
+      return;
+    }
+
+  //If this search is exactly the same as previous one,
+  //client probably didn't get our response. Send the
+  //response and that's it.
+  if(binary_equal(this->temporary_SEARCH_GAME,
+                  this->user->last_SEARCH_GAME))
+    {
+      this->send_SEARCH_GAME_response(false);
+      return;
+    }
+
+  //Remember the search in case of C->S duplicate packets
+  //and S->C lost packets.
+  user->last_SEARCH_GAME=this->temporary_SEARCH_GAME;
+
+  //Remove player from all searches (in case this is second search).
+  this->removeFromSearchers(this->user);
+
+  //Search searchers and if matches, start game.
+  if(this->searchAndStartGame())
+    {
+      //Send info to all players.
+      this->send_SEARCH_GAME_response(true);
+    }
+  else
+    {
+      this->registerInSearchers();
+      this->send_SEARCH_GAME_response(false);
     }
 }
 
