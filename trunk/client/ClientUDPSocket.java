@@ -74,12 +74,9 @@ public class ClientUDPSocket{
         this.mySocket.send(packet);
     }
 
-    final static float minimalTimeout = 0.1F;
-
     /**
-       @param timeout Timeout in seconds. Minimal timeout is
-       minimalTimeout. If the specified timeout is smaller, it will be
-       set to minimalTimeout.
+       @param timeout Timeout in seconds.Timeout can also be zero. A
+       timeout of zero is interpreted as an infinite timeout.
        @return Returns null if timeout expired or other socket-related
        problem was found. Otherwise, returns an instance of Message.
      */
@@ -88,9 +85,7 @@ public class ClientUDPSocket{
             final DatagramPacket packet
                 = new DatagramPacket(this.buffer,this.buffer.length);
 
-            final int timeout_m
-                = (int)(1000*Math.max(timeout,minimalTimeout));
-            this.mySocket.setSoTimeout(timeout_m);
+            this.mySocket.setSoTimeout((int)(1000*timeout));
 
             this.mySocket.receive(packet);
 

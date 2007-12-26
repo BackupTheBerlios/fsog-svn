@@ -109,18 +109,12 @@ public class ThousandProtocolDefinition{
                "Game with 10 bid increment."),
              new FlagDefinition("BID_INCREMENT_ANY",
                "Game with any bid increment."),
-             new FlagDefinition("MUST_PLAY_FROM_800",
-               "Game where to get points you must"
-               +" make a game if you have >= 800 points."),
-             new FlagDefinition("MUST_PLAY_FROM_900",
-               "Game where to get points you must"
-               +" make a game if you have >= 900 points."),
              new FlagDefinition("SHOW_MUST_100",
                "Game where 'must' is always shown."),
              new FlagDefinition("SHOW_MUST_110",
                "Game where 'must' is shown from 110."),
-             new FlagDefinition("PUBLIC","Public game."),
-             new FlagDefinition("PRIVATE","Private game."),
+             new FlagDefinition("PUBLIC_GAME","Public game."),
+             new FlagDefinition("PRIVATE_GAME","Private game."),
              new FlagDefinition("RANKING_GAME","Ranking game."),
              new FlagDefinition("SPARRING_GAME","Sparring (non-ranked) game."),
              new FlagDefinition("TIME_7","7 minutes game."),
@@ -154,7 +148,7 @@ public class ThousandProtocolDefinition{
              +" Includes game settings. One of four usernames"
              +" will be equal to the requesting player's if she should"
              +" play the game, otherwise it's observing. Must be"
-             +" acknowledge by the client program immediately,"
+             +" acknowledged by the client program immediately,"
              +" using the secret provided here.",
              Sender.SERVER,
              //new PieceDefinition(PieceType.INT16,"gameIdentifier",

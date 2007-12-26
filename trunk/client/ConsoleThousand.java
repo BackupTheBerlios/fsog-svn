@@ -151,7 +151,7 @@ public class ConsoleThousand {
         d("sendAndReceive(...). Sending "+Protocol.lookupMessageType(message)
           +", awaiting "+Arrays.toString(types));
 
-        sending: for(int i=0;;i=Math.min(i+1,timeouts.length-1)){
+        for(int i=0;;i=Math.min(i+1,timeouts.length-1)){
             final float timeout = timeouts[i];
             try{
                 d("Sending...");
@@ -175,9 +175,37 @@ public class ConsoleThousand {
         }
     }
 
+    /**
+       Simply await for response of type within types. This
+       will work as long as necessary, even forever.
+     */
+    private Message await(Protocol.MessageType... types){
+
+        d("await(...). Awaiting: "+Arrays.toString(types));
+
+        while(true){
+            try{
+                d("Receiving without timeout...");
+                final Message r = mySocket.receiveMessage(0.0F);
+                if(r==null){
+                    d("Bad response. Datagram lost? Network OK? Server running?");
+                    continue;
+                }
+                for(Protocol.MessageType type : types)
+                    if(type.equals(Protocol.lookupMessageType(r))){
+                        d("Correct response: "+Protocol.lookupMessageType(r));
+                        return r;
+                    }
+                w("UNEXPECTED message received: "+r);
+            }catch(final Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void run() throws Exception{
 
-        final Message logIn = Protocol.serialize_1_LOG_IN("nick","password");
+        final Message logIn = Protocol.serialize_1_LOG_IN(this.nick,this.password);
 
         final Message logInReply = sendAndReceive(logIn,
                                                   Protocol.MessageType.LOG_IN_CORRECT_1,
@@ -215,11 +243,29 @@ public class ConsoleThousand {
                                                |Protocol.TIME_15);
                                                
 
-        final Message searchReply
+        i("Searching for game...");
+
+        Message searchReply
             = sendAndReceive(search,
                              Protocol.MessageType.PROPOSED_GAME_1,
                              Protocol.MessageType.AWAIT_GAME_1);
 
+        while(!Protocol.lookupMessageType(searchReply)
+              .equals(Protocol.MessageType.PROPOSED_GAME_1)){
+            searchReply = await(Protocol.MessageType.PROPOSED_GAME_1);
+        }
+
+        Protocol.Deserialized_1_PROPOSED_GAME proposal
+            = new Protocol.Deserialized_1_PROPOSED_GAME(searchReply);
+
+        i("OK, server proposes some game."
+          +"P0: \""+proposal.player0Username
+          +"\", P1: \""+proposal.player1Username
+          +"\", P2: \""+proposal.player2Username
+          +"\", P3: \""+proposal.player3Username
+          +"\", settings: "+proposal.gameSettings);
+
+       
 
         mySocket.close();
     }
