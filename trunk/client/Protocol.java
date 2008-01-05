@@ -34,11 +34,6 @@ import java.util.*;
 
 public class Protocol{
 
-  //Known UDP port number of the server:
-  static int getServerUDPPort_1(){
-    return 10137;
-  }
-
   //Can be used for switching to detect
   //which deserializer should be used.
   enum MessageType{
@@ -57,7 +52,7 @@ public class Protocol{
     SEARCH_GAME_1,
     //Sent by server when no game with given search cryteria is currently available.
     AWAIT_GAME_1,
-    //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledge by the client program immediately, using the secret provided here.
+    //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledged by the client program immediately, using the secret provided here.
     PROPOSED_GAME_1,
     //Sent by client. After this, server just waits for GAME_START. If server doesn't get this ack for some reason, will send again PROPOSED_GAME and ack must be repeated.
     ACKNOWLEDGE_PROPOSED_GAME_1,
@@ -73,6 +68,12 @@ public class Protocol{
     GAME_BID_END_HIDDEN_MUST_1,
     //Message sent by the server to let players know that bidding is over. 'Must' is shown.
     GAME_BID_END_SHOW_MUST_1
+  }
+
+
+  //Known UDP port number of the server:
+  static int getServerUDPPort_1(){
+    return 10137;
   }
 
   //Used in card games. You can encode a card on 
@@ -117,32 +118,28 @@ public class Protocol{
   public static final int BID_INCREMENT_10 = 64;
     //Game with any bid increment.
   public static final int BID_INCREMENT_ANY = 128;
-    //Game where to get points you must make a game if you have >= 800 points.
-  public static final int MUST_PLAY_FROM_800 = 256;
-    //Game where to get points you must make a game if you have >= 900 points.
-  public static final int MUST_PLAY_FROM_900 = 512;
     //Game where 'must' is always shown.
-  public static final int SHOW_MUST_100 = 1024;
+  public static final int SHOW_MUST_100 = 256;
     //Game where 'must' is shown from 110.
-  public static final int SHOW_MUST_110 = 2048;
+  public static final int SHOW_MUST_110 = 512;
     //Public game.
-  public static final int PUBLIC = 4096;
+  public static final int PUBLIC_GAME = 1024;
     //Private game.
-  public static final int PRIVATE = 8192;
+  public static final int PRIVATE_GAME = 2048;
     //Ranking game.
-  public static final int RANKING_GAME = 16384;
+  public static final int RANKING_GAME = 4096;
     //Sparring (non-ranked) game.
-  public static final int SPARRING_GAME = 32768;
+  public static final int SPARRING_GAME = 8192;
     //7 minutes game.
-  public static final int TIME_7 = 65536;
+  public static final int TIME_7 = 16384;
     //10 minutes game.
-  public static final int TIME_10 = 131072;
+  public static final int TIME_10 = 32768;
     //15 minutes game.
-  public static final int TIME_15 = 262144;
+  public static final int TIME_15 = 65536;
     //20 minutes game.
-  public static final int TIME_20 = 524288;
+  public static final int TIME_20 = 131072;
     //30 minutes game.
-  public static final int TIME_30 = 1048576;
+  public static final int TIME_30 = 262144;
 
 
   //This method can be used for rapid message
@@ -563,7 +560,7 @@ public class Protocol{
   //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 8.
-  //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledge by the client program immediately, using the secret provided here.
+  //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledged by the client program immediately, using the secret provided here.
 
   /* Message sent by SERVER only,
      no need to serialize on other side (here).

@@ -42,6 +42,7 @@
 #include <map>
 #include <list>
 #include "Protocol.hpp"
+#include "Time.hpp"
 
 class Thousand;
 
@@ -57,33 +58,33 @@ public:
   //List of cards. See Protocol for how they are represented
   //on 1 byte.
   std::vector<char> cards;
+  //TODO: use platform-independent type names here.
   //Points from all rounds, measured 1:1.
   short totalPoints;
   //Points gathered so far in current round, measured 1:1.
   short roundPoints;
+
   //Last SEARCH_GAME of this user:
   Protocol::Deserialized_1_SEARCH_GAME last_SEARCH_GAME;
   //Next acknowledge secret:
   char nextAcknowledgeSecret;
+  //Next timeout index. Have a look at 
+  uint8_t nextTimeoutSeconds;
   //Did this user already press start?
   bool pressedStart;
 
-  //The type of message that the user must send next. If
-  //message is not sent to the server in a specific timeout,
-  //server does something.  It could be a move within 60s for
-  //instance. If set to UNKNOWN_MESSAGE, server isn't
-  //expecting anything in particular.
-  Protocol::MessageType serverAwaits;
+  //What message did the server send most recently?
+  Message serverSent;
   //Iterator to entry in timeouts. This iterator is only valid if
-  //this->serverAwaits!=UNKNOWN_MESSAGE
-  std::multimap<uint64_t,std::list<User>::iterator>::iterator myTimeout;
+  //this->serverSent!=UNKNOWN_MESSAGE
+  std::multimap<TimeMicro,std::list<User>::iterator>::iterator myTimeout;
 
   //ctor
   User(std::list<Thousand>::iterator game) throw()
     :game(game),
      nextAcknowledgeSecret(1),
      pressedStart(false),
-     serverAwaits(Protocol::UNKNOWN_MESSAGE_1)
+     serverSent()
   {
     //Some versions of the game might need so much.
     //TODO: better reservation management.

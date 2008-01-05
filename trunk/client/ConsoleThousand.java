@@ -238,7 +238,7 @@ public class ConsoleThousand {
                                                |Protocol.NO_BOMBS
                                                |Protocol.BID_INCREMENT_10
                                                |Protocol.SHOW_MUST_100
-                                               |Protocol.PUBLIC
+                                               |Protocol.PUBLIC_GAME
                                                |Protocol.RANKING_GAME
                                                |Protocol.TIME_15);
                                                

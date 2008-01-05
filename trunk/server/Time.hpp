@@ -33,22 +33,16 @@
         Denmark
 */
 
+#pragma once
 
 #include <sys/time.h>
+#include <stdint.h>
 
-//Returns time in microseconds increased by seconds seconds.
-uint64_t timeMicro(const uint_fast16_t seconds) throw()
-{
-  static struct timeval tv;
+typedef uint64_t TimeMicro;
 
-  gettimeofday(&tv,0);
+//Returns current time in microseconds.
+TimeMicro nowMicro() throw();
 
-  uint64_t result = 0;
+//Returns current time in microseconds increased by seconds seconds.
+TimeMicro futureMicro(const uint_fast16_t seconds) throw();
 
-  result=tv.tv_sec;
-  result+=seconds;
-  result*=1000000;
-  result+=tv.tv_usec;
-
-  return result;
-}

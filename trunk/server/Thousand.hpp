@@ -63,12 +63,14 @@ public:
   const char numberOfPlayers;
 
   //Set of players:
+  //TODO: When the user logs out in the middle, one of these is set to users.end()?
   std::vector<std::list<User>::iterator> players;
 
-private:  
+private:
   //Who's dealing the cards:
   char dealer;
-  
+
+  //TODO: avoid this redunduncy.
   //3 cards on must:
   std::vector<char> must;
   //2 cards on first small must (for 2 players game):

@@ -37,7 +37,7 @@
 #pragma once
 #include <netinet/in.h>
 #include <poll.h>
-#include "Message.hpp"
+#include "Protocol.hpp"
 #include "Address.hpp"
 
 class UDPSocket

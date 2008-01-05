@@ -93,27 +93,34 @@ private:
     temporary_ACKNOWLEDGE_PROPOSED_GAME;
   Protocol::Deserialized_1_GAME_START temporary_GAME_START;
 
+  //TODO: iterator might be too big. Use 3 or max 4 bytes.
   //When we send a message to the user and we require
   //confirmation, we insert a pair into this map, where first
   //is the timeout before which the user should reply and the
   //second is the iterator to the user herself.
-  std::multimap<uint64_t,std::list<User>::iterator> timeouts;
+  std::multimap<TimeMicro,std::list<User>::iterator> timeouts;
 
   //Functions:
 
   //Sends the message this->outputMessage to destinationUser. The
-  //other parameters are for timeouts. messageType says what message
-  //the destinationUser should reply with and seconds means withing
-  //how many seconds from now. If messageType is
-  //Protocol::UNKNOWN_MESSAGE, it means that the server doesn't expect
-  //any particular message, but client should send any message before
-  //timeout elapses. seconds must be positive.
+  //other parameters are for timeouts. seconds means withing how many
+  //seconds from now user shall reply. seconds must be
+  //positive. Previous timeout is removed from this->timeouts, and new
+  //one is added.
   void sendMessage(std::list<User>::iterator destinationUser,
-                   const Protocol::MessageType messageType
-                   = Protocol::UNKNOWN_MESSAGE_1,
                    const uint_fast16_t seconds = 15*60) throw();
 
-  void acknowledgementReceived() throw();
+
+  //Resends last message to client, e.g. in case of timeout
+  //expiry. Increases the timeout.
+  void resendMessage() throw();
+
+  //If the user doesn't send acknowledgement few times, this is
+  //called. It logs out the user and removes it from all
+  //datastructures.
+  void killUser() throw();
+
+  //void acknowledgementReceived() throw();
 
   void readAndInterpretMessage() throw();
 
@@ -122,6 +129,8 @@ private:
   void handle_SEARCH_GAME() throw();
   
   void checkTimeouts() throw();
+
+  void handleTimeout() throw();
 
   void removeFromSearchers(const std::list<User>::iterator& userIterator)
     throw();

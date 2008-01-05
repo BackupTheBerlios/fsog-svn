@@ -216,20 +216,15 @@ int32_t Thousand::purifyFlags(const int32_t flags)
   else
     result|=Protocol::BID_INCREMENT_ANY;
 
-  if(flags&Protocol::MUST_PLAY_FROM_800)
-    result|=Protocol::MUST_PLAY_FROM_800;
-  else
-    result|=Protocol::MUST_PLAY_FROM_900;
-
   if(flags&Protocol::SHOW_MUST_100)
     result|=Protocol::SHOW_MUST_100;
   else
     result|=Protocol::SHOW_MUST_110;
 
-  if(flags&Protocol::PUBLIC)
-    result|=Protocol::PUBLIC;
+  if(flags&Protocol::PUBLIC_GAME)
+    result|=Protocol::PUBLIC_GAME;
   else
-    result|=Protocol::PRIVATE;
+    result|=Protocol::PRIVATE_GAME;
 
 
   if(flags&Protocol::RANKING_GAME)

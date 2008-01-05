@@ -31,18 +31,11 @@
 
 #pragma once
 
-#include "Message.hpp"
+#include <vector>
+#include <string>
+#include <sstream>
+#include <cctype>
 
-class Protocol
-{
-public:
-
-  //Known UDP port number of the server:
-  static uint_fast16_t getServerUDPPort_1()
-    throw()
-  {
-    return 10137;
-  }
 
   //Can be used for switching to detect
   //which deserializer should be used.
@@ -63,7 +56,7 @@ public:
     SEARCH_GAME_1 = 6,
     //Sent by server when no game with given search cryteria is currently available.
     AWAIT_GAME_1 = 7,
-    //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledge by the client program immediately, using the secret provided here.
+    //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledged by the client program immediately, using the secret provided here.
     PROPOSED_GAME_1 = 8,
     //Sent by client. After this, server just waits for GAME_START. If server doesn't get this ack for some reason, will send again PROPOSED_GAME and ack must be repeated.
     ACKNOWLEDGE_PROPOSED_GAME_1 = 9,
@@ -80,6 +73,249 @@ public:
     //Message sent by the server to let players know that bidding is over. 'Must' is shown.
     GAME_BID_END_SHOW_MUST_1 = 15
   };
+
+class Message : public std::vector<char>
+{
+private:
+  //Appends value to message
+  template<class T>
+  void appendInteger(const T value,
+                     const unsigned numberOfBytes)
+    throw()
+  {
+    for(unsigned i=0;i<numberOfBytes;i++)
+      {
+        this->push_back(static_cast<char>(0xFF & (value>>(8*(numberOfBytes-1-i)))));
+      }
+  }
+
+public:
+  template<class T>
+  void append1Byte(const T value)
+    throw()
+  {
+    this->appendInteger(value,1);
+  }
+
+  template<class T>
+  void append2Bytes(const T value)
+    throw()
+  {
+    this->appendInteger(value,2);
+  }
+
+  template<class T>
+  void append3Bytes(const T value)
+    throw()
+  {
+    this->appendInteger(value,3);
+  }
+
+  template<class T>
+  void append4Bytes(const T value)
+    throw()
+  {
+    this->appendInteger(value,4);
+  }
+
+  void appendCString(const std::string& value)
+    throw()
+  {
+    this->insert(this->end(),
+                 value.begin(),
+                 value.end());
+    this->push_back(0);
+  }
+
+  //Read value from this message
+  template<class T>
+  static bool read1Byte(Message::const_iterator&it,
+                        const Message::const_iterator&messageEnd,
+                        T&result)
+    throw()
+  {
+    if(it+1>messageEnd)
+      return false;
+
+    result=(*it++);
+    
+    return true;
+  }
+
+  //Read value from this message
+  template<class T>
+  static bool read2Bytes(Message::const_iterator&it,
+                         const Message::const_iterator&messageEnd,
+                         T&result)
+    throw()
+  {
+    if(it+2>messageEnd)
+      return false;
+
+    result=0;
+
+    result|=(static_cast<short>(*it++))<<8;
+    result|=(static_cast<short>(*it++));
+    
+    return true;
+  }
+
+  //Read value from this message
+  template<class T>
+  static bool read3Bytes(Message::const_iterator&it,
+                         const Message::const_iterator&messageEnd,
+                         T&result)
+    throw()
+  {
+    if(it+3>messageEnd)
+      return false;
+    
+    result=0;
+
+    result|=(static_cast<short>(*it++))<<16;
+    result|=(static_cast<short>(*it++))<<8;
+    result|=(static_cast<short>(*it++));
+    
+    return true;
+  }
+
+  //Read value from this message
+  template<class T>
+  static bool read4Bytes(Message::const_iterator&it,
+                         const Message::const_iterator&messageEnd,
+                         T&result)
+    throw()
+  {
+    if(it+4>messageEnd)
+      return false;
+
+    result=0;
+
+    result|=(static_cast<short>(*it++))<<24;
+    result|=(static_cast<short>(*it++))<<16;
+    result|=(static_cast<short>(*it++))<<8;
+    result|=(static_cast<short>(*it++));
+    
+    return true;
+  }
+
+  static bool readCString(Message::const_iterator&it,
+                          const Message::const_iterator&messageEnd,
+                          std::string&result)
+  {
+    std::ostringstream output;
+    char c;
+    while(true)
+      {
+        if(it==messageEnd)
+          return false;
+        c=(*it++);
+        if(c==0)
+          {
+            result=output.str();
+            return true;
+          }
+        output<<c;
+      }
+  }
+  
+
+  //This method can be used for rapid message
+  //type lookup, so you don't need to try
+  //deserializing using all deserializers.
+  //Remember that deserialization can still
+  //always fail, even if this method returns
+  //some known type. It doesn't read the whole
+  //message, just the part where message type
+  //is present.
+  MessageType getMessageType() const throw()
+  {
+    const Message& message = *this;
+    if(message.size()<2)
+      return MessageType(UNKNOWN_MESSAGE_1);
+    
+    const char messageType
+     = message[1];
+    
+    if(messageType<=MessageType(UNKNOWN_MESSAGE_1)
+       || messageType>GAME_BID_END_SHOW_MUST_1)
+      return MessageType(UNKNOWN_MESSAGE_1);
+    
+    return static_cast<MessageType>(messageType);
+  }
+
+  //Can be used for printing MessageType
+  //in human-readable form.
+  std::string getMessageTypeAsString() const throw()
+  {
+    const MessageType mp=this->getMessageType();
+    switch(mp)
+    {
+      case UNKNOWN_MESSAGE_1: return "UNKNOWN_MESSAGE";
+      case LOG_IN_1: return "LOG_IN";
+      case LOG_IN_CORRECT_1: return "LOG_IN_CORRECT";
+      case LOG_IN_INCORRECT_1: return "LOG_IN_INCORRECT";
+      case GET_STATISTICS_1: return "GET_STATISTICS";
+      case RETURN_STATISTICS_1: return "RETURN_STATISTICS";
+      case SEARCH_GAME_1: return "SEARCH_GAME";
+      case AWAIT_GAME_1: return "AWAIT_GAME";
+      case PROPOSED_GAME_1: return "PROPOSED_GAME";
+      case ACKNOWLEDGE_PROPOSED_GAME_1: return "ACKNOWLEDGE_PROPOSED_GAME";
+      case GAME_START_1: return "GAME_START";
+      case GAME_DEAL_7_CARDS_1: return "GAME_DEAL_7_CARDS";
+      case GAME_BID_1: return "GAME_BID";
+      case GAME_BID_MADE_1: return "GAME_BID_MADE";
+      case GAME_BID_END_HIDDEN_MUST_1: return "GAME_BID_END_HIDDEN_MUST";
+      case GAME_BID_END_SHOW_MUST_1: return "GAME_BID_END_SHOW_MUST";
+    }
+
+
+    return "ERROR. No such message in this protocol version!";
+  }
+
+  //Represent this message as string
+  std::string toString()
+    const
+    throw()
+  {
+    std::ostringstream output;
+
+    output
+      <<"MessageType: "<<this->getMessageTypeAsString()
+      <<", number of bytes: "<<this->size()<<std::endl;
+
+    const char*const hex = "0123456789abcdef";
+
+    int_fast16_t i=0;
+    for(std::vector<char>::const_iterator it=this->begin();
+        it!=this->end() && i<1024;
+        it++)
+      {
+        output
+          <<hex[((*it)>>4) & 0x0F]
+          <<hex[(*it) & 0x0F]
+          <<" ("<<(std::isprint(*it)?(*it):'_')<<") ";
+        i++;
+        if(i%10==0)
+          output<<std::endl;
+      }
+
+    return output.str();
+  }
+};
+
+
+
+class Protocol
+{
+public:
+
+  //Known UDP port number of the server:
+  static uint_fast16_t getServerUDPPort_1()
+    throw()
+  {
+    return 10137;
+  }
 
   //Used in card games. You can encode a card on 
   //one byte by bitwise disjunction of value and
@@ -128,56 +364,29 @@ public:
     BID_INCREMENT_10 = 64,
     //Game with any bid increment.
     BID_INCREMENT_ANY = 128,
-    //Game where to get points you must make a game if you have >= 800 points.
-    MUST_PLAY_FROM_800 = 256,
-    //Game where to get points you must make a game if you have >= 900 points.
-    MUST_PLAY_FROM_900 = 512,
     //Game where 'must' is always shown.
-    SHOW_MUST_100 = 1024,
+    SHOW_MUST_100 = 256,
     //Game where 'must' is shown from 110.
-    SHOW_MUST_110 = 2048,
+    SHOW_MUST_110 = 512,
     //Public game.
-    PUBLIC = 4096,
+    PUBLIC_GAME = 1024,
     //Private game.
-    PRIVATE = 8192,
+    PRIVATE_GAME = 2048,
     //Ranking game.
-    RANKING_GAME = 16384,
+    RANKING_GAME = 4096,
     //Sparring (non-ranked) game.
-    SPARRING_GAME = 32768,
+    SPARRING_GAME = 8192,
     //7 minutes game.
-    TIME_7 = 65536,
+    TIME_7 = 16384,
     //10 minutes game.
-    TIME_10 = 131072,
+    TIME_10 = 32768,
     //15 minutes game.
-    TIME_15 = 262144,
+    TIME_15 = 65536,
     //20 minutes game.
-    TIME_20 = 524288,
+    TIME_20 = 131072,
     //30 minutes game.
-    TIME_30 = 1048576
+    TIME_30 = 262144
   };
-
-  //This method can be used for rapid message
-  //type lookup, so you don't need to try
-  //deserializing using all deserializers.
-  //Remember that deserialization can still
-  //always fail, even if this method returns
-  //some known type. It doesn't read the whole
-  //message, just the part where message type
-  //is present.
-  static MessageType lookupMessageType(const Message&message)
-  {
-    if(message.size()<2)
-      return Protocol::MessageType(UNKNOWN_MESSAGE_1);
-    
-    const char messageType
-     = message[1];
-    
-    if(messageType<=Protocol::MessageType(UNKNOWN_MESSAGE_1)
-       || messageType>GAME_BID_END_SHOW_MUST_1)
-      return Protocol::MessageType(UNKNOWN_MESSAGE_1);
-    
-    return static_cast<MessageType>(messageType);
-  }
 
   //Message LOG_IN:
 
@@ -618,7 +827,7 @@ public:
   //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 8.
-  //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledge by the client program immediately, using the secret provided here.
+  //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledged by the client program immediately, using the secret provided here.
 
   static void serialize_1_PROPOSED_GAME(
         //The username (nick) of player #0. Empty string means no player at this side of the table.
