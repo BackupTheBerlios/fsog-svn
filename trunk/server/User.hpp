@@ -73,18 +73,24 @@ public:
   //Did this user already press start?
   bool pressedStart;
 
-  //What message did the server send most recently?
-  Message serverSent;
-  //Iterator to entry in timeouts. This iterator is only valid if
-  //this->serverSent!=UNKNOWN_MESSAGE
-  std::multimap<TimeMicro,std::list<User>::iterator>::iterator myTimeout;
+  //Queue of messages that need to be delivered to the client.
+  //Convention:
+  //back() is where new messages are added (those than need to be delivered later).
+  //Oldest messages (those that need to be delivered first) are at the front().
+  //If this queue is empty, it means that server expects event from the user.
+  //If this queue is not empty, server tries to deliver some info to the client.
+  std::list<Message> deliveryQueue;
+  //Iterator to entry in server's deliveryTimeouts. This iterator is only valid if
+  //!this->deliveryQueue.empty()
+  std::multimap<TimeMicro,std::list<User>::iterator>::iterator myDeliveryTimeout;
+
+  TimeSec lastActionTime;
 
   //ctor
   User(std::list<Thousand>::iterator game) throw()
     :game(game),
      nextAcknowledgeSecret(1),
-     pressedStart(false),
-     serverSent()
+     pressedStart(false)
   {
     //Some versions of the game might need so much.
     //TODO: better reservation management.

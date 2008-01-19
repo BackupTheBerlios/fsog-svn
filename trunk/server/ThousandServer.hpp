@@ -60,21 +60,24 @@ private:
   //Output messages are written here and later sent to the socket.
   Message outputMessage;
 
-  //Remainder: list and map never invalidate iterators.
+  //Remainder: list and map don't invalidate iterators for no reason.
+
   //Games:
+  //TODO: Actually we don't need the list, could be just objects.
   std::list<Thousand> games;
+
   //All users:
+  //TODO: Actually we don't need the list, could be just objects.
   std::list<User> users;
+
   //When you get a packet, you can see which user it is.
+  //TODO: iterator might be very big, like 8 bytes.
   std::map<Address,std::list<User>::iterator> addressToUser;
   //Map nicks to User iterator.
   std::map<std::string,std::list<User>::iterator> nickToUser;
   //
   Address address;
 
-  //const std::list<Thousand>::iterator dummyGame;
-  //const std::map<Address,User>::iterator dummyUser;
-  
   //Temporary iterators to game and user:
   std::list<Thousand>::iterator game;
   bool gameKnown;
@@ -85,31 +88,41 @@ private:
   std::list<Searcher> searchers;
   std::list<SearcherPair> searcherPairs;
   std::list<SearcherTripple> searcherTripples;
-            
+
+  //Objects for temporary deserialization (to avoid creating new ones
+  //all the time):
   Protocol::Deserialized_1_LOG_IN temporary_LOG_IN;
   Protocol::Deserialized_1_SEARCH_GAME temporary_SEARCH_GAME;
   Protocol::Deserialized_1_SEARCH_GAME intersected_SEARCH_GAME;
-  Protocol::Deserialized_1_ACKNOWLEDGE_PROPOSED_GAME
-    temporary_ACKNOWLEDGE_PROPOSED_GAME;
+  Protocol::Deserialized_1_ACKNOWLEDGE
+    temporary_ACKNOWLEDGE;
   Protocol::Deserialized_1_GAME_START temporary_GAME_START;
+
+  //TODO: add lastAction map.
+
+  //Functions:
+
+  //Sends the message this->outputMessage to destinationUser.
+  void reply(std::list<User>::iterator destinationUser) throw();
+
+  //BEGIN OF DELIVERY METHODS
+
+  //Delivery is a process where server sends a message to the user and
+  //the user must acknowledge the message within some time. A timeout
+  //is created by this method, so if no reply happens, delivery
+  //timeout fires.
+  void deliver(std::list<User>::iterator destinationUser) throw();
 
   //TODO: iterator might be too big. Use 3 or max 4 bytes.
   //When we send a message to the user and we require
   //confirmation, we insert a pair into this map, where first
   //is the timeout before which the user should reply and the
   //second is the iterator to the user herself.
-  std::multimap<TimeMicro,std::list<User>::iterator> timeouts;
+  std::multimap<TimeMicro,std::list<User>::iterator> deliveryTimeouts;
 
-  //Functions:
+  void checkDeliveryTimeouts() throw();
 
-  //Sends the message this->outputMessage to destinationUser. The
-  //other parameters are for timeouts. seconds means withing how many
-  //seconds from now user shall reply. seconds must be
-  //positive. Previous timeout is removed from this->timeouts, and new
-  //one is added.
-  void sendMessage(std::list<User>::iterator destinationUser,
-                   const uint_fast16_t seconds = 15*60) throw();
-
+  void handleDeliveryTimeout() throw();
 
   //Resends last message to client, e.g. in case of timeout
   //expiry. Increases the timeout.
@@ -120,7 +133,11 @@ private:
   //datastructures.
   void killUser() throw();
 
-  //void acknowledgementReceived() throw();
+  //Some acknowledgement was received. Check if it's OK and make sure
+  //server thinks the message is delivered.
+  void acknowledgementReceived() throw();
+
+  //END OF DELIVERY METHODS
 
   void readAndInterpretMessage() throw();
 
@@ -128,10 +145,6 @@ private:
 
   void handle_SEARCH_GAME() throw();
   
-  void checkTimeouts() throw();
-
-  void handleTimeout() throw();
-
   void removeFromSearchers(const std::list<User>::iterator& userIterator)
     throw();
 

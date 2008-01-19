@@ -59,7 +59,7 @@
     //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledged by the client program immediately, using the secret provided here.
     PROPOSED_GAME_1 = 8,
     //Sent by client. After this, server just waits for GAME_START. If server doesn't get this ack for some reason, will send again PROPOSED_GAME and ack must be repeated.
-    ACKNOWLEDGE_PROPOSED_GAME_1 = 9,
+    ACKNOWLEDGE_1 = 9,
     //Client clicks the 'start button' to accept a game. Immediately after all clients do this, server will deal cards and start counting time for some player. Server sends no acknowledgement for it. If cards are not dealt after, say, 5s, client can re-send GAME_START. But they might not be dealt because the opponent didn't click GAME_START.
     GAME_START_1 = 10,
     //Everybody pressed start, so let's deal the cards. The cards sent are not sorted in any way.
@@ -260,7 +260,7 @@ public:
       case SEARCH_GAME_1: return "SEARCH_GAME";
       case AWAIT_GAME_1: return "AWAIT_GAME";
       case PROPOSED_GAME_1: return "PROPOSED_GAME";
-      case ACKNOWLEDGE_PROPOSED_GAME_1: return "ACKNOWLEDGE_PROPOSED_GAME";
+      case ACKNOWLEDGE_1: return "ACKNOWLEDGE";
       case GAME_START_1: return "GAME_START";
       case GAME_DEAL_7_CARDS_1: return "GAME_DEAL_7_CARDS";
       case GAME_BID_1: return "GAME_BID";
@@ -933,14 +933,14 @@ public:
     return true;
   }
 
-  //Message ACKNOWLEDGE_PROPOSED_GAME:
+  //Message ACKNOWLEDGE:
 
   //This message is sent by CLIENT.
 
   //In protocol version 1 this message has id 9.
   //Sent by client. After this, server just waits for GAME_START. If server doesn't get this ack for some reason, will send again PROPOSED_GAME and ack must be repeated.
 
-  static void serialize_1_ACKNOWLEDGE_PROPOSED_GAME(
+  static void serialize_1_ACKNOWLEDGE(
         //Protection against very old duplicate packets.
         const int8_t secret,
     Message&outputMessage)
@@ -956,15 +956,15 @@ public:
     outputMessage.append1Byte(secret);
   }
 
-  class Deserialized_1_ACKNOWLEDGE_PROPOSED_GAME
+  class Deserialized_1_ACKNOWLEDGE
   {
   public:
     //Protection against very old duplicate packets.
     int8_t secret;
   };
 
-  static bool deserialize_1_ACKNOWLEDGE_PROPOSED_GAME(const Message&inputMessage,
-        Deserialized_1_ACKNOWLEDGE_PROPOSED_GAME&output)
+  static bool deserialize_1_ACKNOWLEDGE(const Message&inputMessage,
+        Deserialized_1_ACKNOWLEDGE&output)
   throw()
   {
     Message::const_iterator it

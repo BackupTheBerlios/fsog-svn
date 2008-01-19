@@ -55,7 +55,7 @@ public class Protocol{
     //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledged by the client program immediately, using the secret provided here.
     PROPOSED_GAME_1,
     //Sent by client. After this, server just waits for GAME_START. If server doesn't get this ack for some reason, will send again PROPOSED_GAME and ack must be repeated.
-    ACKNOWLEDGE_PROPOSED_GAME_1,
+    ACKNOWLEDGE_1,
     //Client clicks the 'start button' to accept a game. Immediately after all clients do this, server will deal cards and start counting time for some player. Server sends no acknowledgement for it. If cards are not dealt after, say, 5s, client can re-send GAME_START. But they might not be dealt because the opponent didn't click GAME_START.
     GAME_START_1,
     //Everybody pressed start, so let's deal the cards. The cards sent are not sorted in any way.
@@ -169,7 +169,7 @@ public class Protocol{
         case 6: return MessageType.SEARCH_GAME_1;
         case 7: return MessageType.AWAIT_GAME_1;
         case 8: return MessageType.PROPOSED_GAME_1;
-        case 9: return MessageType.ACKNOWLEDGE_PROPOSED_GAME_1;
+        case 9: return MessageType.ACKNOWLEDGE_1;
         case 10: return MessageType.GAME_START_1;
         case 11: return MessageType.GAME_DEAL_7_CARDS_1;
         case 12: return MessageType.GAME_BID_1;
@@ -647,14 +647,14 @@ public class Protocol{
     }
   }
 
-  //Message ACKNOWLEDGE_PROPOSED_GAME:
+  //Message ACKNOWLEDGE:
 
   //This message is sent by CLIENT.
 
   //In protocol version 1 this message has id 9.
   //Sent by client. After this, server just waits for GAME_START. If server doesn't get this ack for some reason, will send again PROPOSED_GAME and ack must be repeated.
 
-  public static Message serialize_1_ACKNOWLEDGE_PROPOSED_GAME(
+  public static Message serialize_1_ACKNOWLEDGE(
         //Protection against very old duplicate packets.
         final byte secret){
     final Message outputMessage
@@ -672,10 +672,10 @@ public class Protocol{
 
   /* Message sent by CLIENT only,
      no need to serialize on other side (here).
-  public static class Deserialized_1_ACKNOWLEDGE_PROPOSED_GAME{
+  public static class Deserialized_1_ACKNOWLEDGE{
     //Protection against very old duplicate packets.
     public final byte secret;
-    public Deserialized_1_ACKNOWLEDGE_PROPOSED_GAME(final Message inputMessage)
+    public Deserialized_1_ACKNOWLEDGE(final Message inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator

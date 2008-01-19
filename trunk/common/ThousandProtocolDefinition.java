@@ -179,14 +179,12 @@ public class ThousandProtocolDefinition{
              );
         
         protocol.defineMessage
-            ("ACKNOWLEDGE_PROPOSED_GAME",
+            ("ACKNOWLEDGE",
              "Sent by client. After this, server just waits for"
              +" GAME_START. If server doesn't get this ack for some"
              +" reason, will send again PROPOSED_GAME and ack must"
              +" be repeated.",
              Sender.CLIENT,
-             //new PieceDefinition(PieceType.INT16,"gameIdentifier",
-             //  "Identifier of the game created by server."),
              new PieceDefinition(PieceType.INT8,
                                  "secret",
                                  "Protection against very old"

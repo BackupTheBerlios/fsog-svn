@@ -7,4 +7,4 @@ Javadoc generation.
 Thousand:
 
 Read wiki for more game options.
-
+Split 2 and >=3 into two different games.

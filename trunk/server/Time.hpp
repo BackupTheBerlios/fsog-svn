@@ -39,6 +39,7 @@
 #include <stdint.h>
 
 typedef uint64_t TimeMicro;
+typedef uint32_t TimeSec;
 
 //Returns current time in microseconds.
 TimeMicro nowMicro() throw();

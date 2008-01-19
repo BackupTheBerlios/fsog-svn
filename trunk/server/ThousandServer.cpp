@@ -56,7 +56,7 @@ void ThousandServer::mainLoop() throw()
 {
   while(true)
     {
-      checkTimeouts();
+      checkDeliveryTimeouts();
 
       //This sleeps for specified time, but wakes up
       //if something appeared on socket:
@@ -88,7 +88,10 @@ void ThousandServer::readAndInterpretMessage() throw()
     = this->addressToUser.find(this->address);
 
   if(this->userKnown())
-    this->user = this->addressToUserIterator->second;
+    {
+      this->user = this->addressToUserIterator->second;
+      this->user->lastActionTime=std::time(0);
+    }
 
   this->game
     = (this->userKnown()
@@ -139,12 +142,13 @@ void ThousandServer::readAndInterpretMessage() throw()
                                                    this->user)
                                     ).first;
 
-        this->user->myTimeout = this->timeouts.end();
+        this->user->myDeliveryTimeout = this->deliveryTimeouts.end();
+        this->user->lastActionTime=std::time(0);
         
         Protocol::serialize_1_LOG_IN_CORRECT(this->outputMessage);
         
         //If undelivered, client has to ask again.
-        this->sendMessage(this->user);
+        this->reply(this->user);
       }
       break; //End of LOG_IN
     case GET_STATISTICS_1:
@@ -162,23 +166,23 @@ void ThousandServer::readAndInterpretMessage() throw()
                                               this->outputMessage);
 
       //If undelivered, client has to ask again.
-      this->sendMessage(this->user);
+      this->reply(this->user);
 
       break;
 
     case SEARCH_GAME_1:
       this->handle_SEARCH_GAME();
       break;
-    case ACKNOWLEDGE_PROPOSED_GAME_1:
+    case ACKNOWLEDGE_1:
       //User must be logged in!
       //Drop the packet if user is unknown.
       if(!userKnown())
         break;
 
       //Try to deserialize the message:
-      if(!Protocol::deserialize_1_ACKNOWLEDGE_PROPOSED_GAME
+      if(!Protocol::deserialize_1_ACKNOWLEDGE
          (this->inputMessage,
-          this->temporary_ACKNOWLEDGE_PROPOSED_GAME))
+          this->temporary_ACKNOWLEDGE))
        {
           std::cerr
             <<"Couldn't deserialize message."<<std::endl
@@ -186,20 +190,7 @@ void ThousandServer::readAndInterpretMessage() throw()
           break;
         }
 
-      if(this->user->serverSent.getMessageType()==PROPOSED_GAME_1)
-        {
-          //Server was waiting for this message from the user.
-          //Check if ack secret is OK:
-          if(this->temporary_ACKNOWLEDGE_PROPOSED_GAME.secret
-             == this->user->nextAcknowledgeSecret)
-            {
-              //Now we know the user received PROPOSED_GAME.
-              //
-              //this->acknowledgementReceived();
-              //Await pressing the start button.
-            }
-        }
-
+      this->acknowledgementReceived();
       break;
 
     case GAME_START_1:
@@ -289,42 +280,98 @@ void ThousandServer::handle_SEARCH_GAME() throw()
     }
 }
 
-void ThousandServer::checkTimeouts() throw()
+void ThousandServer::checkDeliveryTimeouts() throw()
 {
   TimeMicro now = nowMicro();
 
   //std::cerr<<"INFO: Handling timeouts at:"<<now<<std::endl;
 
-  for(std::multimap<TimeMicro,std::list<User>::iterator>::iterator it = this->timeouts.begin();
-      it!= this->timeouts.end() && it->first < now;
-      it++)
+  std::multimap<TimeMicro,std::list<User>::iterator>::iterator it;
+  std::multimap<TimeMicro,std::list<User>::iterator>::iterator end
+    = this->deliveryTimeouts.end();
+
+  while(true)
     {
-      std::cerr<<"Timeout expired at: "<<it->first<<std::endl;
+      it=this->deliveryTimeouts.begin();
+      if(it==end || it->first >= now)
+        break;
+
+
+      std::cerr<<"Delivery timeout expired at: "<<it->first<<std::endl;
 
       if(now-it->first>100000)
-        std::cerr<<"WARNING: now-timeout: " <<now-it->first<<std::endl;
+        std::cerr<<"WARNING: now-deliverytimeout: " <<now-it->first<<std::endl;
 
       this->user=it->second;
-      handleTimeout();
+
+      this->deliveryTimeouts.erase(it);
+      this->user->myDeliveryTimeout = this->deliveryTimeouts.end();
+
+      if(this->user->deliveryQueue.empty())
+        {
+          std::cerr
+            <<"ERROR! Delivery timeout, but deliveryQueue empty! Last inputMessage:"<<std::endl
+            <<this->inputMessage.toString()<<std::endl;
+        }
+      else
+        {
+          this->resendMessage();
+        }
     }
 }
 
-void ThousandServer::handleTimeout() throw()
+void ThousandServer::resendMessage() throw()
 {
-  switch(this->user->serverSent.getMessageType())
+  uint8_t& seconds = this->user->nextTimeoutSeconds;
+
+  //Increase waiting time exponentially:
+  //TODO: Start with 100ms.
+  if(seconds<=0)
+    seconds=1;
+  else
+    seconds*=2;
+
+  if(seconds<=16)
     {
-    case PROPOSED_GAME_1:
-      //Client was proposed a game, but forgot to acknowledge!
-      this->resendMessage();
-      break;
-    default:
-      std::cerr
-        <<"ERROR! Unhandled timeout! Last message:"<<std::endl
-        <<this->inputMessage.toString()<<std::endl;
-      break;
+      //Send the message first:
+      //TODO: Just use the address in the socket.
+      this->socket.sendMessage(this->user->deliveryQueue.front(),
+                               this->user->myAddressToUserIterator->first);
+
+      //Add new timeout:
+      this->user->myDeliveryTimeout
+        = this->deliveryTimeouts.insert(std::make_pair(futureMicro(seconds),
+                                                       this->user));
+    }
+  else
+    {
+      //Enough waiting! Log the user out.
+      this->killUser();
     }
 }
 
+void ThousandServer::killUser() throw()
+{
+  std::cerr<<"I'm killing nonresponsive user \""
+           <<this->user->myNickToUserIterator->first
+           <<"\"."
+           <<std::endl;
+
+  //TODO: end the game that the user played!
+  //TODO: what's the difference between game->players.size() and game->numberOfPlayers?
+  if(gameKnown)
+    for(uint_fast8_t i=0;i<game->players.size();i++)
+      if(game->players[i]==this->user)
+        game->players[i]=this->users.end();
+
+  this->addressToUser.erase(this->user->myAddressToUserIterator);
+  this->nickToUser.erase(this->user->myNickToUserIterator);
+  this->removeFromSearchers(this->user);
+  //Timeout already erased in checkDeliveryTimeouts().
+  
+  this->users.erase(this->user);
+  this->user=this->users.end();
+}
 
 int main(const int argc,
          char** argv)
@@ -700,105 +747,87 @@ void ThousandServer::send_SEARCH_GAME_response(const bool toAll) throw()
       if(toAll)
         {
           for(char i=0;i<this->game->numberOfPlayers;i++)
-            this->sendMessage(this->game->players[i],1);
+            this->deliver(this->game->players[i]);
         }
       else
-        this->sendMessage(this->user,1);
+        this->deliver(this->user);
 
     }
   else
     {
       Protocol::serialize_1_AWAIT_GAME(this->outputMessage);
-      this->sendMessage(this->user);
+      this->reply(this->user);
     }
 }
 
-void ThousandServer::sendMessage(std::list<User>::iterator destinationUser,
-                                 const uint_fast16_t seconds) throw()
+void ThousandServer::reply(std::list<User>::iterator destinationUser) throw()
 {
   //Send the message first:
   this->socket.sendMessage(this->outputMessage,
                            destinationUser->myAddressToUserIterator->first);
-
-  //Remove previous timeout:
-  if(destinationUser->myTimeout!=this->timeouts.end())
-    this->timeouts.erase(destinationUser->myTimeout);
-
-  //Add new timeout:
-  destinationUser->myTimeout
-    = this->timeouts.insert(std::make_pair(futureMicro(seconds),
-                                           destinationUser));
-
-  this->user->nextTimeoutSeconds=0;
-      
-  destinationUser->serverSent = this->outputMessage;
 }
 
-void ThousandServer::resendMessage() throw()
+void ThousandServer::deliver(std::list<User>::iterator destinationUser) throw()
 {
-  uint8_t& seconds = this->user->nextTimeoutSeconds;
-
-  //Increase waiting time exponentially:
-  //TODO: Start with 100ms.
-  if(seconds<=0)
-    seconds=1;
-  else
-    seconds*=2;
-
-  if(seconds<=16)
+  //Warning, the user's deliveryQueue might be nonempty, in which case
+  //previous messages must be delivered first.
+  if(destinationUser->deliveryQueue.empty())
     {
+      //Queue is empty, so this is the first message that needs to be delivered.
       //Send the message first:
-      //TODO: Just use the address in the socket.
-      this->socket.sendMessage(this->user->serverSent,
-                               this->user->myAddressToUserIterator->first);
-
-      //Remove previous timeout:
-      this->timeouts.erase(this->user->myTimeout);
+      this->socket.sendMessage(this->outputMessage,
+                               destinationUser->myAddressToUserIterator->first);
 
       //Add new timeout:
-      this->user->myTimeout
-        = this->timeouts.insert(std::make_pair(futureMicro(seconds),
-                                               this->user));
+      destinationUser->myDeliveryTimeout
+        = this->deliveryTimeouts.insert(std::make_pair(futureMicro(1),
+                                                       destinationUser));
+
+      destinationUser->nextTimeoutSeconds=1;
+    }
+
+  //Whether queue is empty or not, we append the message to be delivered:
+  destinationUser->deliveryQueue.push_back(this->outputMessage);
+}
+
+void ThousandServer::acknowledgementReceived() throw()
+{
+  //Warning: method handles acks for all message types.
+
+  //Old or duplicate ack packet:
+  if(this->user->deliveryQueue.empty())
+    return;
+
+  //If ack secret is wrong, drop this old packet:
+  if(this->temporary_ACKNOWLEDGE.secret
+     != this->user->nextAcknowledgeSecret)
+    return;
+
+  //So we have a good ack.
+  this->user->deliveryQueue.pop_front();
+  this->deliveryTimeouts.erase(this->user->myDeliveryTimeout);
+      
+  if(this->user->deliveryQueue.empty())
+    {
+      //This was the last message scheduled for delivery:
+      this->user->myDeliveryTimeout = this->deliveryTimeouts.end();
     }
   else
     {
-      //Enough waiting! Log the user out.
-      this->killUser();
+      //There's more messages scheduled for delivery:
+
+      //Send the message first:
+      this->socket.sendMessage(this->user->deliveryQueue.front(),
+                               this->user->myAddressToUserIterator->first);
+
+      //Add new timeout:
+      this->user->myDeliveryTimeout
+        = this->deliveryTimeouts.insert(std::make_pair(futureMicro(1),
+                                                       this->user));
+
+      this->user->nextTimeoutSeconds=1;
     }
 }
-
-void ThousandServer::killUser() throw()
-{
-  std::cerr<<"I'm killing nonresponsive user \""
-           <<this->user->myNickToUserIterator->first
-           <<"\"."
-           <<std::endl;
-
-  //TODO: end the game that the user played!
-  //TODO: what's the difference between game->players.size() and game->numberOfPlayers?
-  if(gameKnown)
-    for(uint_fast8_t i=0;i<game->players.size();i++)
-      if(game->players[i]==this->user)
-        game->players[i]=this->users.end();
-
-  this->addressToUser.erase(this->user->myAddressToUserIterator);
-  this->nickToUser.erase(this->user->myNickToUserIterator);
-  this->removeFromSearchers(this->user);
-  this->timeouts.erase(this->user->myTimeout);
-  
-  this->users.erase(this->user);
-  this->user=this->users.end();
-}
-
-/*
-void ThousandServer::acknowledgementReceived() throw()
-{
-  //Now the user is not awaiting anything:
-  this->user->serverAwaits = Protocol::UNKNOWN_MESSAGE_1;
-  //Remove timeout:
-  this->timeouts.erase(this->user->myTimeout);
-}
-*/
 
 void ThousandServer::dealCards() throw()
 {
@@ -818,7 +847,7 @@ void ThousandServer::dealCards() throw()
          this->game->players[i]->cards[5],
          this->game->players[i]->cards[6],
          this->outputMessage);
-      this->sendMessage(this->game->players[i]);
+      this->reply(this->game->players[i]);
     }
 
   this->game->state=Thousand::BIDDING;
