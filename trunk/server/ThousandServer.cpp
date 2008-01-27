@@ -81,6 +81,14 @@ void ThousandServer::readAndInterpretMessage() throw()
   if(!somethingRead)
     return;
 
+  if(!this->deserialize(this->inputMessage))
+    {
+      std::cerr
+        <<"Couldn't deserialize message."<<std::endl
+        <<this->inputMessage.toString()<<std::endl;
+      return;
+    }
+
   this->address = this->socket.getClientAddress();
 
   //See which user sent the message:
@@ -105,21 +113,12 @@ void ThousandServer::readAndInterpretMessage() throw()
     {
     case LOG_IN_1:
       {
-        if(!Protocol::deserialize_1_LOG_IN(this->inputMessage,
-                                           this->temporary_LOG_IN))
-          {
-            std::cerr
-              <<"Couldn't deserialize message."<<std::endl
-              <<this->inputMessage.toString()<<std::endl;
-            break;
-          }
-        
         //TODO: if user re-connected after a crash, we should
         //do something good.
         
         //See whether the user was already logged in from some address:
         std::map<std::string,std::list<User>::iterator>::iterator nickToUserIterator
-          = this->nickToUser.find(this->temporary_LOG_IN.nick);
+          = this->nickToUser.find(this->deserialized_LOG_IN.nick);
         
         //Remove the previous address association:
         //if(nickToUserIterator!=nickToUser.end())
@@ -138,7 +137,7 @@ void ThousandServer::readAndInterpretMessage() throw()
                                        ).first;
         
         this->user->myNickToUserIterator
-          = this->nickToUser.insert(std::make_pair(this->temporary_LOG_IN.nick,
+          = this->nickToUser.insert(std::make_pair(this->deserialized_LOG_IN.nick,
                                                    this->user)
                                     ).first;
 
@@ -152,14 +151,6 @@ void ThousandServer::readAndInterpretMessage() throw()
       }
       break; //End of LOG_IN
     case GET_STATISTICS_1:
-      if(!Protocol::deserialize_1_GET_STATISTICS(this->inputMessage))
-        {
-          std::cerr
-            <<"Couldn't deserialize message."<<std::endl
-            <<this->inputMessage.toString()<<std::endl;
-          break;
-        }
-
       Protocol::serialize_1_RETURN_STATISTICS(this->users.size(),
                                               this->games.size(),
                                               this->searchers.size(),
@@ -179,17 +170,6 @@ void ThousandServer::readAndInterpretMessage() throw()
       if(!userKnown())
         break;
 
-      //Try to deserialize the message:
-      if(!Protocol::deserialize_1_ACKNOWLEDGE
-         (this->inputMessage,
-          this->temporary_ACKNOWLEDGE))
-       {
-          std::cerr
-            <<"Couldn't deserialize message."<<std::endl
-            <<this->inputMessage.toString()<<std::endl;
-          break;
-        }
-
       this->acknowledgementReceived();
       break;
 
@@ -199,15 +179,6 @@ void ThousandServer::readAndInterpretMessage() throw()
         //Drop the packet if user is unknown.
         if(!userKnown())
           break;
-        
-        //Try to deserialize the message:
-        if(!Protocol::deserialize_1_GAME_START(this->inputMessage))
-          {
-            std::cerr
-              <<"Couldn't deserialize message."<<std::endl
-              <<this->inputMessage.toString()<<std::endl;
-            break;
-          }
         
         this->user->pressedStart=true;
         
@@ -240,20 +211,10 @@ void ThousandServer::handle_SEARCH_GAME() throw()
   if(!this->userKnown())
     return;
 
-  //Try to deserialize the message:
-  if(!Protocol::deserialize_1_SEARCH_GAME(this->inputMessage,
-                                          this->temporary_SEARCH_GAME))
-    {
-      std::cerr
-        <<"Couldn't deserialize message."<<std::endl
-        <<this->inputMessage.toString()<<std::endl;
-      return;
-    }
-
   //If this search is exactly the same as previous one,
   //client probably didn't get our response. Send the
   //response and that's it.
-  if(binary_equal(this->temporary_SEARCH_GAME,
+  if(binary_equal(this->deserialized_SEARCH_GAME,
                   this->user->last_SEARCH_GAME))
     {
       this->send_SEARCH_GAME_response(false);
@@ -262,7 +223,7 @@ void ThousandServer::handle_SEARCH_GAME() throw()
 
   //Remember the search in case of C->S duplicate packets
   //and S->C lost packets.
-  user->last_SEARCH_GAME=this->temporary_SEARCH_GAME;
+  user->last_SEARCH_GAME=this->deserialized_SEARCH_GAME;
 
   //Remove player from all searches (in case this is second search).
   this->removeFromSearchers(this->user);
@@ -446,7 +407,7 @@ void ThousandServer::removeFromSearchers(const std::list<User>::iterator&userToB
 bool ThousandServer::searchAndStartGame() throw()
 {
   //Search tripples
-  if(this->temporary_SEARCH_GAME.searchFlags&Protocol::FOUR_PLAYERS)
+  if(this->deserialized_SEARCH_GAME.searchFlags&Protocol::FOUR_PLAYERS)
     {
       for(std::list<SearcherTripple>::iterator trippleIterator
             = this->searcherTripples.begin();
@@ -468,7 +429,7 @@ bool ThousandServer::searchAndStartGame() throw()
 
   //Couldn't find 3 matching opponents.
   //Maybe we can find 2 matching opponents:
-  if(this->temporary_SEARCH_GAME.searchFlags&Protocol::THREE_PLAYERS)
+  if(this->deserialized_SEARCH_GAME.searchFlags&Protocol::THREE_PLAYERS)
     {
       for(std::list<SearcherPair>::iterator pairIterator
             = this->searcherPairs.begin();
@@ -490,7 +451,7 @@ bool ThousandServer::searchAndStartGame() throw()
   
   //Couldn't find 2 matching opponents.
   //Maybe we can find 1 matching opponent:
-  if(this->temporary_SEARCH_GAME.searchFlags&Protocol::TWO_PLAYERS)
+  if(this->deserialized_SEARCH_GAME.searchFlags&Protocol::TWO_PLAYERS)
     {
       for(std::list<Searcher>::iterator searcherIterator
             = this->searchers.begin();
@@ -607,7 +568,7 @@ void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searc
 void ThousandServer::registerInSearchers() throw()
 {
   //Create tripple if interested in playing in 4:
-  if(this->temporary_SEARCH_GAME.searchFlags&Protocol::FOUR_PLAYERS)
+  if(this->deserialized_SEARCH_GAME.searchFlags&Protocol::FOUR_PLAYERS)
     {
       for(std::list<SearcherPair>::const_iterator pairIterator
             = this->searcherPairs.begin();
@@ -624,7 +585,7 @@ void ThousandServer::registerInSearchers() throw()
     }
   
   //Create pair if interested in playing in 3 or 4:
-  if(this->temporary_SEARCH_GAME.searchFlags
+  if(this->deserialized_SEARCH_GAME.searchFlags
      &(Protocol::THREE_PLAYERS|Protocol::FOUR_PLAYERS))
     {
       for(std::list<Searcher>::const_iterator searcherIterator
@@ -644,7 +605,7 @@ void ThousandServer::registerInSearchers() throw()
   //Create single:
   //See if this guy would make sense with anyone
   //by intersecting with itself.
-  if(this->intersectCryteria(this->temporary_SEARCH_GAME))
+  if(this->intersectCryteria(this->deserialized_SEARCH_GAME))
     this->searchers.push_back
       (Searcher(this->user,
                 this->intersected_SEARCH_GAME));
@@ -658,7 +619,7 @@ bool ThousandServer::intersectCryteria(const Protocol::Deserialized_1_SEARCH_GAM
     = this->intersected_SEARCH_GAME.searchFlags;
 
   intersection
-    = this->temporary_SEARCH_GAME.searchFlags
+    = this->deserialized_SEARCH_GAME.searchFlags
     & cryteria.searchFlags;
   
   //Don't agree on number of players:
@@ -799,7 +760,7 @@ void ThousandServer::acknowledgementReceived() throw()
     return;
 
   //If ack secret is wrong, drop this old packet:
-  if(this->temporary_ACKNOWLEDGE.secret
+  if(this->deserialized_ACKNOWLEDGE.secret
      != this->user->nextAcknowledgeSecret)
     return;
 

@@ -39,7 +39,6 @@
 #include <stdint.h>
 #include <map>
 #include "Game.hpp"
-#include "Message.hpp"
 #include "Protocol.hpp"
 #include "UDPSocket.hpp"
 #include "Searcher.hpp"
@@ -47,7 +46,7 @@
 #include "SearcherTripple.hpp"
 #include "Thousand.hpp"
 
-class ThousandServer
+class ThousandServer : private Deserializer
 {
 private:
   //Socket stuff.
@@ -88,15 +87,6 @@ private:
   std::list<Searcher> searchers;
   std::list<SearcherPair> searcherPairs;
   std::list<SearcherTripple> searcherTripples;
-
-  //Objects for temporary deserialization (to avoid creating new ones
-  //all the time):
-  Protocol::Deserialized_1_LOG_IN temporary_LOG_IN;
-  Protocol::Deserialized_1_SEARCH_GAME temporary_SEARCH_GAME;
-  Protocol::Deserialized_1_SEARCH_GAME intersected_SEARCH_GAME;
-  Protocol::Deserialized_1_ACKNOWLEDGE
-    temporary_ACKNOWLEDGE;
-  Protocol::Deserialized_1_GAME_START temporary_GAME_START;
 
   //TODO: add lastAction map.
 
@@ -147,6 +137,9 @@ private:
   
   void removeFromSearchers(const std::list<User>::iterator& userIterator)
     throw();
+
+  //\todo Don't use protocol objects here.
+  Protocol::Deserialized_1_SEARCH_GAME intersected_SEARCH_GAME;
 
   bool intersectCryteria(const Protocol::Deserialized_1_SEARCH_GAME& cryteria)
     throw();

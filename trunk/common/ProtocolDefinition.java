@@ -875,6 +875,52 @@ public class ProtocolDefinition{
                   +"  final static byte COLOR_MASK = (byte) 0xF0;\n\n");
     }
 
+    private void cppWriteDeserializer() throws Exception{
+        cppWrite("\n"
+                 +"class Deserializer\n"
+                 +"{\n"
+                 +"  protected:\n"
+                 +"  //Objects for temporary deserialization (to avoid creating\n"
+                 +"  //new ones all the time):\n");
+
+        for(MessageDefinition md : this.messageDefinitions){
+            if(md.sentBy.equals(Sender.CLIENT)
+               &&md.pieceDefinitions.length>0)
+                cppWrite("  Protocol::Deserialized"
+                         +"_"+protocolVersion+"_"+md.name
+                         +" deserialized_"+md.name+";\n");
+        }
+
+        cppWrite("\n"
+                 +"  bool deserialize(const Message&message) throw()\n"
+                 +"  {\n"
+                 +"    switch(message.getMessageType())\n"
+                 +"    {\n");
+
+        for(MessageDefinition md : this.messageDefinitions){
+            if(md.sentBy.equals(Sender.CLIENT)){
+                cppWrite("    case "+md.name+"_"+protocolVersion+":\n"
+                         +"      return Protocol::deserialize_"
+                         +protocolVersion+"_"+md.name+"(message");
+                if(md.pieceDefinitions.length>0)
+                    cppWrite(",\n"
+                             +"                              "
+                             +"this->deserialized_"+md.name+");\n");
+                else
+                    cppWrite(");\n");
+            }
+        }
+
+        
+        cppWrite("    default:\n"
+                 +"      return false;\n"
+                 +"    }\n"
+                 +"  }\n");
+
+        cppWrite("};\n");
+
+    }
+
     public void write()
         throws Exception
     {
@@ -898,6 +944,9 @@ public class ProtocolDefinition{
         }
 
         this.writeFooter();
+
+        this.cppWriteDeserializer();
+
 
         this.javaWriter.flush();
         this.javaWriter.close();
