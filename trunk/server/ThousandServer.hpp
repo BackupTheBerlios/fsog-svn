@@ -46,7 +46,7 @@
 #include "SearcherTripple.hpp"
 #include "Thousand.hpp"
 
-class ThousandServer : private Deserializer
+class ThousandServer : public Deserializer
 {
 private:
   //Socket stuff.

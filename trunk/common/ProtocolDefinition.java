@@ -72,6 +72,8 @@ public class ProtocolDefinition{
 
     //Members:
     private final FileWriter javaWriter;
+    private final FileWriter hppWriter;
+    private final String hppFileName;
     private final FileWriter cppWriter;
     private final int protocolVersion;
     private final int serverUDPPort;
@@ -84,6 +86,7 @@ public class ProtocolDefinition{
     //ctor:
     public ProtocolDefinition(final int protocolVersion,
                               final int serverUDPPort,
+                              final String hppFileName,
                               final String cppFileName,
                               final String javaFileName)
         throws Exception
@@ -92,6 +95,11 @@ public class ProtocolDefinition{
             throw new Exception("Protocol version error.");
 
         this.protocolVersion = protocolVersion;
+
+        this.hppFileName = hppFileName;
+
+        this.hppWriter
+            = new FileWriter(hppFileName);
 
         this.cppWriter
             = new FileWriter(cppFileName);
@@ -136,6 +144,12 @@ public class ProtocolDefinition{
         this.addCardsDefinition = true;
     }
 
+    private void hppWrite(final String s)
+    throws IOException
+    {
+        this.hppWriter.write(s);
+    }
+
     private void cppWrite(final String s)
     throws IOException
     {
@@ -148,64 +162,65 @@ public class ProtocolDefinition{
         this.javaWriter.write(s);
     }
 
-    private void bothWrite(final String s)
-    throws IOException
-    {
-        this.cppWriter.write(s);
-        this.javaWriter.write(s);
-    }
+    private static final String license
+        ="/*\n"
+        +"    FSOG - Free Software Online Games\n"
+        +"    Copyright (C) 2007 Bartlomiej Antoni Szymczak\n"
+        +"\n"
+        +"    This file is part of FSOG.\n"
+        +"\n"
+        +"    FSOG is free software: you can redistribute it and/or modify\n"
+        +"    it under the terms of the GNU Affero General Public License as\n"
+        +"    published by the Free Software Foundation, either version 3 of the\n"
+        +"    License, or (at your option) any later version.\n"
+        +"\n"
+        +"    This program is distributed in the hope that it will be useful,\n"
+        +"    but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+        +"    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+        +"    GNU Affero General Public License for more details.\n"
+        +"\n"
+        +"    You should have received a copy of the GNU Affero General Public License\n"
+        +"    along with this program.  If not, see <http://www.gnu.org/licenses/>.\n"
+        +"\n"
+        +"*/\n"
+        +"\n"
+        +"/*\n"
+        +"    You can contact the author, Bartlomiej Antoni Szymczak, by:\n"
+        +"    - electronic mail: rhywek@gmail.com\n"
+        +"    - paper mail:\n"
+        +"        Bartlomiej Antoni Szymczak\n"
+        +"        Boegesvinget 8, 1. sal\n"
+        +"        2740 Skovlunde\n"
+        +"        Denmark\n"
+        +"*/\n"
+        +"\n";
 
     private void writeHeader() throws IOException{
-        bothWrite("/*\n"
-                  +"    FSOG - Free Software Online Games\n"
-                  +"    Copyright (C) 2007 Bartlomiej Antoni Szymczak\n"
-                  +"\n"
-                  +"    This file is part of FSOG.\n"
-                  +"\n"
-                  +"    FSOG is free software: you can redistribute it and/or modify\n"
-                  +"    it under the terms of the GNU Affero General Public License as\n"
-                  +"    published by the Free Software Foundation, either version 3 of the\n"
-                  +"    License, or (at your option) any later version.\n"
-                  +"\n"
-                  +"    This program is distributed in the hope that it will be useful,\n"
-                  +"    but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-                  +"    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-                  +"    GNU Affero General Public License for more details.\n"
-                  +"\n"
-                  +"    You should have received a copy of the GNU Affero General Public License\n"
-                  +"    along with this program.  If not, see <http://www.gnu.org/licenses/>.\n"
-                  +"\n"
-                  +"*/\n"
-                  +"\n"
-                  +"/*\n"
-                  +"    You can contact the author, Bartlomiej Antoni Szymczak, by:\n"
-                  +"    - electronic mail: rhywek@gmail.com\n"
-                  +"    - paper mail:\n"
-                  +"        Bartlomiej Antoni Szymczak\n"
-                  +"        Boegesvinget 8, 1. sal\n"
-                  +"        2740 Skovlunde\n"
-                  +"        Denmark\n"
-                  +"*/\n"
-                  +"\n");
+        hppWrite(license);
 
-        cppWrite("#pragma once\n");
-        cppWrite("\n");
-        cppWrite("#include <vector>\n"
+        hppWrite("#pragma once\n");
+        hppWrite("\n");
+        hppWrite("#include <vector>\n"
                  +"#include <string>\n"
                  +"#include <sstream>\n"
                  +"#include <cctype>\n"
                  +"\n"
                  +"\n");
 
-        cppWriteMessageEnum();
+        hppWriteMessageEnum();
 
-        cppWriteMessageClass();
+        hppWriteMessageClass();
         
-        cppWrite("class Protocol\n");
-        cppWrite("{\n");
-        cppWrite("public:\n");
-        cppWrite("\n");
+        hppWrite("class Protocol\n");
+        hppWrite("{\n");
+        hppWrite("public:\n");
+        hppWrite("\n");
 
+        cppWrite(license);
+        cppWrite("\n"
+                 +"#include \""+hppFileName+"\"\n");
+
+        javaWrite(license);
         javaWrite("\n");
         javaWrite("import java.util.*;\n");
         javaWrite("\n");
@@ -215,8 +230,8 @@ public class ProtocolDefinition{
         javaWrite("\n");
     }
 
-    private void cppWriteMessageClass() throws IOException{
-        cppWrite("class Message : public std::vector<char>\n"
+    private void hppWriteMessageClass() throws IOException{
+        hppWrite("class Message : public std::vector<char>\n"
                  +"{\n"
                  +"private:\n"
                  +"  //Appends value to message\n"
@@ -362,9 +377,9 @@ public class ProtocolDefinition{
                  +"  }\n"
                  +"  \n"
                  +"\n");
-        cppWriteGetMessageType();
-        cppWriteGetMessageTypeAsString();
-        cppWrite("  //Represent this message as string\n"
+        hppWriteGetMessageType();
+        hppWriteGetMessageTypeAsString();
+        hppWrite("  //Represent this message as string\n"
                  +"  std::string toString()\n"
                  +"    const\n"
                  +"    throw()\n"
@@ -394,23 +409,24 @@ public class ProtocolDefinition{
                  +"    return output.str();\n"
                  +"  }\n");
 
-        cppWrite("};\n"
+        hppWrite("};\n"
                  +"\n\n\n");
     }
 
     private void writeFooter() throws IOException{
-        cppWrite("};\n");
+        hppWrite("};\n");
         javaWrite("}\n");
     }
 
     private void writeServerUDPPort() throws IOException{
-        bothWrite("  //Known UDP port number of the server:\n");
-        cppWrite("  static uint_fast16_t getServerUDPPort_"
+        hppWrite("  //Known UDP port number of the server:\n");
+        hppWrite("  static uint_fast16_t getServerUDPPort_"
                  +this.protocolVersion+"()\n"
                  +"    throw()\n"
                  +"  {\n"
                  +"    return "+this.serverUDPPort+";\n"
                  +"  }\n\n");
+        javaWrite("  //Known UDP port number of the server:\n");
         javaWrite("  static int getServerUDPPort_"
                   +this.protocolVersion+"(){\n"
                   +"    return "+this.serverUDPPort+";\n"
@@ -420,9 +436,11 @@ public class ProtocolDefinition{
     private void writeFlagSetDefinition(final FlagSetDefinition flagSetDefinition)
     throws Exception
     {
-        bothWrite("  //Flags '"+flagSetDefinition.name+"':\n"
+        hppWrite("  //Flags '"+flagSetDefinition.name+"':\n"
                    +"  //"+flagSetDefinition.comment+"\n");
-        cppWrite("  enum "+flagSetDefinition.name+"\n"
+        javaWrite("  //Flags '"+flagSetDefinition.name+"':\n"
+                   +"  //"+flagSetDefinition.comment+"\n");
+        hppWrite("  enum "+flagSetDefinition.name+"\n"
                  +"  {\n");
 
         int flagValue = 1;
@@ -431,8 +449,9 @@ public class ProtocolDefinition{
             final FlagDefinition flagDefinition
                 = flagSetDefinition.flagDefinitions[i];
 
-            bothWrite("    //"+flagDefinition.comment+"\n");
-            cppWrite("    "+flagDefinition.name+" = "+flagValue
+            hppWrite("    //"+flagDefinition.comment+"\n");
+            javaWrite("    //"+flagDefinition.comment+"\n");
+            hppWrite("    "+flagDefinition.name+" = "+flagValue
                      +(i<flagSetDefinition.flagDefinitions.length-1?",":"")
                      +"\n");
             javaWrite("  public static final int "
@@ -440,20 +459,20 @@ public class ProtocolDefinition{
             flagValue*=2;
         }
 
-        cppWrite("  };\n\n");
+        hppWrite("  };\n\n");
         javaWrite("\n\n");
     }
 
-    private void cppWriteMessageEnum()
+    private void hppWriteMessageEnum()
         throws IOException
     {
 
-        this.cppWrite("  //Can be used for switching to detect\n"
+        this.hppWrite("  //Can be used for switching to detect\n"
                       +"  //which deserializer should be used.\n"
                       +"  enum MessageType");
 
-        this.cppWrite("\n  {");
-        this.cppWrite("\n    UNKNOWN_MESSAGE_"+this.protocolVersion
+        this.hppWrite("\n  {");
+        this.hppWrite("\n    UNKNOWN_MESSAGE_"+this.protocolVersion
                       +" = 0");
         
         for(int i=0;i<this.messageDefinitions.size();i++){
@@ -461,29 +480,29 @@ public class ProtocolDefinition{
             final MessageDefinition messageDefinition
                 = messageDefinitions.get(i);
             
-            cppWrite(",\n    //"+messageDefinition.comment+"\n"
+            hppWrite(",\n    //"+messageDefinition.comment+"\n"
                      +"    "+messageDefinition.name
                      +"_"+this.protocolVersion);
-            cppWrite(" = "+messageDefinition.identifier);
+            hppWrite(" = "+messageDefinition.identifier);
         }
 
-        this.cppWrite("\n  };\n\n");
+        this.hppWrite("\n  };\n\n");
     }
 
-    private void cppWriteGetMessageTypeAsString()
+    private void hppWriteGetMessageTypeAsString()
         throws IOException
     {
         //Enum to string conversion:
 
-        this.cppWrite("  //Can be used for printing MessageType\n"
+        this.hppWrite("  //Can be used for printing MessageType\n"
                       +"  //in human-readable form.\n"
                       +"  std::string getMessageTypeAsString() const throw()");
 
-        this.cppWrite("\n  {"
+        this.hppWrite("\n  {"
                       +"\n    const MessageType mp=this->getMessageType();");
-        this.cppWrite("\n    switch(mp)");
-        this.cppWrite("\n    {");
-        this.cppWrite("\n      case UNKNOWN_MESSAGE_"+this.protocolVersion
+        this.hppWrite("\n    switch(mp)");
+        this.hppWrite("\n    {");
+        this.hppWrite("\n      case UNKNOWN_MESSAGE_"+this.protocolVersion
                       +": return \"UNKNOWN_MESSAGE\";");
         
         for(int i=0;i<this.messageDefinitions.size();i++){
@@ -491,14 +510,14 @@ public class ProtocolDefinition{
             final MessageDefinition messageDefinition
                 = messageDefinitions.get(i);
             
-            cppWrite("\n"
+            hppWrite("\n"
                      +"      case "+messageDefinition.name
                      +"_"+this.protocolVersion
                      +": return \""+messageDefinition.name+"\";");
         }
-        this.cppWrite("\n    }\n\n");
-        this.cppWrite("\n    return \"ERROR. No such message in this protocol version!\";");
-        this.cppWrite("\n  }\n\n");
+        this.hppWrite("\n    }\n\n");
+        this.hppWrite("\n    return \"ERROR. No such message in this protocol version!\";");
+        this.hppWrite("\n  }\n\n");
         
     }
 
@@ -525,10 +544,10 @@ public class ProtocolDefinition{
         this.javaWrite("\n  }\n\n");
     }
 
-    private void cppWriteGetMessageType()
+    private void hppWriteGetMessageType()
         throws IOException
     {
-        this.cppWrite("  //This method can be used for rapid message\n"
+        this.hppWrite("  //This method can be used for rapid message\n"
                       +"  //type lookup, so you don't need to try\n"
                       +"  //deserializing using all deserializers.\n"
                       +"  //Remember that deserialization can still\n"
@@ -540,7 +559,7 @@ public class ProtocolDefinition{
         final String highestMessageName
             = this.messageDefinitions.lastElement().name;
 
-        this.cppWrite("  MessageType getMessageType() const throw()\n"
+        this.hppWrite("  MessageType getMessageType() const throw()\n"
                       +"  {\n"
                       +"    const Message& message = *this;\n"
                       +"    if(message.size()<2)\n"
@@ -612,17 +631,21 @@ public class ProtocolDefinition{
         if(protocolVersion<1||protocolVersion>255)
             throw new Exception("Incorrect protocol version.");
 
-        bothWrite("  //"+"Message "+messageDefinition.name+":\n\n");
-        bothWrite("  //This message is sent by "+messageDefinition.sentBy
-                  +".\n\n");
-        bothWrite("  //In protocol version "+protocolVersion
-                  +" this message has id "+messageDefinition.identifier
-                  +".\n");
-        bothWrite("  //"+messageDefinition.comment+"\n\n");
+        final String s0
+            ="  //"+"Message "+messageDefinition.name+":\n\n"
+            +"  //This message is sent by "+messageDefinition.sentBy
+            +".\n\n"
+            +"  //In protocol version "+protocolVersion
+            +" this message has id "+messageDefinition.identifier
+            +".\n"
+            +"  //"+messageDefinition.comment+"\n\n";
+
+        hppWrite(s0);
+        javaWrite(s0);
 
         //Generate serializer:
         if(messageDefinition.sentBy.equals(Sender.CLIENT)){
-            //cppWrite("  /* Message sent by "+messageDefinition.sentBy
+            //hppWrite("  /* Message sent by "+messageDefinition.sentBy
             //+" only,\n"
             //+"     no need to serialize on other side (here).\n");
         }else{
@@ -631,7 +654,7 @@ public class ProtocolDefinition{
                       +"     no need to serialize on other side (here).\n");
         }
 
-        cppWrite("  static void serialize_"
+        hppWrite("  static void serialize_"
                  +protocolVersion+"_"
                  +messageDefinition.name+"(");
         javaWrite("  public static Message serialize_"
@@ -643,11 +666,13 @@ public class ProtocolDefinition{
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
 
-            bothWrite("\n        //"+pieceDefinition.comment+"\n"
-                      +"        ");
-
-            cppWrite(pieceDefinition.type.toCppConstType(this.flagSetDefinitions)
+            hppWrite("\n        //"+pieceDefinition.comment+"\n"
+                     +"        ");
+            hppWrite(pieceDefinition.type.toCppConstType(this.flagSetDefinitions)
                      +" "+pieceDefinition.name+",\n");
+
+            javaWrite("\n        //"+pieceDefinition.comment+"\n"
+                      +"        ");
             javaWrite(pieceDefinition.type.toJavaFinalType(this.flagSetDefinitions)
                       +" "+pieceDefinition.name
                       +(i<messageDefinition.pieceDefinitions.length-1
@@ -655,7 +680,7 @@ public class ProtocolDefinition{
                         :""));
         }
 
-        cppWrite("    Message&outputMessage)\n"
+        hppWrite("    Message&outputMessage)\n"
                  +"    throw()\n"
                  +"  {\n"
                  +"    outputMessage.resize(0);\n");
@@ -664,32 +689,41 @@ public class ProtocolDefinition{
                   +"    final Message outputMessage\n"
                   +"     = new Message();\n\n");
 
-        bothWrite("    //Let the receiver know which "
-                  +"protocol version this is:\n"
-                  +"    outputMessage.append1Byte("
-                  +protocolVersion+");\n"
-                  +"    //Let the receiver know what kind "
-                  +"of message this is:\n"
-                  +"    outputMessage.append1Byte("
-                  +messageDefinition.identifier+");\n\n");
+        final String s1
+            ="    //Let the receiver know which "
+            +"protocol version this is:\n"
+            +"    outputMessage.append1Byte("
+            +protocolVersion+");\n"
+            +"    //Let the receiver know what kind "
+            +"of message this is:\n"
+            +"    outputMessage.append1Byte("
+            +messageDefinition.identifier+");\n\n";
+
+        hppWrite(s1);
+        javaWrite(s1);
         
         for(int i=0;i<messageDefinition.pieceDefinitions.length;i++){
 
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
-            
-            bothWrite("    //Serialize "+pieceDefinition.name+":\n");
-            bothWrite("    outputMessage."
-                      +pieceDefinition.type.getAppender
-                      (this.flagSetDefinitions)
-                      +"("+pieceDefinition.name+");\n");
+
+            final String s2
+                ="    //Serialize "+pieceDefinition.name+":\n"
+                +"    outputMessage."
+                +pieceDefinition.type.getAppender
+                (this.flagSetDefinitions)
+                +"("+pieceDefinition.name+");\n";
+
+            hppWrite(s2);
+            javaWrite(s2);
         }
             
         javaWrite("    return outputMessage;\n");
-        bothWrite("  }\n\n");
+        hppWrite("  }\n\n");
+        javaWrite("  }\n\n");
 
         if(messageDefinition.sentBy.equals(Sender.CLIENT)){
-            //cppWrite("  */\n\n");
+            //hppWrite("  */\n\n");
         }else{
             javaWrite("  */\n\n");
         }
@@ -702,13 +736,13 @@ public class ProtocolDefinition{
                       +" only,\n"
                       +"     no need to serialize on other side (here).\n");
         }else{
-            //cppWrite("  /* Message sent by "+messageDefinition.sentBy
+            //hppWrite("  /* Message sent by "+messageDefinition.sentBy
             //+" only,\n"
             //+"     no need to serialize on other side (here).\n");
         }
 
         //Generate class for deserialized object:
-        cppWrite("  class Deserialized_"+this.protocolVersion+"_"
+        hppWrite("  class Deserialized_"+this.protocolVersion+"_"
                  +messageDefinition.name+"\n"
                  +"  {\n"
                  +"  public:\n");
@@ -719,19 +753,22 @@ public class ProtocolDefinition{
                     
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
-
-            bothWrite("    //"+pieceDefinition.comment+"\n");
-            bothWrite("    ");
+            
+            hppWrite("    //"+pieceDefinition.comment+"\n");
+            hppWrite("    ");
+            javaWrite("    //"+pieceDefinition.comment+"\n");
+            javaWrite("    ");
             javaWrite("public final ");
 
-            cppWrite(pieceDefinition.type.toCppType(this.flagSetDefinitions));
+            hppWrite(pieceDefinition.type.toCppType(this.flagSetDefinitions));
             javaWrite(pieceDefinition.type.toJavaType(this.flagSetDefinitions));
 
-            bothWrite(" "+pieceDefinition.name+";\n");
+            hppWrite(" "+pieceDefinition.name+";\n");
+            javaWrite(" "+pieceDefinition.name+";\n");
         }
 
         //C++ class ends here, but Java later.
-        cppWrite("  };\n\n");
+        hppWrite("  };\n\n");
 
         //Generate deserializer: C++ deserializer takes form
         //of static method, which writes result into
@@ -740,7 +777,7 @@ public class ProtocolDefinition{
         //Java deserializer takes form of constructor and
         //throws exception if deserialization failed for
         //clarity reasons.
-        cppWrite("  static bool deserialize_"
+        hppWrite("  static bool deserialize_"
                  +this.protocolVersion+"_"
                  +messageDefinition.name+"(const Message&inputMessage"
                  +(messageDefinition.pieceDefinitions.length>0
@@ -792,19 +829,20 @@ public class ProtocolDefinition{
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
 
-            bothWrite("    //Deserialize "+pieceDefinition.name+":\n");
-            cppWrite("    if(!Message::"
+            hppWrite("    //Deserialize "+pieceDefinition.name+":\n");
+            hppWrite("    if(!Message::"
                      +pieceDefinition.type.getReader(this.flagSetDefinitions)
                      +"(it,messageEnd,output."
                      +pieceDefinition.name+"))\n"
                      +"      return false;\n");
+            javaWrite("    //Deserialize "+pieceDefinition.name+":\n");
             javaWrite("      this."+pieceDefinition.name
                       +" = Message."
                       +pieceDefinition.type.getReader(this.flagSetDefinitions)
                       +"(iterator);\n");
         }
         
-        cppWrite("    return true;\n"
+        hppWrite("    return true;\n"
                  +"  }\n\n");
 
         javaWrite("      }catch(NoSuchElementException e){\n"
@@ -816,7 +854,7 @@ public class ProtocolDefinition{
         if(messageDefinition.sentBy.equals(Sender.CLIENT)){
             javaWrite("  */\n\n");
         }else{
-            //cppWrite("  */\n\n");
+            //hppWrite("  */\n\n");
         }
         //End of deserialization.
     }
@@ -825,11 +863,15 @@ public class ProtocolDefinition{
     private void writeCards()
         throws IOException
     {
-        bothWrite("  //Used in card games. You can encode a card on \n"
-                  +"  //one byte by bitwise disjunction of value and\n"
-                  +"  //color. Use VALUE_MASK and COLOR_MASK to decode.\n");
+        final String s0
+            ="  //Used in card games. You can encode a card on \n"
+            +"  //one byte by bitwise disjunction of value and\n"
+            +"  //color. Use VALUE_MASK and COLOR_MASK to decode.\n";
 
-        cppWrite("  enum Card\n"
+        hppWrite(s0);
+        javaWrite(s0);
+
+        hppWrite("  enum Card\n"
                  +"  {\n"
                  +"    ACE = 0x01,\n"
                  +"    TWO = 0x02,\n"
@@ -875,8 +917,8 @@ public class ProtocolDefinition{
                   +"  final static byte COLOR_MASK = (byte) 0xF0;\n\n");
     }
 
-    private void cppWriteDeserializer() throws Exception{
-        cppWrite("\n"
+    private void hppWriteDeserializer() throws Exception{
+        hppWrite("\n"
                  +"class Deserializer\n"
                  +"{\n"
                  +"  protected:\n"
@@ -886,13 +928,17 @@ public class ProtocolDefinition{
         for(MessageDefinition md : this.messageDefinitions){
             if(md.sentBy.equals(Sender.CLIENT)
                &&md.pieceDefinitions.length>0)
-                cppWrite("  Protocol::Deserialized"
+                hppWrite("  Protocol::Deserialized"
                          +"_"+protocolVersion+"_"+md.name
                          +" deserialized_"+md.name+";\n");
         }
 
+        hppWrite("\n"
+                 +"  bool deserialize(const Message&message) throw();\n"
+                 +"\n");
+
         cppWrite("\n"
-                 +"  bool deserialize(const Message&message) throw()\n"
+                 +"  bool Deserializer::deserialize(const Message&message) throw()\n"
                  +"  {\n"
                  +"    switch(message.getMessageType())\n"
                  +"    {\n");
@@ -917,7 +963,7 @@ public class ProtocolDefinition{
                  +"    }\n"
                  +"  }\n");
 
-        cppWrite("};\n");
+        hppWrite("};\n");
 
     }
 
@@ -945,11 +991,13 @@ public class ProtocolDefinition{
 
         this.writeFooter();
 
-        this.cppWriteDeserializer();
+        this.hppWriteDeserializer();
 
 
         this.javaWriter.flush();
         this.javaWriter.close();
+        this.hppWriter.flush();
+        this.hppWriter.close();
         this.cppWriter.flush();
         this.cppWriter.close();
     }

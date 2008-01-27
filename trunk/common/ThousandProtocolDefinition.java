@@ -45,6 +45,7 @@ public class ThousandProtocolDefinition{
             = new ProtocolDefinition(protocolVersion,
                                      serverUDPPort,
                                      "../server/Protocol.hpp",
+                                     "../server/Protocol.cpp",
                                      "../client/Protocol.java");
 
         protocol.addCardsDefinition();

@@ -1,7 +1,3 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- 
- * vim:expandtab:shiftwidth=2:tabstop=2: */
-
-
 /*
     FSOG - Free Software Online Games
     Copyright (C) 2007 Bartlomiej Antoni Szymczak
@@ -34,4 +30,29 @@
 */
 
 
-#include "Protocol.hpp"
+#include "../server/Protocol.hpp"
+
+  bool Deserializer::deserialize(const Message&message) throw()
+  {
+    switch(message.getMessageType())
+    {
+    case LOG_IN_1:
+      return Protocol::deserialize_1_LOG_IN(message,
+                              this->deserialized_LOG_IN);
+    case GET_STATISTICS_1:
+      return Protocol::deserialize_1_GET_STATISTICS(message);
+    case SEARCH_GAME_1:
+      return Protocol::deserialize_1_SEARCH_GAME(message,
+                              this->deserialized_SEARCH_GAME);
+    case ACKNOWLEDGE_1:
+      return Protocol::deserialize_1_ACKNOWLEDGE(message,
+                              this->deserialized_ACKNOWLEDGE);
+    case GAME_START_1:
+      return Protocol::deserialize_1_GAME_START(message);
+    case GAME_BID_1:
+      return Protocol::deserialize_1_GAME_BID(message,
+                              this->deserialized_GAME_BID);
+    default:
+      return false;
+    }
+  }

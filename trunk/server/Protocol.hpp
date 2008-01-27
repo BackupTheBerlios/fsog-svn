@@ -1463,7 +1463,7 @@ public:
 
 class Deserializer
 {
-  protected:
+  public:
   //Objects for temporary deserialization (to avoid creating
   //new ones all the time):
   Protocol::Deserialized_1_LOG_IN deserialized_LOG_IN;
@@ -1471,28 +1471,6 @@ class Deserializer
   Protocol::Deserialized_1_ACKNOWLEDGE deserialized_ACKNOWLEDGE;
   Protocol::Deserialized_1_GAME_BID deserialized_GAME_BID;
 
-  bool deserialize(const Message&message) throw()
-  {
-    switch(message.getMessageType())
-    {
-    case LOG_IN_1:
-      return Protocol::deserialize_1_LOG_IN(message,
-                              this->deserialized_LOG_IN);
-    case GET_STATISTICS_1:
-      return Protocol::deserialize_1_GET_STATISTICS(message);
-    case SEARCH_GAME_1:
-      return Protocol::deserialize_1_SEARCH_GAME(message,
-                              this->deserialized_SEARCH_GAME);
-    case ACKNOWLEDGE_1:
-      return Protocol::deserialize_1_ACKNOWLEDGE(message,
-                              this->deserialized_ACKNOWLEDGE);
-    case GAME_START_1:
-      return Protocol::deserialize_1_GAME_START(message);
-    case GAME_BID_1:
-      return Protocol::deserialize_1_GAME_BID(message,
-                              this->deserialized_GAME_BID);
-    default:
-      return false;
-    }
-  }
+  bool deserialize(const Message&message) throw();
+
 };
