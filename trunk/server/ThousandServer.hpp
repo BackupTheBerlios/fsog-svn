@@ -46,7 +46,7 @@
 #include "SearcherTripple.hpp"
 #include "Thousand.hpp"
 
-class ThousandServer : public Deserializer
+class ThousandServer : public Server
 {
 private:
   //Socket stuff.
@@ -132,9 +132,14 @@ private:
   void readAndInterpretMessage() throw();
 
   inline bool userKnown() throw();
-
-  void handle_SEARCH_GAME() throw();
   
+  bool handle_1_LOG_IN() throw();
+  bool handle_1_GET_STATISTICS() throw();
+  bool handle_1_ACKNOWLEDGE() throw();
+  bool handle_1_GAME_START() throw();
+  bool handle_1_SEARCH_GAME() throw();
+  bool handle_1_GAME_BID() throw();
+
   void removeFromSearchers(const std::list<User>::iterator& userIterator)
     throw();
 

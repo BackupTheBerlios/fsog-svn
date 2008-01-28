@@ -917,9 +917,9 @@ public class ProtocolDefinition{
                   +"  final static byte COLOR_MASK = (byte) 0xF0;\n\n");
     }
 
-    private void hppWriteDeserializer() throws Exception{
+    private void hppWriteServer() throws Exception{
         hppWrite("\n"
-                 +"class Deserializer\n"
+                 +"class Server\n"
                  +"{\n"
                  +"  protected:\n"
                  +"  //Objects for temporary deserialization (to avoid creating\n"
@@ -934,11 +934,11 @@ public class ProtocolDefinition{
         }
 
         hppWrite("\n"
-                 +"  bool deserialize(const Message&message) throw();\n"
+                 +"  bool handle(const Message&message) throw();\n"
                  +"\n");
 
         cppWrite("\n"
-                 +"  bool Deserializer::deserialize(const Message&message) throw()\n"
+                 +"  bool Server::handle(const Message&message) throw()\n"
                  +"  {\n"
                  +"    switch(message.getMessageType())\n"
                  +"    {\n");
@@ -951,17 +951,27 @@ public class ProtocolDefinition{
                 if(md.pieceDefinitions.length>0)
                     cppWrite(",\n"
                              +"                              "
-                             +"this->deserialized_"+md.name+");\n");
+                             +"this->deserialized_"+md.name+")\n");
                 else
-                    cppWrite(");\n");
+                    cppWrite(")\n");
+                cppWrite("             && this->handle_"+protocolVersion
+                         +"_"+md.name+"();\n");
             }
         }
-
         
         cppWrite("    default:\n"
                  +"      return false;\n"
                  +"    }\n"
                  +"  }\n");
+
+        hppWrite("  //Handlers for various message types:\n");
+        for(MessageDefinition md : this.messageDefinitions){
+            if(md.sentBy.equals(Sender.CLIENT))
+                hppWrite("  virtual bool handle"+"_"+protocolVersion
+                         +"_"+md.name+"() throw() =0;\n");
+        }
+
+        hppWrite("  virtual ~Server() throw() {}");
 
         hppWrite("};\n");
 
@@ -991,7 +1001,7 @@ public class ProtocolDefinition{
 
         this.writeFooter();
 
-        this.hppWriteDeserializer();
+        this.hppWriteServer();
 
 
         this.javaWriter.flush();

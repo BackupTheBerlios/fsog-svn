@@ -81,14 +81,6 @@ void ThousandServer::readAndInterpretMessage() throw()
   if(!somethingRead)
     return;
 
-  if(!this->deserialize(this->inputMessage))
-    {
-      std::cerr
-        <<"Couldn't deserialize message."<<std::endl
-        <<this->inputMessage.toString()<<std::endl;
-      return;
-    }
-
   this->address = this->socket.getClientAddress();
 
   //See which user sent the message:
@@ -109,107 +101,109 @@ void ThousandServer::readAndInterpretMessage() throw()
   this->gameKnown
     = (this->game!=this->games.end());
 
-  switch(this->inputMessage.getMessageType())
+  if(!this->handle(this->inputMessage))
     {
-    case LOG_IN_1:
-      {
-        //TODO: if user re-connected after a crash, we should
-        //do something good.
-        
-        //See whether the user was already logged in from some address:
-        std::map<std::string,std::list<User>::iterator>::iterator nickToUserIterator
-          = this->nickToUser.find(this->deserialized_LOG_IN.nick);
-        
-        //Remove the previous address association:
-        //if(nickToUserIterator!=nickToUser.end())
-        //  nickToUser.remove(nickToUserIterator);
-        
-        //TODO: check password in database.
-        
-        //Create new user:
-        //std::pair<std::map<Address,User>::iterator,bool> tempPair
-        this->users.push_front(User(this->games.end()));
-        this->user = this->users.begin();
-        
-        this->user->myAddressToUserIterator
-          = this->addressToUser.insert(std::make_pair(this->address,
-                                                      this->user)
-                                       ).first;
-        
-        this->user->myNickToUserIterator
-          = this->nickToUser.insert(std::make_pair(this->deserialized_LOG_IN.nick,
-                                                   this->user)
-                                    ).first;
-
-        this->user->myDeliveryTimeout = this->deliveryTimeouts.end();
-        this->user->lastActionTime=std::time(0);
-        
-        Protocol::serialize_1_LOG_IN_CORRECT(this->outputMessage);
-        
-        //If undelivered, client has to ask again.
-        this->reply(this->user);
-      }
-      break; //End of LOG_IN
-    case GET_STATISTICS_1:
-      Protocol::serialize_1_RETURN_STATISTICS(this->users.size(),
-                                              this->games.size(),
-                                              this->searchers.size(),
-                                              this->outputMessage);
-
-      //If undelivered, client has to ask again.
-      this->reply(this->user);
-
-      break;
-
-    case SEARCH_GAME_1:
-      this->handle_SEARCH_GAME();
-      break;
-    case ACKNOWLEDGE_1:
-      //User must be logged in!
-      //Drop the packet if user is unknown.
-      if(!userKnown())
-        break;
-
-      this->acknowledgementReceived();
-      break;
-
-    case GAME_START_1:
-      {
-        //User must be logged in!
-        //Drop the packet if user is unknown.
-        if(!userKnown())
-          break;
-        
-        this->user->pressedStart=true;
-        
-        bool allStarted = true;
-        for(char i=0;i<this->game->numberOfPlayers;i++)
-          if(!this->game->players[i]->pressedStart)
-            {
-              allStarted = false;
-              break;
-            }
-        
-        if(allStarted)
-          {
-            //All players clicked start. Deal the cards now:
-            this->dealCards();
-          }
-      }//END of message GAME_START
-    default:
       std::cerr
-        <<"Unknown message type."<<std::endl
+        <<"Couldn't handle message."<<std::endl
         <<this->inputMessage.toString()<<std::endl;
-      break;
+      return;
     }
 }
 
-void ThousandServer::handle_SEARCH_GAME() throw()
+bool ThousandServer::handle_1_LOG_IN() throw()
+{
+  //TODO: if user re-connected after a crash, we should
+  //do something good.
+        
+  //See whether the user was already logged in from some address:
+  std::map<std::string,std::list<User>::iterator>::iterator nickToUserIterator
+    = this->nickToUser.find(this->deserialized_LOG_IN.nick);
+        
+  //Remove the previous address association:
+  //if(nickToUserIterator!=nickToUser.end())
+  //  nickToUser.remove(nickToUserIterator);
+        
+  //TODO: check password in database.
+        
+  //Create new user:
+  //std::pair<std::map<Address,User>::iterator,bool> tempPair
+  this->users.push_front(User(this->games.end()));
+  this->user = this->users.begin();
+  
+  this->user->myAddressToUserIterator
+    = this->addressToUser.insert(std::make_pair(this->address,
+                                                this->user)
+                                 ).first;
+  
+  this->user->myNickToUserIterator
+    = this->nickToUser.insert(std::make_pair(this->deserialized_LOG_IN.nick,
+                                             this->user)
+                              ).first;
+  
+  this->user->myDeliveryTimeout = this->deliveryTimeouts.end();
+  this->user->lastActionTime=std::time(0);
+  
+  Protocol::serialize_1_LOG_IN_CORRECT(this->outputMessage);
+  
+  //If undelivered, client has to ask again.
+  this->reply(this->user);
+  return true;
+}
+
+bool ThousandServer::handle_1_GET_STATISTICS() throw()
+{
+  Protocol::serialize_1_RETURN_STATISTICS(this->users.size(),
+                                          this->games.size(),
+                                          this->searchers.size(),
+                                          this->outputMessage);
+
+  //If undelivered, client has to ask again.
+  this->reply(this->user);
+  return true;
+}
+
+bool ThousandServer::handle_1_ACKNOWLEDGE() throw()
+{
+  //User must be logged in!
+  //Drop the packet if user is unknown.
+  if(!userKnown())
+    return false;//\todo should we return false? Results in error message.
+
+  this->acknowledgementReceived();
+  return true;
+}
+
+bool ThousandServer::handle_1_GAME_START() throw()
+{
+  //User must be logged in!
+  //Drop the packet if user is unknown.
+  if(!userKnown())
+    return false;//\todo false?
+        
+  this->user->pressedStart=true;
+        
+  bool allStarted = true;
+  for(char i=0;i<this->game->numberOfPlayers;i++)
+    if(!this->game->players[i]->pressedStart)
+      {
+        allStarted = false;
+        break;
+      }
+        
+  if(allStarted)
+    {
+      //All players clicked start. Deal the cards now:
+      this->dealCards();
+    }
+  return true;
+}
+
+bool ThousandServer::handle_1_SEARCH_GAME() throw()
 {
   //User must be logged in!
   //Drop the packet if user is unknown.
   if(!this->userKnown())
-    return;
+    return false; //\todo false?
 
   //If this search is exactly the same as previous one,
   //client probably didn't get our response. Send the
@@ -218,7 +212,7 @@ void ThousandServer::handle_SEARCH_GAME() throw()
                   this->user->last_SEARCH_GAME))
     {
       this->send_SEARCH_GAME_response(false);
-      return;
+      return true;
     }
 
   //Remember the search in case of C->S duplicate packets
@@ -239,7 +233,14 @@ void ThousandServer::handle_SEARCH_GAME() throw()
       this->registerInSearchers();
       this->send_SEARCH_GAME_response(false);
     }
+  return true;
 }
+
+bool ThousandServer::handle_1_GAME_BID() throw()
+{
+  return false;//\todo Finish function.
+}
+
 
 void ThousandServer::checkDeliveryTimeouts() throw()
 {

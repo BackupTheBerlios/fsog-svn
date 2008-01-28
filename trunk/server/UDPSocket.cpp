@@ -187,5 +187,6 @@ void UDPSocket::sendMessage(const Message&message,
          0,
          (struct sockaddr *)&address.address,
          sizeof(address.address));
-  std::cout<<"Sent."<<std::endl;
+  if(CommandLine::printNetworkPackets())
+    std::cout<<"Sent."<<std::endl;
 }

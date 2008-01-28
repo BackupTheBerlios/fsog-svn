@@ -1461,9 +1461,9 @@ public:
 
 };
 
-class Deserializer
+class Server
 {
-  public:
+  protected:
   //Objects for temporary deserialization (to avoid creating
   //new ones all the time):
   Protocol::Deserialized_1_LOG_IN deserialized_LOG_IN;
@@ -1471,6 +1471,13 @@ class Deserializer
   Protocol::Deserialized_1_ACKNOWLEDGE deserialized_ACKNOWLEDGE;
   Protocol::Deserialized_1_GAME_BID deserialized_GAME_BID;
 
-  bool deserialize(const Message&message) throw();
+  bool handle(const Message&message) throw();
 
-};
+  //Handlers for various message types:
+  virtual bool handle_1_LOG_IN() throw() =0;
+  virtual bool handle_1_GET_STATISTICS() throw() =0;
+  virtual bool handle_1_SEARCH_GAME() throw() =0;
+  virtual bool handle_1_ACKNOWLEDGE() throw() =0;
+  virtual bool handle_1_GAME_START() throw() =0;
+  virtual bool handle_1_GAME_BID() throw() =0;
+  virtual ~Server() throw() {}};
