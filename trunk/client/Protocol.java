@@ -32,7 +32,7 @@
 
 import java.util.*;
 
-public class Protocol{
+public class ThousandProtocol{
 
   //Can be used for switching to detect
   //which deserializer should be used.
@@ -70,11 +70,6 @@ public class Protocol{
     GAME_BID_END_SHOW_MUST_1
   }
 
-
-  //Known UDP port number of the server:
-  static int getServerUDPPort_1(){
-    return 10137;
-  }
 
   //Used in card games. You can encode a card on 
   //one byte by bitwise disjunction of value and

@@ -166,33 +166,33 @@ std::vector<char> Thousand::createDeck() throw()
 {
   std::vector<char> result;
 
-  result.push_back(Protocol::ACE|Protocol::HEARTS);
-  result.push_back(Protocol::TEN|Protocol::HEARTS);
-  result.push_back(Protocol::KING|Protocol::HEARTS);
-  result.push_back(Protocol::QUEEN|Protocol::HEARTS);
-  result.push_back(Protocol::JACK|Protocol::HEARTS);
-  result.push_back(Protocol::NINE|Protocol::HEARTS);
+  result.push_back(ThousandProtocol::ACE|ThousandProtocol::HEARTS);
+  result.push_back(ThousandProtocol::TEN|ThousandProtocol::HEARTS);
+  result.push_back(ThousandProtocol::KING|ThousandProtocol::HEARTS);
+  result.push_back(ThousandProtocol::QUEEN|ThousandProtocol::HEARTS);
+  result.push_back(ThousandProtocol::JACK|ThousandProtocol::HEARTS);
+  result.push_back(ThousandProtocol::NINE|ThousandProtocol::HEARTS);
 
-  result.push_back(Protocol::ACE|Protocol::DIAMONDS);
-  result.push_back(Protocol::TEN|Protocol::DIAMONDS);
-  result.push_back(Protocol::KING|Protocol::DIAMONDS);
-  result.push_back(Protocol::QUEEN|Protocol::DIAMONDS);
-  result.push_back(Protocol::JACK|Protocol::DIAMONDS);
-  result.push_back(Protocol::NINE|Protocol::DIAMONDS);
+  result.push_back(ThousandProtocol::ACE|ThousandProtocol::DIAMONDS);
+  result.push_back(ThousandProtocol::TEN|ThousandProtocol::DIAMONDS);
+  result.push_back(ThousandProtocol::KING|ThousandProtocol::DIAMONDS);
+  result.push_back(ThousandProtocol::QUEEN|ThousandProtocol::DIAMONDS);
+  result.push_back(ThousandProtocol::JACK|ThousandProtocol::DIAMONDS);
+  result.push_back(ThousandProtocol::NINE|ThousandProtocol::DIAMONDS);
 
-  result.push_back(Protocol::ACE|Protocol::CLUBS);
-  result.push_back(Protocol::TEN|Protocol::CLUBS);
-  result.push_back(Protocol::KING|Protocol::CLUBS);
-  result.push_back(Protocol::QUEEN|Protocol::CLUBS);
-  result.push_back(Protocol::JACK|Protocol::CLUBS);
-  result.push_back(Protocol::NINE|Protocol::CLUBS);
+  result.push_back(ThousandProtocol::ACE|ThousandProtocol::CLUBS);
+  result.push_back(ThousandProtocol::TEN|ThousandProtocol::CLUBS);
+  result.push_back(ThousandProtocol::KING|ThousandProtocol::CLUBS);
+  result.push_back(ThousandProtocol::QUEEN|ThousandProtocol::CLUBS);
+  result.push_back(ThousandProtocol::JACK|ThousandProtocol::CLUBS);
+  result.push_back(ThousandProtocol::NINE|ThousandProtocol::CLUBS);
 
-  result.push_back(Protocol::ACE|Protocol::SPADES);
-  result.push_back(Protocol::TEN|Protocol::SPADES);
-  result.push_back(Protocol::KING|Protocol::SPADES);
-  result.push_back(Protocol::QUEEN|Protocol::SPADES);
-  result.push_back(Protocol::JACK|Protocol::SPADES);
-  result.push_back(Protocol::NINE|Protocol::SPADES);
+  result.push_back(ThousandProtocol::ACE|ThousandProtocol::SPADES);
+  result.push_back(ThousandProtocol::TEN|ThousandProtocol::SPADES);
+  result.push_back(ThousandProtocol::KING|ThousandProtocol::SPADES);
+  result.push_back(ThousandProtocol::QUEEN|ThousandProtocol::SPADES);
+  result.push_back(ThousandProtocol::JACK|ThousandProtocol::SPADES);
+  result.push_back(ThousandProtocol::NINE|ThousandProtocol::SPADES);
 
   return result;
 }
@@ -203,46 +203,46 @@ int32_t Thousand::purifyFlags(const int32_t flags)
   int32_t result = 0;
 
   //Bombs:
-  if(flags&Protocol::NO_BOMBS)
-    result|=Protocol::NO_BOMBS;
-  else if(flags&Protocol::BOMBS)
-    result|=Protocol::BOMBS;
+  if(flags&ThousandProtocol::NO_BOMBS)
+    result|=ThousandProtocol::NO_BOMBS;
+  else if(flags&ThousandProtocol::BOMBS)
+    result|=ThousandProtocol::BOMBS;
   else
-    result|=Protocol::UNLIMITED_BOMBS;
+    result|=ThousandProtocol::UNLIMITED_BOMBS;
 
   
-  if(flags&Protocol::BID_INCREMENT_10)
-    result|=Protocol::BID_INCREMENT_10;
+  if(flags&ThousandProtocol::BID_INCREMENT_10)
+    result|=ThousandProtocol::BID_INCREMENT_10;
   else
-    result|=Protocol::BID_INCREMENT_ANY;
+    result|=ThousandProtocol::BID_INCREMENT_ANY;
 
-  if(flags&Protocol::SHOW_MUST_100)
-    result|=Protocol::SHOW_MUST_100;
+  if(flags&ThousandProtocol::SHOW_MUST_100)
+    result|=ThousandProtocol::SHOW_MUST_100;
   else
-    result|=Protocol::SHOW_MUST_110;
+    result|=ThousandProtocol::SHOW_MUST_110;
 
-  if(flags&Protocol::PUBLIC_GAME)
-    result|=Protocol::PUBLIC_GAME;
+  if(flags&ThousandProtocol::PUBLIC_GAME)
+    result|=ThousandProtocol::PUBLIC_GAME;
   else
-    result|=Protocol::PRIVATE_GAME;
+    result|=ThousandProtocol::PRIVATE_GAME;
 
 
-  if(flags&Protocol::RANKING_GAME)
-    result|=Protocol::RANKING_GAME;
+  if(flags&ThousandProtocol::RANKING_GAME)
+    result|=ThousandProtocol::RANKING_GAME;
   else
-    result|=Protocol::SPARRING_GAME;
+    result|=ThousandProtocol::SPARRING_GAME;
 
 
-  if(flags&Protocol::TIME_7)
-    result|=Protocol::TIME_7;
-  else if(flags&Protocol::TIME_10)
-    result|=Protocol::TIME_10;
-  else if(flags&Protocol::TIME_15)
-    result|=Protocol::TIME_15;
-  else if(flags&Protocol::TIME_20)
-    result|=Protocol::TIME_20;
+  if(flags&ThousandProtocol::TIME_7)
+    result|=ThousandProtocol::TIME_7;
+  else if(flags&ThousandProtocol::TIME_10)
+    result|=ThousandProtocol::TIME_10;
+  else if(flags&ThousandProtocol::TIME_15)
+    result|=ThousandProtocol::TIME_15;
+  else if(flags&ThousandProtocol::TIME_20)
+    result|=ThousandProtocol::TIME_20;
   else
-    result|=Protocol::TIME_30;
+    result|=ThousandProtocol::TIME_30;
 
   return result;
 }

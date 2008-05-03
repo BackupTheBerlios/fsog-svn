@@ -47,7 +47,7 @@ class SearcherTripple
 public:
   SearcherTripple(const SearcherPair&pair,
                   const std::list<User>::iterator newUser,
-                  const Protocol::Deserialized_1_SEARCH_GAME&cryteria)
+                  const ThousandProtocol::Deserialized_1_SEARCH_GAME&cryteria)
     :user0(pair.user0),
      user1(pair.user1),
      user2(newUser),
@@ -58,5 +58,5 @@ public:
   const std::list<User>::iterator user0;
   const std::list<User>::iterator user1;
   const std::list<User>::iterator user2;
-  const Protocol::Deserialized_1_SEARCH_GAME cryteria;
+  const ThousandProtocol::Deserialized_1_SEARCH_GAME cryteria;
 };

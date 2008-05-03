@@ -1,5 +1,5 @@
-/* -*- Mode: java; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- * vim:expandtab:shiftwidth=4:tabstop=4: */
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- 
+ * vim:expandtab:shiftwidth=2:tabstop=2: */
 
 
 /*
@@ -34,4 +34,43 @@
 */
 
 
-public enum Sender{ CLIENT, SERVER }
+#pragma once
+
+#include <stdint.h>
+#include <vector>
+#include "Game.hpp"
+#include "TicTacToeProtocol.hpp"
+
+typedef uint8_t Field;
+const Field EMPTY = 0x00;
+const Field X = 0x01;
+const Field O = 0x02;
+
+class TicTacToe : public AlternatingTurnGame
+{
+private:
+  //Our 3x3 board:
+  std::vector<std::vector<Field> > board;
+  uint8_t covered;
+
+  //Temporary object for deserializing move message:
+  TicTacToeProtocol::Deserialized_1_MAKE_MOVE deserialized_1_MAKE_MOVE;
+
+  Field currentPlayersField() const throw()
+  {
+    return (currentPlayerNumber == 0 ? X : O);
+  }
+
+public:
+
+  TicTacToe() throw() {}
+
+  ~TicTacToe() throw() {}
+
+  bool initialize(std::vector<Message>& initialMessages) throw();
+
+  MoveResult move(const Message& move,
+                  std::vector<Message>& moveMessages,
+                  std::list< std::list<std::string> >& endResult) throw();
+
+};

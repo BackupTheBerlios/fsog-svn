@@ -43,7 +43,7 @@
 
 class User;
 
-class Thousand : public Game
+class Thousand 
 {
 public:
   //Settings of this game:

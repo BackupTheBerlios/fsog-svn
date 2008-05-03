@@ -46,11 +46,11 @@ class Searcher
 {
 public:
   Searcher(const std::list<User>::iterator& user,
-           const Protocol::Deserialized_1_SEARCH_GAME&cryteria)
+           const ThousandProtocol::Deserialized_1_SEARCH_GAME&cryteria)
     :user(user),
      cryteria(cryteria)
   {}
 
   const std::list<User>::iterator user;
-  const Protocol::Deserialized_1_SEARCH_GAME cryteria;
+  const ThousandProtocol::Deserialized_1_SEARCH_GAME cryteria;
 };

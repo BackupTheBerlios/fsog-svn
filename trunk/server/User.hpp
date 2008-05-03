@@ -65,7 +65,7 @@ public:
   short roundPoints;
 
   //Last SEARCH_GAME of this user:
-  Protocol::Deserialized_1_SEARCH_GAME last_SEARCH_GAME;
+  ThousandProtocol::Deserialized_1_SEARCH_GAME last_SEARCH_GAME;
   //Next acknowledge secret:
   char nextAcknowledgeSecret;
   //Next timeout index. Have a look at 

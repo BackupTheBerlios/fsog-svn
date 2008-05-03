@@ -35,287 +35,48 @@
 #include <string>
 #include <sstream>
 #include <cctype>
+#include "Message.hpp"
 
+
+class ThousandProtocol
+{
+public:
 
   //Can be used for switching to detect
   //which deserializer should be used.
-  enum MessageType
-  {
-    UNKNOWN_MESSAGE_1 = 0,
+    static const int8_t UNKNOWN_MESSAGE_1 = 0;
     //Sent by client to log in. Loginng in associates the sending IP+port as belonging to the particular user until logged out. Can be used to create an account. Valid nick is between 5 and 20 letters, consisting of any printable non-whitespace ASCII characters. Password should be at least 6 characters. Easy passwords won't be admitted.
-    LOG_IN_1 = 1,
+    static const int8_t LOG_IN_1 = 1;
     //Sent by server to let the user know that log in was OK.
-    LOG_IN_CORRECT_1 = 2,
+    static const int8_t LOG_IN_CORRECT_1 = 2;
     //Sent by server to let the user know that log in wasn't OK.
-    LOG_IN_INCORRECT_1 = 3,
+    static const int8_t LOG_IN_INCORRECT_1 = 3;
     //Message sent by client to request 'room' statistics.
-    GET_STATISTICS_1 = 4,
+    static const int8_t GET_STATISTICS_1 = 4;
     //Sent by server when returning info about 'room' stats.
-    RETURN_STATISTICS_1 = 5,
+    static const int8_t RETURN_STATISTICS_1 = 5;
     //Sent by client when searching for some game.
-    SEARCH_GAME_1 = 6,
+    static const int8_t SEARCH_GAME_1 = 6;
     //Sent by server when no game with given search cryteria is currently available.
-    AWAIT_GAME_1 = 7,
+    static const int8_t AWAIT_GAME_1 = 7;
     //Sent by server when game is matched. Includes game settings. One of four usernames will be equal to the requesting player's if she should play the game, otherwise it's observing. Must be acknowledged by the client program immediately, using the secret provided here.
-    PROPOSED_GAME_1 = 8,
+    static const int8_t PROPOSED_GAME_1 = 8;
     //Sent by client. After this, server just waits for GAME_START. If server doesn't get this ack for some reason, will send again PROPOSED_GAME and ack must be repeated.
-    ACKNOWLEDGE_1 = 9,
+    static const int8_t ACKNOWLEDGE_1 = 9;
     //Client clicks the 'start button' to accept a game. Immediately after all clients do this, server will deal cards and start counting time for some player. Server sends no acknowledgement for it. If cards are not dealt after, say, 5s, client can re-send GAME_START. But they might not be dealt because the opponent didn't click GAME_START.
-    GAME_START_1 = 10,
+    static const int8_t GAME_START_1 = 10;
     //Everybody pressed start, so let's deal the cards. The cards sent are not sorted in any way.
-    GAME_DEAL_7_CARDS_1 = 11,
+    static const int8_t GAME_DEAL_7_CARDS_1 = 11;
     //The message sent by client when placing a bid.
-    GAME_BID_1 = 12,
+    static const int8_t GAME_BID_1 = 12;
     //Message sent by the server to let other players know what bid was placed.
-    GAME_BID_MADE_1 = 13,
+    static const int8_t GAME_BID_MADE_1 = 13;
     //Message sent by the server to let players know that bidding is over. 'Must' is not shown.
-    GAME_BID_END_HIDDEN_MUST_1 = 14,
+    static const int8_t GAME_BID_END_HIDDEN_MUST_1 = 14;
     //Message sent by the server to let players know that bidding is over. 'Must' is shown.
-    GAME_BID_END_SHOW_MUST_1 = 15
-  };
-
-class Message : public std::vector<char>
-{
-private:
-  //Appends value to message
-  template<class T>
-  void appendInteger(const T value,
-                     const unsigned numberOfBytes)
-    throw()
-  {
-    for(unsigned i=0;i<numberOfBytes;i++)
-      {
-        this->push_back(static_cast<char>(0xFF & (value>>(8*(numberOfBytes-1-i)))));
-      }
-  }
-
-public:
-  template<class T>
-  void append1Byte(const T value)
-    throw()
-  {
-    this->appendInteger(value,1);
-  }
-
-  template<class T>
-  void append2Bytes(const T value)
-    throw()
-  {
-    this->appendInteger(value,2);
-  }
-
-  template<class T>
-  void append3Bytes(const T value)
-    throw()
-  {
-    this->appendInteger(value,3);
-  }
-
-  template<class T>
-  void append4Bytes(const T value)
-    throw()
-  {
-    this->appendInteger(value,4);
-  }
-
-  void appendCString(const std::string& value)
-    throw()
-  {
-    this->insert(this->end(),
-                 value.begin(),
-                 value.end());
-    this->push_back(0);
-  }
-
-  //Read value from this message
-  template<class T>
-  static bool read1Byte(Message::const_iterator&it,
-                        const Message::const_iterator&messageEnd,
-                        T&result)
-    throw()
-  {
-    if(it+1>messageEnd)
-      return false;
-
-    result=(*it++);
-    
-    return true;
-  }
-
-  //Read value from this message
-  template<class T>
-  static bool read2Bytes(Message::const_iterator&it,
-                         const Message::const_iterator&messageEnd,
-                         T&result)
-    throw()
-  {
-    if(it+2>messageEnd)
-      return false;
-
-    result=0;
-
-    result|=(static_cast<short>(*it++))<<8;
-    result|=(static_cast<short>(*it++));
-    
-    return true;
-  }
-
-  //Read value from this message
-  template<class T>
-  static bool read3Bytes(Message::const_iterator&it,
-                         const Message::const_iterator&messageEnd,
-                         T&result)
-    throw()
-  {
-    if(it+3>messageEnd)
-      return false;
-    
-    result=0;
-
-    result|=(static_cast<short>(*it++))<<16;
-    result|=(static_cast<short>(*it++))<<8;
-    result|=(static_cast<short>(*it++));
-    
-    return true;
-  }
-
-  //Read value from this message
-  template<class T>
-  static bool read4Bytes(Message::const_iterator&it,
-                         const Message::const_iterator&messageEnd,
-                         T&result)
-    throw()
-  {
-    if(it+4>messageEnd)
-      return false;
-
-    result=0;
-
-    result|=(static_cast<short>(*it++))<<24;
-    result|=(static_cast<short>(*it++))<<16;
-    result|=(static_cast<short>(*it++))<<8;
-    result|=(static_cast<short>(*it++));
-    
-    return true;
-  }
-
-  static bool readCString(Message::const_iterator&it,
-                          const Message::const_iterator&messageEnd,
-                          std::string&result)
-  {
-    std::ostringstream output;
-    char c;
-    while(true)
-      {
-        if(it==messageEnd)
-          return false;
-        c=(*it++);
-        if(c==0)
-          {
-            result=output.str();
-            return true;
-          }
-        output<<c;
-      }
-  }
-  
-
-  //This method can be used for rapid message
-  //type lookup, so you don't need to try
-  //deserializing using all deserializers.
-  //Remember that deserialization can still
-  //always fail, even if this method returns
-  //some known type. It doesn't read the whole
-  //message, just the part where message type
-  //is present.
-  MessageType getMessageType() const throw()
-  {
-    const Message& message = *this;
-    if(message.size()<2)
-      return MessageType(UNKNOWN_MESSAGE_1);
-    
-    const char messageType
-     = message[1];
-    
-    if(messageType<=MessageType(UNKNOWN_MESSAGE_1)
-       || messageType>GAME_BID_END_SHOW_MUST_1)
-      return MessageType(UNKNOWN_MESSAGE_1);
-    
-    return static_cast<MessageType>(messageType);
-  }
-
-  //Can be used for printing MessageType
-  //in human-readable form.
-  std::string getMessageTypeAsString() const throw()
-  {
-    const MessageType mp=this->getMessageType();
-    switch(mp)
-    {
-      case UNKNOWN_MESSAGE_1: return "UNKNOWN_MESSAGE";
-      case LOG_IN_1: return "LOG_IN";
-      case LOG_IN_CORRECT_1: return "LOG_IN_CORRECT";
-      case LOG_IN_INCORRECT_1: return "LOG_IN_INCORRECT";
-      case GET_STATISTICS_1: return "GET_STATISTICS";
-      case RETURN_STATISTICS_1: return "RETURN_STATISTICS";
-      case SEARCH_GAME_1: return "SEARCH_GAME";
-      case AWAIT_GAME_1: return "AWAIT_GAME";
-      case PROPOSED_GAME_1: return "PROPOSED_GAME";
-      case ACKNOWLEDGE_1: return "ACKNOWLEDGE";
-      case GAME_START_1: return "GAME_START";
-      case GAME_DEAL_7_CARDS_1: return "GAME_DEAL_7_CARDS";
-      case GAME_BID_1: return "GAME_BID";
-      case GAME_BID_MADE_1: return "GAME_BID_MADE";
-      case GAME_BID_END_HIDDEN_MUST_1: return "GAME_BID_END_HIDDEN_MUST";
-      case GAME_BID_END_SHOW_MUST_1: return "GAME_BID_END_SHOW_MUST";
-    }
+    static const int8_t GAME_BID_END_SHOW_MUST_1 = 15;
 
 
-    return "ERROR. No such message in this protocol version!";
-  }
-
-  //Represent this message as string
-  std::string toString()
-    const
-    throw()
-  {
-    std::ostringstream output;
-
-    output
-      <<"MessageType: "<<this->getMessageTypeAsString()
-      <<", number of bytes: "<<this->size()<<std::endl;
-
-    const char*const hex = "0123456789abcdef";
-
-    int_fast16_t i=0;
-    for(std::vector<char>::const_iterator it=this->begin();
-        it!=this->end() && i<1024;
-        it++)
-      {
-        output
-          <<hex[((*it)>>4) & 0x0F]
-          <<hex[(*it) & 0x0F]
-          <<" ("<<(std::isprint(*it)?(*it):'_')<<") ";
-        i++;
-        if(i%10==0)
-          output<<std::endl;
-      }
-
-    return output.str();
-  }
-};
-
-
-
-class Protocol
-{
-public:
-
-  //Known UDP port number of the server:
-  static uint_fast16_t getServerUDPPort_1()
-    throw()
-  {
-    return 10137;
-  }
 
   //Used in card games. You can encode a card on 
   //one byte by bitwise disjunction of value and
@@ -388,6 +149,61 @@ public:
     TIME_30 = 262144
   };
 
+  //Can be used for printing message type
+  //in human-readable form.
+  static std::string messageTypeToString(int8_t messageType) throw()
+  {
+    switch(messageType)
+    {
+      case UNKNOWN_MESSAGE_1: return "UNKNOWN_MESSAGE";
+      case LOG_IN_1: return "LOG_IN";
+      case LOG_IN_CORRECT_1: return "LOG_IN_CORRECT";
+      case LOG_IN_INCORRECT_1: return "LOG_IN_INCORRECT";
+      case GET_STATISTICS_1: return "GET_STATISTICS";
+      case RETURN_STATISTICS_1: return "RETURN_STATISTICS";
+      case SEARCH_GAME_1: return "SEARCH_GAME";
+      case AWAIT_GAME_1: return "AWAIT_GAME";
+      case PROPOSED_GAME_1: return "PROPOSED_GAME";
+      case ACKNOWLEDGE_1: return "ACKNOWLEDGE";
+      case GAME_START_1: return "GAME_START";
+      case GAME_DEAL_7_CARDS_1: return "GAME_DEAL_7_CARDS";
+      case GAME_BID_1: return "GAME_BID";
+      case GAME_BID_MADE_1: return "GAME_BID_MADE";
+      case GAME_BID_END_HIDDEN_MUST_1: return "GAME_BID_END_HIDDEN_MUST";
+      case GAME_BID_END_SHOW_MUST_1: return "GAME_BID_END_SHOW_MUST";
+    }
+
+
+    return "ERROR. No such message in this protocol version!";
+  }
+
+  //Represent message as string
+  static std::string messageToString(const Message& message)
+    throw()
+  {
+    std::ostringstream output;
+
+    output
+      <<"Message type: "<<messageTypeToString(message.getMessageType())      <<", number of bytes: "<<message.size()<<std::endl;
+
+    const char*const hex = "0123456789abcdef";
+
+    int_fast16_t i=0;
+    for(std::vector<char>::const_iterator it=message.begin();
+        it!=message.end() && i<1024;
+        it++)
+      {
+        output
+          <<hex[((*it)>>4) & 0x0F]
+          <<hex[(*it) & 0x0F]
+          <<" ("<<(std::isprint(*it)?(*it):'_')<<") ";
+        i++;
+        if(i%10==0)
+          output<<std::endl;
+      }
+
+    return output.str();
+  }
   //Message LOG_IN:
 
   //This message is sent by CLIENT.
@@ -1461,15 +1277,15 @@ public:
 
 };
 
-class Server
+class ThousandHandler
 {
   protected:
   //Objects for temporary deserialization (to avoid creating
   //new ones all the time):
-  Protocol::Deserialized_1_LOG_IN deserialized_LOG_IN;
-  Protocol::Deserialized_1_SEARCH_GAME deserialized_SEARCH_GAME;
-  Protocol::Deserialized_1_ACKNOWLEDGE deserialized_ACKNOWLEDGE;
-  Protocol::Deserialized_1_GAME_BID deserialized_GAME_BID;
+  ThousandProtocol::Deserialized_1_LOG_IN deserialized_LOG_IN;
+  ThousandProtocol::Deserialized_1_SEARCH_GAME deserialized_SEARCH_GAME;
+  ThousandProtocol::Deserialized_1_ACKNOWLEDGE deserialized_ACKNOWLEDGE;
+  ThousandProtocol::Deserialized_1_GAME_BID deserialized_GAME_BID;
 
   bool handle(const Message&message) throw();
 
@@ -1480,4 +1296,4 @@ class Server
   virtual bool handle_1_ACKNOWLEDGE() throw() =0;
   virtual bool handle_1_GAME_START() throw() =0;
   virtual bool handle_1_GAME_BID() throw() =0;
-  virtual ~Server() throw() {}};
+  virtual ~ThousandHandler() throw() {}};

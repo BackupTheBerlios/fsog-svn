@@ -36,9 +36,125 @@
 
 #pragma once
 
+#include <list>
+#include <string>
+#include <vector>
+#include "Message.hpp" //For Message class
+
+/** Some thread will create an object of a class deriving from
+    Game. The IO model used for networking, as well as socket details
+    are not visible from within Game.
+*/
+
 class Game
 {
 public:
-  //typedef uint32_t GameIdentifier;
-  //typedef uint64_t GameKey;
+  
+  typedef int32_t Identifier;
+
+  uint8_t numberOfPlayers;
+  std::vector<std::string> nicks;
+  //TODO: who is changing currentPlayerNumber?
+  uint8_t currentPlayerNumber;
+
+  /** Can be called from derived classes to shuffle order of
+      "nicks". Also sets "currentPlayerNumber" to 0.
+   */
+  void shuffleNicks() throw();
+
+  Game() throw() {};
+  virtual ~Game() throw() {};
+
+  /** After all the players have joined the game, server will call
+      "initialize(...)". A game should become initialized, so that the
+      first player can make a move. "initialize(...)" can,
+      e.g. randomize the number of players, deal cards, set pieces on
+      chessboard, etc. Before server calls "initialize(...)", "nicks"
+      contains the nicks of players in the order they joined. After
+      the function is called, the server will send "nicks" to clients,
+      so they know in what order they play. If some additional
+      information needs to be sent to the players, e.g. what cards
+      they got, it can be put in "initialMessages". The size of
+      "initialMessages" is at least that of "nicks". "initialize(...)"
+      should put additional information for "nick[i]" in
+      "initialMessages[i]". "initialize(...)" shall not resize
+      "initialMessages". First "nicks.size()" elements of
+      "initialMessages" are empty messages before "initialize(...)" is
+      called. After server calls "initialize(...)", it awaits for the
+      move of the first player.
+
+      "initialize(...)" shall return "true" if game can be started
+      normally and "false" if game cannot be started for some reason.
+  */
+  virtual bool initialize(std::vector<Message>& initialMessages) throw() =0;
+
+  /** Values representing what effect a move has on the game. Values
+      >=0 mean that a move is invalid. In such a case the value says
+      which player sent an invalid move. Negative values are reserved
+      for valid moves. See constants "CONTINUE" and "END". 
+  */
+  typedef int16_t MoveResult;
+
+  //Move is valid and the game is going on
+  static const MoveResult CONTINUE = -1;
+  //Move is valid and the game is finished
+  static const MoveResult END = -2;
+
+};
+
+class AlternatingTurnGame : public Game
+{  
+
+  /** Move of each player is described  as a bit vector. Each game has
+     to define  how moves are encoded  within such a  vector.  A valid
+     move is  a move which  is correct according  to the rules  of the
+     game  and  current settings  and  game  state.   Observe that  in
+     "literaki"  game, placing non--existing  word on  the board  is a
+     valid move, because  one can do it according to  the rules of the
+     game. It is  just not a very  good move, but a valid  one. On the
+     other hand  moving a pawn 5 fields  away in chess is  not a valid
+     move.
+  */
+
+  /** Very often server awaits for a move from a player. When move
+      information arrives, "move(...)" is called. "move(...)" shall
+      verify whether "move" is a valid move. If it's not, "move(...)"
+      shall return "MoveResult::INVALID". If it is, "move(...)" shall
+      update the game state to reflect that a move was made and return
+      "MoveResult::CONTINUE" or "MoveResult::END".  After the function
+      is called, the server will send "moveMessages" to clients, so
+      they know what happened. All information that needs to be sent
+      to players, e.g. what cards was played, shall be put in
+      "moveMessages". Observe that sometimes diferent information is
+      sent to different players, e.g. in the game Thousand, a player
+      gives a card to another player, so that the third player doesn't
+      see what card it is.  The size of "moveMessages" is at least
+      that of "nicks". "move(...)"  shall put information for
+      "nick[i]" in "moveMessages[i]". "move(...)" shall not resize
+      "moveMessages". First "nicks.size()" elements of "moveMessages"
+      are empty messages before "move(...)" is called.
+
+      The last parameter is only used when the game is finished,
+      i.e. when "move(...)" returns "END". In such a case "move(...)"
+      should fill "endResult" with nicks of players according to what
+      places they got in the game. Let's assume that Superman, Batman,
+      Spiderman and Flash played a 4--player game. Let's say that
+      Batman won and got 113 points, Superman and Flash took both
+      second place, gathering 72 points each, and Spiderman was last
+      with 64 points. In such a case, "move(...)" should set
+      "endResult" to look like:
+      [[Batman],[Superman,Flash],[Spiderman]]. Of course, there is
+      second equivalent "endResult":
+      [[Batman],[Flash,Superman],[Spiderman]].
+
+      "endResult" is empty before "move(...)" is called. "move(...)"
+      can only modify "endResult" if it returns "END". If "move(...)"
+      returns anything other than "END", "endResult" should be left
+      empty.
+  */
+  virtual MoveResult move(const Message& move,
+                          std::vector<Message>& moveMessages,
+                          std::list< std::list<std::string> >& endResult)
+    throw() =0;
+
 };

@@ -32,30 +32,30 @@
 
 #include "../server/Protocol.hpp"
 
-  bool Server::handle(const Message&message) throw()
+  bool ThousandHandler::handle(const Message&message) throw()
   {
     switch(message.getMessageType())
     {
-    case LOG_IN_1:
-      return Protocol::deserialize_1_LOG_IN(message,
+    case ThousandProtocol::LOG_IN_1:
+      return ThousandProtocol::deserialize_1_LOG_IN(message,
                               this->deserialized_LOG_IN)
              && this->handle_1_LOG_IN();
-    case GET_STATISTICS_1:
-      return Protocol::deserialize_1_GET_STATISTICS(message)
+    case ThousandProtocol::GET_STATISTICS_1:
+      return ThousandProtocol::deserialize_1_GET_STATISTICS(message)
              && this->handle_1_GET_STATISTICS();
-    case SEARCH_GAME_1:
-      return Protocol::deserialize_1_SEARCH_GAME(message,
+    case ThousandProtocol::SEARCH_GAME_1:
+      return ThousandProtocol::deserialize_1_SEARCH_GAME(message,
                               this->deserialized_SEARCH_GAME)
              && this->handle_1_SEARCH_GAME();
-    case ACKNOWLEDGE_1:
-      return Protocol::deserialize_1_ACKNOWLEDGE(message,
+    case ThousandProtocol::ACKNOWLEDGE_1:
+      return ThousandProtocol::deserialize_1_ACKNOWLEDGE(message,
                               this->deserialized_ACKNOWLEDGE)
              && this->handle_1_ACKNOWLEDGE();
-    case GAME_START_1:
-      return Protocol::deserialize_1_GAME_START(message)
+    case ThousandProtocol::GAME_START_1:
+      return ThousandProtocol::deserialize_1_GAME_START(message)
              && this->handle_1_GAME_START();
-    case GAME_BID_1:
-      return Protocol::deserialize_1_GAME_BID(message,
+    case ThousandProtocol::GAME_BID_1:
+      return ThousandProtocol::deserialize_1_GAME_BID(message,
                               this->deserialized_GAME_BID)
              && this->handle_1_GAME_BID();
     default:

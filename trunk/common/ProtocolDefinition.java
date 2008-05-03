@@ -76,7 +76,7 @@ public class ProtocolDefinition{
     private final String hppFileName;
     private final FileWriter cppWriter;
     private final int protocolVersion;
-    private final int serverUDPPort;
+    private final String protocolName;
 
     private final Vector<MessageDefinition> messageDefinitions;
     private final Vector<FlagSetDefinition> flagSetDefinitions;
@@ -84,15 +84,17 @@ public class ProtocolDefinition{
     private boolean addCardsDefinition;
 
     //ctor:
-    public ProtocolDefinition(final int protocolVersion,
-                              final int serverUDPPort,
+    public ProtocolDefinition(final String protocolName,
+                              final int protocolVersion,
                               final String hppFileName,
                               final String cppFileName,
                               final String javaFileName)
         throws Exception
     {
-        if(protocolVersion<1 || protocolVersion>255)
+        if(protocolVersion<1 || protocolVersion>126)
             throw new Exception("Protocol version error.");
+
+        this.protocolName = protocolName;
 
         this.protocolVersion = protocolVersion;
 
@@ -106,8 +108,6 @@ public class ProtocolDefinition{
 
         this.javaWriter
             = new FileWriter(javaFileName);
-
-        this.serverUDPPort = serverUDPPort;
 
         this.messageDefinitions
             = new Vector<MessageDefinition>();
@@ -204,16 +204,18 @@ public class ProtocolDefinition{
                  +"#include <string>\n"
                  +"#include <sstream>\n"
                  +"#include <cctype>\n"
+                 +"#include \"Message.hpp\"\n"
                  +"\n"
                  +"\n");
 
-        hppWriteMessageEnum();
-
-        hppWriteMessageClass();
+        //Class Message is now in fixed file, not generated one.
+        //hppWriteMessageClass();
         
-        hppWrite("class Protocol\n");
+        hppWrite("class "+protocolName+"Protocol\n");
         hppWrite("{\n");
         hppWrite("public:\n");
+        hppWrite("\n");
+        hppWriteMessageTypes();
         hppWrite("\n");
 
         cppWrite(license);
@@ -224,7 +226,7 @@ public class ProtocolDefinition{
         javaWrite("\n");
         javaWrite("import java.util.*;\n");
         javaWrite("\n");
-        javaWrite("public class Protocol{\n");
+        javaWrite("public class "+protocolName+"Protocol{\n");
         javaWrite("\n");
         javaWriteMessageEnum();
         javaWrite("\n");
@@ -378,37 +380,6 @@ public class ProtocolDefinition{
                  +"  \n"
                  +"\n");
         hppWriteGetMessageType();
-        hppWriteGetMessageTypeAsString();
-        hppWrite("  //Represent this message as string\n"
-                 +"  std::string toString()\n"
-                 +"    const\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    std::ostringstream output;\n"
-                 +"\n"
-                 +"    output\n"
-                 +"      <<\"MessageType: \"<<this->getMessageTypeAsString()\n"
-                 +"      <<\", number of bytes: \"<<this->size()<<std::endl;\n"
-                 +"\n"
-                 +"    const char*const hex = \"0123456789abcdef\";\n"
-                 +"\n"
-                 +"    int_fast16_t i=0;\n"
-                 +"    for(std::vector<char>::const_iterator it=this->begin();\n"
-                 +"        it!=this->end() && i<1024;\n"
-                 +"        it++)\n"
-                 +"      {\n"
-                 +"        output\n"
-                 +"          <<hex[((*it)>>4) & 0x0F]\n"
-                 +"          <<hex[(*it) & 0x0F]\n"
-                 +"          <<\" (\"<<(std::isprint(*it)?(*it):'_')<<\") \";\n"
-                 +"        i++;\n"
-                 +"        if(i%10==0)\n"
-                 +"          output<<std::endl;\n"
-                 +"      }\n"
-                 +"\n"
-                 +"    return output.str();\n"
-                 +"  }\n");
-
         hppWrite("};\n"
                  +"\n\n\n");
     }
@@ -416,21 +387,6 @@ public class ProtocolDefinition{
     private void writeFooter() throws IOException{
         hppWrite("};\n");
         javaWrite("}\n");
-    }
-
-    private void writeServerUDPPort() throws IOException{
-        hppWrite("  //Known UDP port number of the server:\n");
-        hppWrite("  static uint_fast16_t getServerUDPPort_"
-                 +this.protocolVersion+"()\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    return "+this.serverUDPPort+";\n"
-                 +"  }\n\n");
-        javaWrite("  //Known UDP port number of the server:\n");
-        javaWrite("  static int getServerUDPPort_"
-                  +this.protocolVersion+"(){\n"
-                  +"    return "+this.serverUDPPort+";\n"
-                  +"  }\n\n");
     }
 
     private void writeFlagSetDefinition(final FlagSetDefinition flagSetDefinition)
@@ -463,44 +419,77 @@ public class ProtocolDefinition{
         javaWrite("\n\n");
     }
 
-    private void hppWriteMessageEnum()
+    private void hppWriteMessageTypes()
         throws IOException
     {
 
         this.hppWrite("  //Can be used for switching to detect\n"
-                      +"  //which deserializer should be used.\n"
-                      +"  enum MessageType");
+                      +"  //which deserializer should be used.\n");
 
-        this.hppWrite("\n  {");
-        this.hppWrite("\n    UNKNOWN_MESSAGE_"+this.protocolVersion
-                      +" = 0");
+        this.hppWrite("    static const int8_t UNKNOWN_MESSAGE_"+this.protocolVersion
+                      +" = 0;\n");
         
         for(int i=0;i<this.messageDefinitions.size();i++){
             
             final MessageDefinition messageDefinition
                 = messageDefinitions.get(i);
             
-            hppWrite(",\n    //"+messageDefinition.comment+"\n"
-                     +"    "+messageDefinition.name
+            hppWrite("    //"+messageDefinition.comment+"\n"
+                     +"    static const int8_t "+messageDefinition.name
                      +"_"+this.protocolVersion);
-            hppWrite(" = "+messageDefinition.identifier);
+            hppWrite(" = "+messageDefinition.identifier+";\n");
         }
 
-        this.hppWrite("\n  };\n\n");
+        this.hppWrite("\n\n");
     }
 
-    private void hppWriteGetMessageTypeAsString()
+    private void hppWriteMessageToString()
+        throws IOException
+    {
+        hppWrite("  //Represent message as string\n"
+                 +"  static std::string messageToString(const Message& message)\n"
+                 +"    throw()\n"
+                 +"  {\n"
+                 +"    std::ostringstream output;\n"
+                 +"\n"
+                 +"    output\n"
+                 +"      <<\"Message type: \"<<"
+                 +"messageTypeToString(message.getMessageType())"
+                 +"      <<\", number of bytes: \"<<message.size()<<std::endl;\n"
+                 +"\n"
+                 +"    const char*const hex = \"0123456789abcdef\";\n"
+                 +"\n"
+                 +"    int_fast16_t i=0;\n"
+                 +"    for(std::vector<char>::const_iterator it=message.begin();\n"
+                 +"        it!=message.end() && i<1024;\n"
+                 +"        it++)\n"
+                 +"      {\n"
+                 +"        output\n"
+                 +"          <<hex[((*it)>>4) & 0x0F]\n"
+                 +"          <<hex[(*it) & 0x0F]\n"
+                 +"          <<\" (\"<<(std::isprint(*it)?(*it):'_')<<\") \";\n"
+                 +"        i++;\n"
+                 +"        if(i%10==0)\n"
+                 +"          output<<std::endl;\n"
+                 +"      }\n"
+                 +"\n"
+                 +"    return output.str();\n"
+                 +"  }\n");
+
+    }
+
+    private void hppWriteMessageTypeToString()
         throws IOException
     {
         //Enum to string conversion:
 
-        this.hppWrite("  //Can be used for printing MessageType\n"
+        this.hppWrite("  //Can be used for printing message type\n"
                       +"  //in human-readable form.\n"
-                      +"  std::string getMessageTypeAsString() const throw()");
+                      +"  static std::string messageTypeToString(int8_t messageType)"
+                      +" throw()");
 
-        this.hppWrite("\n  {"
-                      +"\n    const MessageType mp=this->getMessageType();");
-        this.hppWrite("\n    switch(mp)");
+        this.hppWrite("\n  {");
+        this.hppWrite("\n    switch(messageType)");
         this.hppWrite("\n    {");
         this.hppWrite("\n      case UNKNOWN_MESSAGE_"+this.protocolVersion
                       +": return \"UNKNOWN_MESSAGE\";");
@@ -551,32 +540,23 @@ public class ProtocolDefinition{
                       +"  //type lookup, so you don't need to try\n"
                       +"  //deserializing using all deserializers.\n"
                       +"  //Remember that deserialization can still\n"
-                      +"  //always fail, even if this method returns\n"
+                      +"  //fail, even if this method returns\n"
                       +"  //some known type. It doesn't read the whole\n"
                       +"  //message, just the part where message type\n"
-                      +"  //is present.\n");
+                      +"  //is present. If the message type cannot be\n"
+                      +"  //determined, 0 is returned. This could happen\n"
+                      +"  //e.g. if message is empty.\n");
 
-        final String highestMessageName
-            = this.messageDefinitions.lastElement().name;
+        //final String highestMessageName
+        //    = this.messageDefinitions.lastElement().name;
 
-        this.hppWrite("  MessageType getMessageType() const throw()\n"
+        this.hppWrite("  int8_t getMessageType() const throw()\n"
                       +"  {\n"
                       +"    const Message& message = *this;\n"
                       +"    if(message.size()<2)\n"
-                      +"      return MessageType("
-                      +"UNKNOWN_MESSAGE_"+this.protocolVersion+");\n"
+                      +"      return 0;\n"
                       +"    \n"
-                      +"    const char messageType\n"
-                      +"     = message[1];\n"
-                      +"    \n"
-                      +"    if(messageType<=MessageType("
-                      +"UNKNOWN_MESSAGE_"+this.protocolVersion+")\n"
-                      +"       || messageType>"+highestMessageName
-                      +"_"+this.protocolVersion+")\n"
-                      +"      return MessageType("
-                      +"UNKNOWN_MESSAGE_"+this.protocolVersion+");\n"
-                      +"    \n"
-                      +"    return static_cast<MessageType>(messageType);\n"
+                      +"    return message[1];\n"
                       +"  }\n\n");
     }
     
@@ -917,9 +897,9 @@ public class ProtocolDefinition{
                   +"  final static byte COLOR_MASK = (byte) 0xF0;\n\n");
     }
 
-    private void hppWriteServer() throws Exception{
+    private void hppWriteHandler() throws Exception{
         hppWrite("\n"
-                 +"class Server\n"
+                 +"class "+protocolName+"Handler\n"
                  +"{\n"
                  +"  protected:\n"
                  +"  //Objects for temporary deserialization (to avoid creating\n"
@@ -928,7 +908,7 @@ public class ProtocolDefinition{
         for(MessageDefinition md : this.messageDefinitions){
             if(md.sentBy.equals(Sender.CLIENT)
                &&md.pieceDefinitions.length>0)
-                hppWrite("  Protocol::Deserialized"
+                hppWrite("  "+protocolName+"Protocol::Deserialized"
                          +"_"+protocolVersion+"_"+md.name
                          +" deserialized_"+md.name+";\n");
         }
@@ -938,15 +918,16 @@ public class ProtocolDefinition{
                  +"\n");
 
         cppWrite("\n"
-                 +"  bool Server::handle(const Message&message) throw()\n"
+                 +"  bool "+protocolName+"Handler::handle(const Message&message) throw()\n"
                  +"  {\n"
                  +"    switch(message.getMessageType())\n"
                  +"    {\n");
 
         for(MessageDefinition md : this.messageDefinitions){
             if(md.sentBy.equals(Sender.CLIENT)){
-                cppWrite("    case "+md.name+"_"+protocolVersion+":\n"
-                         +"      return Protocol::deserialize_"
+                cppWrite("    case "+protocolName+"Protocol::"
+                         +md.name+"_"+protocolVersion+":\n"
+                         +"      return "+protocolName+"Protocol::deserialize_"
                          +protocolVersion+"_"+md.name+"(message");
                 if(md.pieceDefinitions.length>0)
                     cppWrite(",\n"
@@ -971,7 +952,7 @@ public class ProtocolDefinition{
                          +"_"+md.name+"() throw() =0;\n");
         }
 
-        hppWrite("  virtual ~Server() throw() {}");
+        hppWrite("  virtual ~"+protocolName+"Handler() throw() {}");
 
         hppWrite("};\n");
 
@@ -981,8 +962,6 @@ public class ProtocolDefinition{
         throws Exception
     {
         this.writeHeader();
-
-        this.writeServerUDPPort();
 
         if(this.addCardsDefinition){
             this.writeCards();
@@ -994,6 +973,8 @@ public class ProtocolDefinition{
         }
 
         this.javaWriteLookupMessageType();
+        this.hppWriteMessageTypeToString();
+        this.hppWriteMessageToString();
 
         for(MessageDefinition messageDefinition : this.messageDefinitions){
             this.writeMessageDefinition(messageDefinition);
@@ -1001,7 +982,7 @@ public class ProtocolDefinition{
 
         this.writeFooter();
 
-        this.hppWriteServer();
+        this.hppWriteHandler();
 
 
         this.javaWriter.flush();

@@ -34,4 +34,30 @@
 */
 
 
-public enum Sender{ CLIENT, SERVER }
+public class TicTacToeProtocolDefinition{
+
+    public static void main(String[] args) throws Exception{
+
+        final int protocolVersion = 1;
+        
+        final ProtocolDefinition protocol
+            = new ProtocolDefinition("TicTacToe",
+                                     protocolVersion,
+                                     "../server/TicTacToeProtocol.hpp",
+                                     "../server/TicTacToeProtocol.cpp",
+                                     "../client/TicTacToeProtocol.java");
+
+        protocol.defineMessage
+            ("MAKE_MOVE",
+             "Simple TicTacToe move.",
+             Sender.CLIENT,
+             new PieceDefinition(PieceType.INT8,
+                                 "row",
+                                 "In which row player puts her X or O."),
+             new PieceDefinition(PieceType.INT8,
+                                 "column",
+                                 "In which row player puts her X or O."));
+                
+        protocol.write();
+    }
+}

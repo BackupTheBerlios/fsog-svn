@@ -1,7 +1,3 @@
-/* -*- Mode: java; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- * vim:expandtab:shiftwidth=4:tabstop=4: */
-
-
 /*
     FSOG - Free Software Online Games
     Copyright (C) 2007 Bartlomiej Antoni Szymczak
@@ -34,4 +30,17 @@
 */
 
 
-public enum Sender{ CLIENT, SERVER }
+#include "../server/TicTacToeProtocol.hpp"
+
+  bool TicTacToeHandler::handle(const Message&message) throw()
+  {
+    switch(message.getMessageType())
+    {
+    case TicTacToeProtocol::MAKE_MOVE_1:
+      return TicTacToeProtocol::deserialize_1_MAKE_MOVE(message,
+                              this->deserialized_MAKE_MOVE)
+             && this->handle_1_MAKE_MOVE();
+    default:
+      return false;
+    }
+  }

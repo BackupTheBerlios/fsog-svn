@@ -39,11 +39,10 @@ public class ThousandProtocolDefinition{
     public static void main(String[] args) throws Exception{
 
         final int protocolVersion = 1;
-        final int serverUDPPort = 10137;
         
         final ProtocolDefinition protocol
-            = new ProtocolDefinition(protocolVersion,
-                                     serverUDPPort,
+            = new ProtocolDefinition("Thousand",
+                                     protocolVersion,
                                      "../server/Protocol.hpp",
                                      "../server/Protocol.cpp",
                                      "../client/Protocol.java");

@@ -163,7 +163,7 @@ bool UDPSocket::receiveMessage(Message&message) throw()
       if(CommandLine::printNetworkPackets())
         std::cout
           <<"Received: "<<std::endl
-          <<message.toString()<<std::endl
+          <<ThousandProtocol::messageToString(message)<<std::endl
           <<"From: "<<this->clientAddress.toString()<<std::endl;
       return true;
     }
@@ -179,7 +179,7 @@ void UDPSocket::sendMessage(const Message&message,
 {
   if(CommandLine::printNetworkPackets())
     std::cout<<"Sending message:"<<std::endl
-             <<message.toString()<<std::endl
+             <<ThousandProtocol::messageToString(message)<<std::endl
              <<"to:"<<address.toString()<<std::endl;
   sendto(this->socketFileDescriptor,
          message.data(),

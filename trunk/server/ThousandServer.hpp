@@ -46,7 +46,7 @@
 #include "SearcherTripple.hpp"
 #include "Thousand.hpp"
 
-class ThousandServer : public Server
+class ThousandServer : public ThousandHandler
 {
 private:
   //Socket stuff.
@@ -144,22 +144,22 @@ private:
     throw();
 
   //\todo Don't use protocol objects here.
-  Protocol::Deserialized_1_SEARCH_GAME intersected_SEARCH_GAME;
+  ThousandProtocol::Deserialized_1_SEARCH_GAME intersected_SEARCH_GAME;
 
-  bool intersectCryteria(const Protocol::Deserialized_1_SEARCH_GAME& cryteria)
+  bool intersectCryteria(const ThousandProtocol::Deserialized_1_SEARCH_GAME& cryteria)
     throw();
 
   bool searchAndStartGame() throw();
 
-  void startGame(const Protocol::Deserialized_1_SEARCH_GAME& searchCryteria,
+  void startGame(const ThousandProtocol::Deserialized_1_SEARCH_GAME& searchCryteria,
                  const std::list<Searcher>::iterator single)
     throw();
 
-  void startGame(const Protocol::Deserialized_1_SEARCH_GAME& searchCryteria,
+  void startGame(const ThousandProtocol::Deserialized_1_SEARCH_GAME& searchCryteria,
                  const std::list<SearcherPair>::iterator pair)
     throw();
 
-  void startGame(const Protocol::Deserialized_1_SEARCH_GAME& searchCryteria,
+  void startGame(const ThousandProtocol::Deserialized_1_SEARCH_GAME& searchCryteria,
                  const std::list<SearcherTripple>::iterator tripple)
     throw();
 

@@ -49,7 +49,7 @@ class SearcherPair
 public:
   SearcherPair(const Searcher&searcher,
                const std::list<User>::iterator newUser,
-               const Protocol::Deserialized_1_SEARCH_GAME&cryteria)
+               const ThousandProtocol::Deserialized_1_SEARCH_GAME&cryteria)
     :user0(searcher.user),
      user1(newUser),
      cryteria(cryteria)
@@ -57,5 +57,5 @@ public:
 
   const std::list<User>::iterator user0;
   const std::list<User>::iterator user1;
-  const Protocol::Deserialized_1_SEARCH_GAME cryteria;
+  const ThousandProtocol::Deserialized_1_SEARCH_GAME cryteria;
 };

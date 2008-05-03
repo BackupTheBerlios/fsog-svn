@@ -34,4 +34,12 @@
 */
 
 
+#include <algorithm>
 #include "Game.hpp"
+
+void Game::shuffleNicks() throw()
+{
+  std::random_shuffle(this->nicks.begin(),
+                      this->nicks.end());
+  this->currentPlayerNumber=0;
+}

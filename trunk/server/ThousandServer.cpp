@@ -38,7 +38,6 @@
 
 #include "Time.hpp"
 #include "ThousandServer.hpp"
-#include "CommandLine.hpp"
 #include "BinaryEqual.hpp"
 
 ThousandServer::ThousandServer(const unsigned short port) throw()
@@ -105,7 +104,7 @@ void ThousandServer::readAndInterpretMessage() throw()
     {
       std::cerr
         <<"Couldn't handle message."<<std::endl
-        <<this->inputMessage.toString()<<std::endl;
+        <<ThousandProtocol::messageToString(inputMessage)<<std::endl;
       return;
     }
 }
@@ -143,7 +142,7 @@ bool ThousandServer::handle_1_LOG_IN() throw()
   this->user->myDeliveryTimeout = this->deliveryTimeouts.end();
   this->user->lastActionTime=std::time(0);
   
-  Protocol::serialize_1_LOG_IN_CORRECT(this->outputMessage);
+  ThousandProtocol::serialize_1_LOG_IN_CORRECT(this->outputMessage);
   
   //If undelivered, client has to ask again.
   this->reply(this->user);
@@ -152,7 +151,7 @@ bool ThousandServer::handle_1_LOG_IN() throw()
 
 bool ThousandServer::handle_1_GET_STATISTICS() throw()
 {
-  Protocol::serialize_1_RETURN_STATISTICS(this->users.size(),
+  ThousandProtocol::serialize_1_RETURN_STATISTICS(this->users.size(),
                                           this->games.size(),
                                           this->searchers.size(),
                                           this->outputMessage);
@@ -273,7 +272,7 @@ void ThousandServer::checkDeliveryTimeouts() throw()
         {
           std::cerr
             <<"ERROR! Delivery timeout, but deliveryQueue empty! Last inputMessage:"<<std::endl
-            <<this->inputMessage.toString()<<std::endl;
+            <<ThousandProtocol::messageToString(this->inputMessage)<<std::endl;
         }
       else
         {
@@ -333,16 +332,6 @@ void ThousandServer::killUser() throw()
   
   this->users.erase(this->user);
   this->user=this->users.end();
-}
-
-int main(const int argc,
-         char** argv)
-  throw()
-{
-  CommandLine::parse(argc,argv);
-  
-  ThousandServer gameServer(Protocol::getServerUDPPort_1());
-  gameServer.mainLoop();
 }
 
 void ThousandServer::removeFromSearchers(const std::list<User>::iterator&userToBeRemoved)
@@ -408,7 +397,7 @@ void ThousandServer::removeFromSearchers(const std::list<User>::iterator&userToB
 bool ThousandServer::searchAndStartGame() throw()
 {
   //Search tripples
-  if(this->deserialized_SEARCH_GAME.searchFlags&Protocol::FOUR_PLAYERS)
+  if(this->deserialized_SEARCH_GAME.searchFlags&ThousandProtocol::FOUR_PLAYERS)
     {
       for(std::list<SearcherTripple>::iterator trippleIterator
             = this->searcherTripples.begin();
@@ -430,7 +419,7 @@ bool ThousandServer::searchAndStartGame() throw()
 
   //Couldn't find 3 matching opponents.
   //Maybe we can find 2 matching opponents:
-  if(this->deserialized_SEARCH_GAME.searchFlags&Protocol::THREE_PLAYERS)
+  if(this->deserialized_SEARCH_GAME.searchFlags&ThousandProtocol::THREE_PLAYERS)
     {
       for(std::list<SearcherPair>::iterator pairIterator
             = this->searcherPairs.begin();
@@ -452,7 +441,7 @@ bool ThousandServer::searchAndStartGame() throw()
   
   //Couldn't find 2 matching opponents.
   //Maybe we can find 1 matching opponent:
-  if(this->deserialized_SEARCH_GAME.searchFlags&Protocol::TWO_PLAYERS)
+  if(this->deserialized_SEARCH_GAME.searchFlags&ThousandProtocol::TWO_PLAYERS)
     {
       for(std::list<Searcher>::iterator searcherIterator
             = this->searchers.begin();
@@ -476,7 +465,7 @@ bool ThousandServer::searchAndStartGame() throw()
   return false;  
 }
 
-void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searchCryteria,
+void ThousandServer::startGame(const ThousandProtocol::Deserialized_1_SEARCH_GAME& searchCryteria,
                                const std::list<SearcherTripple>::iterator tripple)
   throw()
 {
@@ -509,7 +498,7 @@ void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searc
   this->removeFromSearchers(this->game->players[3]);
 }
 
-void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searchCryteria,
+void ThousandServer::startGame(const ThousandProtocol::Deserialized_1_SEARCH_GAME& searchCryteria,
                                const std::list<SearcherPair>::iterator pair)
   throw()
 {
@@ -539,7 +528,7 @@ void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searc
   this->removeFromSearchers(this->game->players[2]);
 }
 
-void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searchCryteria,
+void ThousandServer::startGame(const ThousandProtocol::Deserialized_1_SEARCH_GAME& searchCryteria,
                                const std::list<Searcher>::iterator single)
   throw()
 {
@@ -569,7 +558,7 @@ void ThousandServer::startGame(const Protocol::Deserialized_1_SEARCH_GAME& searc
 void ThousandServer::registerInSearchers() throw()
 {
   //Create tripple if interested in playing in 4:
-  if(this->deserialized_SEARCH_GAME.searchFlags&Protocol::FOUR_PLAYERS)
+  if(this->deserialized_SEARCH_GAME.searchFlags&ThousandProtocol::FOUR_PLAYERS)
     {
       for(std::list<SearcherPair>::const_iterator pairIterator
             = this->searcherPairs.begin();
@@ -587,7 +576,7 @@ void ThousandServer::registerInSearchers() throw()
   
   //Create pair if interested in playing in 3 or 4:
   if(this->deserialized_SEARCH_GAME.searchFlags
-     &(Protocol::THREE_PLAYERS|Protocol::FOUR_PLAYERS))
+     &(ThousandProtocol::THREE_PLAYERS|ThousandProtocol::FOUR_PLAYERS))
     {
       for(std::list<Searcher>::const_iterator searcherIterator
             = this->searchers.begin();
@@ -612,7 +601,7 @@ void ThousandServer::registerInSearchers() throw()
                 this->intersected_SEARCH_GAME));
 }
 
-bool ThousandServer::intersectCryteria(const Protocol::Deserialized_1_SEARCH_GAME& cryteria)
+bool ThousandServer::intersectCryteria(const ThousandProtocol::Deserialized_1_SEARCH_GAME& cryteria)
   throw()
 {
   //TODO ranking minimum.
@@ -624,43 +613,43 @@ bool ThousandServer::intersectCryteria(const Protocol::Deserialized_1_SEARCH_GAM
     & cryteria.searchFlags;
   
   //Don't agree on number of players:
-  if(intersection & (Protocol::TWO_PLAYERS
-                     |Protocol::THREE_PLAYERS
-                     |Protocol::FOUR_PLAYERS) == 0)
+  if(intersection & (ThousandProtocol::TWO_PLAYERS
+                     |ThousandProtocol::THREE_PLAYERS
+                     |ThousandProtocol::FOUR_PLAYERS) == 0)
     return false;
   
   //Don't agree on any bombs:
-  if(intersection & (Protocol::NO_BOMBS
-                     |Protocol::BOMBS
-                     |Protocol::UNLIMITED_BOMBS) == 0)
+  if(intersection & (ThousandProtocol::NO_BOMBS
+                     |ThousandProtocol::BOMBS
+                     |ThousandProtocol::UNLIMITED_BOMBS) == 0)
     return false;
 
   //Don't agree on bid increment:
-  if(intersection & (Protocol::BID_INCREMENT_10
-                     |Protocol::BID_INCREMENT_ANY) == 0)
+  if(intersection & (ThousandProtocol::BID_INCREMENT_10
+                     |ThousandProtocol::BID_INCREMENT_ANY) == 0)
     return false;
   
   //Don't agree on show must:
-  if(intersection & (Protocol::SHOW_MUST_100
-                     |Protocol::SHOW_MUST_110) == 0)
+  if(intersection & (ThousandProtocol::SHOW_MUST_100
+                     |ThousandProtocol::SHOW_MUST_110) == 0)
     return false;
   
   //Don't agree on publicity:
-  if(intersection & (Protocol::PUBLIC_GAME
-                     |Protocol::PRIVATE_GAME) == 0)
+  if(intersection & (ThousandProtocol::PUBLIC_GAME
+                     |ThousandProtocol::PRIVATE_GAME) == 0)
     return false;
   
   //Don't agree on ranking/sparring:
-  if(intersection & (Protocol::RANKING_GAME
-                     |Protocol::SPARRING_GAME) == 0)
+  if(intersection & (ThousandProtocol::RANKING_GAME
+                     |ThousandProtocol::SPARRING_GAME) == 0)
     return false;
   
   //Don't agree on time:
-  if(intersection & (Protocol::TIME_7
-                     |Protocol::TIME_10
-                     |Protocol::TIME_15
-                     |Protocol::TIME_20
-                     |Protocol::TIME_30) == 0)
+  if(intersection & (ThousandProtocol::TIME_7
+                     |ThousandProtocol::TIME_10
+                     |ThousandProtocol::TIME_15
+                     |ThousandProtocol::TIME_20
+                     |ThousandProtocol::TIME_30) == 0)
     return false;
   
   //TODO: ranking.
@@ -675,7 +664,7 @@ void ThousandServer::send_SEARCH_GAME_response(const bool toAll) throw()
       switch(game->numberOfPlayers)
         {
         case 4:
-          Protocol::serialize_1_PROPOSED_GAME
+          ThousandProtocol::serialize_1_PROPOSED_GAME
             (game->players[0]->myNickToUserIterator->first,
              game->players[1]->myNickToUserIterator->first,
              game->players[2]->myNickToUserIterator->first,
@@ -685,7 +674,7 @@ void ThousandServer::send_SEARCH_GAME_response(const bool toAll) throw()
              this->outputMessage);
           break;
         case 3:
-          Protocol::serialize_1_PROPOSED_GAME
+          ThousandProtocol::serialize_1_PROPOSED_GAME
             (game->players[0]->myNickToUserIterator->first,
              game->players[1]->myNickToUserIterator->first,
              game->players[2]->myNickToUserIterator->first,
@@ -695,7 +684,7 @@ void ThousandServer::send_SEARCH_GAME_response(const bool toAll) throw()
              this->outputMessage);
           break;
         case 2:
-          Protocol::serialize_1_PROPOSED_GAME
+          ThousandProtocol::serialize_1_PROPOSED_GAME
             (game->players[0]->myNickToUserIterator->first,
              game->players[1]->myNickToUserIterator->first,
              "",
@@ -717,7 +706,7 @@ void ThousandServer::send_SEARCH_GAME_response(const bool toAll) throw()
     }
   else
     {
-      Protocol::serialize_1_AWAIT_GAME(this->outputMessage);
+      ThousandProtocol::serialize_1_AWAIT_GAME(this->outputMessage);
       this->reply(this->user);
     }
 }
@@ -800,7 +789,7 @@ void ThousandServer::dealCards() throw()
   //Send cards to all players:
   for(char i=0;i<this->game->numberOfPlayers;i++)
     {
-      Protocol::serialize_1_GAME_DEAL_7_CARDS
+      ThousandProtocol::serialize_1_GAME_DEAL_7_CARDS
         (this->game->players[i]->cards[0],
          this->game->players[i]->cards[1],
          this->game->players[i]->cards[2],
