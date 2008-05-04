@@ -51,7 +51,8 @@ class TicTacToe : public AlternatingTurnGame
 private:
   //Our 3x3 board:
   std::vector<std::vector<Field> > board;
-  uint8_t covered;
+  //Used for counting how many fields are still empty:
+  uint8_t empty;
 
   //Temporary object for deserializing move message:
   TicTacToeProtocol::Deserialized_1_MAKE_MOVE deserialized_1_MAKE_MOVE;
@@ -71,6 +72,6 @@ public:
 
   MoveResult move(const Message& move,
                   std::vector<Message>& moveMessages,
-                  std::list< std::list<std::string> >& endResult) throw();
+                  std::list< std::set<uint16_t> >& endResult) throw();
 
 };

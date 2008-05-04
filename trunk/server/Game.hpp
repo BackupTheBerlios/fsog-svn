@@ -39,6 +39,7 @@
 #include <list>
 #include <string>
 #include <vector>
+#include <set>
 #include "Message.hpp" //For Message class
 
 /** Some thread will create an object of a class deriving from
@@ -52,15 +53,20 @@ public:
   
   typedef int32_t Identifier;
 
-  uint8_t numberOfPlayers;
+  //TODO: Does the game need to know the nicks? Probably no...
   std::vector<std::string> nicks;
-  //TODO: who is changing currentPlayerNumber?
-  uint8_t currentPlayerNumber;
+  uint16_t currentPlayerNumber;
 
   /** Can be called from derived classes to shuffle order of
       "nicks". Also sets "currentPlayerNumber" to 0.
    */
   void shuffleNicks() throw();
+
+  /** Can be called from derived classes to change
+      "currentPlayerNumber". It simply does "currentPlayerNumber =
+      (currentPlayerNumber + 1) % nicks.size()".
+   */
+  void nextPlayer() throw();
 
   Game() throw() {};
   virtual ~Game() throw() {};
@@ -143,18 +149,22 @@ class AlternatingTurnGame : public Game
       second place, gathering 72 points each, and Spiderman was last
       with 64 points. In such a case, "move(...)" should set
       "endResult" to look like:
-      [[Batman],[Superman,Flash],[Spiderman]]. Of course, there is
-      second equivalent "endResult":
-      [[Batman],[Flash,Superman],[Spiderman]].
+      [{Batman},{Superman,Flash},{Spiderman}].
 
       "endResult" is empty before "move(...)" is called. "move(...)"
       can only modify "endResult" if it returns "END". If "move(...)"
       returns anything other than "END", "endResult" should be left
       empty.
+
+      "move(...)" has to take care of changing "currentPlayerNumber"
+      if it returns "CONTINUE". After "move(...)" returns "CONTINUE",
+      server will expect a move from
+      "nicks[currentPlayerNumber]". "currentPlayerNumber" has to
+      remain in the interval <0,nicks.size()-1>.
   */
   virtual MoveResult move(const Message& move,
                           std::vector<Message>& moveMessages,
-                          std::list< std::list<std::string> >& endResult)
+                          std::list< std::set<int16_t> >& endResult)
     throw() =0;
 
 };

@@ -34,18 +34,20 @@
 */
 
 #include "TicTacToe.hpp"
+#include <set>
 
 bool TicTacToe::initialize(std::vector<Message>& initialMessages) throw()
 {
-  if(this->numberOfPlayers!=2 || this->nicks.size()!=2)
+  if(this->nicks.size()!=2)
     return false;
   //Randomize order of players:
   this->shuffleNicks();
   
   //Initialize board to be 3x3 with all empty fields:
+  //TODO: not efficient. Have static empty board.
   this->board
     = std::vector<std::vector<Field> >(3,std::vector<Field>(3,EMPTY));
-  this->covered = 0;
+  this->empty = 9;
   
   //Ready for playing! After this function returns server will send
   //initial information to clients and will await move from the
@@ -55,7 +57,7 @@ bool TicTacToe::initialize(std::vector<Message>& initialMessages) throw()
 
 Game::MoveResult TicTacToe::move(const Message& move,
                                  std::vector<Message>& moveMessages,
-                                 std::list< std::list<std::string> >& endResult)
+                                 std::list< std::set<uint16_t> >& endResult)
   throw()
 {
   //First we deserialize the move. If deserialization fails, current
@@ -75,8 +77,7 @@ Game::MoveResult TicTacToe::move(const Message& move,
   const Field c = currentPlayersField();
   
   board[row][column] = c;
-    
-  covered++;
+  empty--;
   
   //Let's see whether we have 3--in--a--row after this move:
   if( (board[row][0]==c && board[row][1]==c && board[row][2]==c)
@@ -86,19 +87,23 @@ Game::MoveResult TicTacToe::move(const Message& move,
     {
       //Yes. The current player just won. We need to set "endResult"
       //correctly and return "END":
-      endResult.push_back(std::list<std::string>(1,nicks[currentPlayerNumber]));
-      endResult.push_back(std::list<std::string>(1,nicks[1-currentPlayerNumber]));
+      endResult.push_back(std::set<uint16_t>());
+      endResult.rbegin()->insert(currentPlayerNumber);
+      endResult.push_back(std::set<uint16_t>());
+      endResult.rbegin()->insert(1-currentPlayerNumber);
       return END;
     }
   
   //If all fields are filled, it's draw.
-  if(covered==9)
+  if(empty==0)
     {
-      endResult.push_back(std::list<std::string>());
-      (*(endResult.rbegin())).push_back(nicks[0]);
-      (*(endResult.rbegin())).push_back(nicks[1]);
+      endResult.push_back(std::set<uint16_t>());
+      endResult.rbegin()->insert(0);
+      endResult.rbegin()->insert(1);
       return END;
     }
-  
+
+  //Game shall continue.
+  this->Game::nextPlayer();
   return CONTINUE;
 }

@@ -43,3 +43,10 @@ void Game::shuffleNicks() throw()
                       this->nicks.end());
   this->currentPlayerNumber=0;
 }
+
+void Game::nextPlayer() throw()
+{
+  currentPlayerNumber++;
+  if(currentPlayerNumber>=nicks.size())
+    currentPlayerNumber=0;
+}
