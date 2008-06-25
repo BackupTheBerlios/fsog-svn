@@ -48,6 +48,16 @@ public class TicTacToeProtocolDefinition{
                                      "../client/TicTacToeProtocol.java");
 
         protocol.defineMessage
+            ("YOU_ARE_FIRST",
+             "Server says that client is the first to move.",
+             Sender.SERVER);
+                
+        protocol.defineMessage
+            ("YOU_ARE_SECOND",
+             "Server says that client is the second to move.",
+             Sender.SERVER);
+
+        protocol.defineMessage
             ("MAKE_MOVE",
              "Simple TicTacToe move.",
              Sender.CLIENT,
@@ -56,7 +66,18 @@ public class TicTacToeProtocolDefinition{
                                  "In which row player puts her X or O."),
              new PieceDefinition(PieceType.INT8,
                                  "column",
-                                 "In which row player puts her X or O."));
+                                 "In which column player puts her X or O."));
+                
+        protocol.defineMessage
+            ("MOVE_MADE",
+             "Simple TicTacToe move. No need to say who made this move.",
+             Sender.CLIENT,
+             new PieceDefinition(PieceType.INT8,
+                                 "row",
+                                 "In which row player puts her X or O."),
+             new PieceDefinition(PieceType.INT8,
+                                 "column",
+                                 "In which column player puts her X or O."));
                 
         protocol.write();
     }

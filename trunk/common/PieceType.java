@@ -106,6 +106,20 @@ public abstract class PieceType{
                 }
             };
     
+    public static PieceType INT64
+        = new PieceType(){
+                public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "int64_t";}
+                public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "long";}
+                public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const int64_t";}
+                public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final long";}
+                public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
+                    return "append8Bytes";
+                }
+                public String getReader(final List<FlagSetDefinition> flagSetDefinitions){
+                    return "read8Bytes";
+                }
+            };
+    
     public static PieceType CSTRING
         = new PieceType(){
                 public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "std::string";}
@@ -120,6 +134,20 @@ public abstract class PieceType{
                 }
             };
     
+    public static PieceType BINARY
+        = new PieceType(){
+                public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "std::vector<char>";}
+                public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "java.util.Vector<Byte>";}
+                public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const std::vector<char>&";}
+                public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final java.util.Vector<Byte>";}
+                public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
+                    return "appendBinary";
+                }
+                public String getReader(final List<FlagSetDefinition> flagSetDefinitions){
+                    return "readBinary";
+                }
+            };
+
     //For representing enum sets:
     private static class FlagSetPieceType extends PieceType{
 

@@ -204,6 +204,8 @@ public class ProtocolDefinition{
                  +"#include <string>\n"
                  +"#include <sstream>\n"
                  +"#include <cctype>\n"
+                 +"#include <map>\n"
+                 +"#include \"Time.hpp\"\n"
                  +"#include \"Message.hpp\"\n"
                  +"\n"
                  +"\n");
@@ -230,158 +232,6 @@ public class ProtocolDefinition{
         javaWrite("\n");
         javaWriteMessageEnum();
         javaWrite("\n");
-    }
-
-    private void hppWriteMessageClass() throws IOException{
-        hppWrite("class Message : public std::vector<char>\n"
-                 +"{\n"
-                 +"private:\n"
-                 +"  //Appends value to message\n"
-                 +"  template<class T>\n"
-                 +"  void appendInteger(const T value,\n"
-                 +"                     const unsigned numberOfBytes)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    for(unsigned i=0;i<numberOfBytes;i++)\n"
-                 +"      {\n"
-                 +"        this->push_back(static_cast<char>(0xFF & (value>>(8*(numberOfBytes-1-i)))));\n"
-                 +"      }\n"
-                 +"  }\n"
-                 +"\n"
-                 +"public:\n"
-                 +"  template<class T>\n"
-                 +"  void append1Byte(const T value)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    this->appendInteger(value,1);\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  template<class T>\n"
-                 +"  void append2Bytes(const T value)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    this->appendInteger(value,2);\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  template<class T>\n"
-                 +"  void append3Bytes(const T value)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    this->appendInteger(value,3);\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  template<class T>\n"
-                 +"  void append4Bytes(const T value)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    this->appendInteger(value,4);\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  void appendCString(const std::string& value)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    this->insert(this->end(),\n"
-                 +"                 value.begin(),\n"
-                 +"                 value.end());\n"
-                 +"    this->push_back(0);\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  //Read value from this message\n"
-                 +"  template<class T>\n"
-                 +"  static bool read1Byte(Message::const_iterator&it,\n"
-                 +"                        const Message::const_iterator&messageEnd,\n"
-                 +"                        T&result)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    if(it+1>messageEnd)\n"
-                 +"      return false;\n"
-                 +"\n"
-                 +"    result=(*it++);\n"
-                 +"    \n"
-                 +"    return true;\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  //Read value from this message\n"
-                 +"  template<class T>\n"
-                 +"  static bool read2Bytes(Message::const_iterator&it,\n"
-                 +"                         const Message::const_iterator&messageEnd,\n"
-                 +"                         T&result)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    if(it+2>messageEnd)\n"
-                 +"      return false;\n"
-                 +"\n"
-                 +"    result=0;\n"
-                 +"\n"
-                 +"    result|=(static_cast<short>(*it++))<<8;\n"
-                 +"    result|=(static_cast<short>(*it++));\n"
-                 +"    \n"
-                 +"    return true;\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  //Read value from this message\n"
-                 +"  template<class T>\n"
-                 +"  static bool read3Bytes(Message::const_iterator&it,\n"
-                 +"                         const Message::const_iterator&messageEnd,\n"
-                 +"                         T&result)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    if(it+3>messageEnd)\n"
-                 +"      return false;\n"
-                 +"    \n"
-                 +"    result=0;\n"
-                 +"\n"
-                 +"    result|=(static_cast<short>(*it++))<<16;\n"
-                 +"    result|=(static_cast<short>(*it++))<<8;\n"
-                 +"    result|=(static_cast<short>(*it++));\n"
-                 +"    \n"
-                 +"    return true;\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  //Read value from this message\n"
-                 +"  template<class T>\n"
-                 +"  static bool read4Bytes(Message::const_iterator&it,\n"
-                 +"                         const Message::const_iterator&messageEnd,\n"
-                 +"                         T&result)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    if(it+4>messageEnd)\n"
-                 +"      return false;\n"
-                 +"\n"
-                 +"    result=0;\n"
-                 +"\n"
-                 +"    result|=(static_cast<short>(*it++))<<24;\n"
-                 +"    result|=(static_cast<short>(*it++))<<16;\n"
-                 +"    result|=(static_cast<short>(*it++))<<8;\n"
-                 +"    result|=(static_cast<short>(*it++));\n"
-                 +"    \n"
-                 +"    return true;\n"
-                 +"  }\n"
-                 +"\n"
-                 +"  static bool readCString(Message::const_iterator&it,\n"
-                 +"                          const Message::const_iterator&messageEnd,\n"
-                 +"                          std::string&result)\n"
-                 +"  {\n"
-                 +"    std::ostringstream output;\n"
-                 +"    char c;\n"
-                 +"    while(true)\n"
-                 +"      {\n"
-                 +"        if(it==messageEnd)\n"
-                 +"          return false;\n"
-                 +"        c=(*it++);\n"
-                 +"        if(c==0)\n"
-                 +"          {\n"
-                 +"            result=output.str();\n"
-                 +"            return true;\n"
-                 +"          }\n"
-                 +"        output<<c;\n"
-                 +"      }\n"
-                 +"  }\n"
-                 +"  \n"
-                 +"\n");
-        hppWriteGetMessageType();
-        hppWrite("};\n"
-                 +"\n\n\n");
     }
 
     private void writeFooter() throws IOException{
@@ -443,21 +293,44 @@ public class ProtocolDefinition{
         this.hppWrite("\n\n");
     }
 
+    private void hppWriteGetMessageType()
+        throws IOException
+    {
+        hppWrite("  //This method can be used for rapid message\n"
+                 +"  //type lookup, so you don't need to try\n"
+                 +"  //deserializing using all deserializers.\n"
+                 +"  //Remember that deserialization can still\n"
+                 +"  //fail, even if this method returns\n"
+                 +"  //some known type. It doesn't read the whole\n"
+                 +"  //message, just the part where message type\n"
+                 +"  //is present. If the message type cannot be\n"
+                 +"  //determined, 0 is returned. This could happen\n"
+                 +"  //e.g. if message is empty.\n"
+                 +"  static int8_t getMessageType(const std::vector<char>& message)"
+                 +" throw()\n"
+                 +"  {\n"
+                 +"    if(message.size()<2)\n"
+                 +"      return 0;\n"
+                 +"    \n"
+                 +"    return message[1];\n"
+                 +"  }\n\n");
+    }
+
     private void hppWriteMessageToString()
         throws IOException
     {
         hppWrite("  //Represent message as string\n"
-                 +"  static std::string messageToString(const Message& message)\n"
+                 +"  static std::string messageToString(const std::vector<char>& message)\n"
                  +"    throw()\n"
                  +"  {\n"
                  +"    std::ostringstream output;\n"
                  +"\n"
                  +"    output\n"
                  +"      <<\"Message type: \"<<"
-                 +"messageTypeToString(message.getMessageType())"
+                 +"messageTypeToString(getMessageType(message))\n"
                  +"      <<\", number of bytes: \"<<message.size()<<std::endl;\n"
                  +"\n"
-                 +"    const char*const hex = \"0123456789abcdef\";\n"
+                 +"    const char*const hex = \"0123456789ABCDEF\";\n"
                  +"\n"
                  +"    int_fast16_t i=0;\n"
                  +"    for(std::vector<char>::const_iterator it=message.begin();\n"
@@ -533,33 +406,6 @@ public class ProtocolDefinition{
         this.javaWrite("\n  }\n\n");
     }
 
-    private void hppWriteGetMessageType()
-        throws IOException
-    {
-        this.hppWrite("  //This method can be used for rapid message\n"
-                      +"  //type lookup, so you don't need to try\n"
-                      +"  //deserializing using all deserializers.\n"
-                      +"  //Remember that deserialization can still\n"
-                      +"  //fail, even if this method returns\n"
-                      +"  //some known type. It doesn't read the whole\n"
-                      +"  //message, just the part where message type\n"
-                      +"  //is present. If the message type cannot be\n"
-                      +"  //determined, 0 is returned. This could happen\n"
-                      +"  //e.g. if message is empty.\n");
-
-        //final String highestMessageName
-        //    = this.messageDefinitions.lastElement().name;
-
-        this.hppWrite("  int8_t getMessageType() const throw()\n"
-                      +"  {\n"
-                      +"    const Message& message = *this;\n"
-                      +"    if(message.size()<2)\n"
-                      +"      return 0;\n"
-                      +"    \n"
-                      +"    return message[1];\n"
-                      +"  }\n\n");
-    }
-    
     private void javaWriteLookupMessageType()
         throws IOException
     {
@@ -660,7 +506,7 @@ public class ProtocolDefinition{
                         :""));
         }
 
-        hppWrite("    Message&outputMessage)\n"
+        hppWrite("    std::vector<char>&outputMessage)\n"
                  +"    throw()\n"
                  +"  {\n"
                  +"    outputMessage.resize(0);\n");
@@ -669,33 +515,37 @@ public class ProtocolDefinition{
                   +"    final Message outputMessage\n"
                   +"     = new Message();\n\n");
 
-        final String s1
-            ="    //Let the receiver know which "
-            +"protocol version this is:\n"
-            +"    outputMessage.append1Byte("
-            +protocolVersion+");\n"
-            +"    //Let the receiver know what kind "
-            +"of message this is:\n"
-            +"    outputMessage.append1Byte("
-            +messageDefinition.identifier+");\n\n";
+        hppWrite("    //Let the receiver know which "
+                 +"protocol version this is:\n"
+                 +"    Message::append1Byte("
+                 +protocolVersion+",outputMessage);\n"
+                 +"    //Let the receiver know what kind "
+                 +"of message this is:\n"
+                 +"    Message::append1Byte("+messageDefinition.identifier
+                 +",outputMessage);\n\n");
 
-        hppWrite(s1);
-        javaWrite(s1);
-        
+        javaWrite("    //Let the receiver know which "
+                  +"protocol version this is:\n"
+                  +"    outputMessage.append1Byte("+protocolVersion+");\n"
+                  +"    //Let the receiver know what kind "
+                  +"of message this is:\n"
+                  +"    outputMessage.append1Byte("+messageDefinition.identifier
+                  +");\n\n");
+
         for(int i=0;i<messageDefinition.pieceDefinitions.length;i++){
 
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
 
-            final String s2
-                ="    //Serialize "+pieceDefinition.name+":\n"
-                +"    outputMessage."
-                +pieceDefinition.type.getAppender
-                (this.flagSetDefinitions)
-                +"("+pieceDefinition.name+");\n";
+            hppWrite("    //Serialize "+pieceDefinition.name+":\n"
+                     +"    Message::"+pieceDefinition.type.getAppender
+                     (this.flagSetDefinitions)
+                     +"("+pieceDefinition.name+",outputMessage);\n");
 
-            hppWrite(s2);
-            javaWrite(s2);
+            javaWrite("    //Serialize "+pieceDefinition.name+":\n"
+                      +"    outputMessage."+pieceDefinition.type.getAppender
+                      (this.flagSetDefinitions)
+                      +"("+pieceDefinition.name+");\n");
         }
             
         javaWrite("    return outputMessage;\n");
@@ -759,7 +609,7 @@ public class ProtocolDefinition{
         //clarity reasons.
         hppWrite("  static bool deserialize_"
                  +this.protocolVersion+"_"
-                 +messageDefinition.name+"(const Message&inputMessage"
+                 +messageDefinition.name+"(const std::vector<char>&inputMessage"
                  +(messageDefinition.pieceDefinitions.length>0
                    ?",\n        Deserialized_"+this.protocolVersion+"_"
                    +messageDefinition.name
@@ -768,9 +618,9 @@ public class ProtocolDefinition{
                  +")\n"
                  +"  throw()\n"
                  +"  {\n"
-                 +"    Message::const_iterator it\n"
+                 +"    std::vector<char>::const_iterator it\n"
                  +"     = inputMessage.begin();\n"
-                 +"    const Message::const_iterator messageEnd\n"
+                 +"    const std::vector<char>::const_iterator messageEnd\n"
                  +"     = inputMessage.end();\n"
                  +"    \n"
                  +"    //Check protocol version:\n"
@@ -901,7 +751,7 @@ public class ProtocolDefinition{
         hppWrite("\n"
                  +"class "+protocolName+"Handler\n"
                  +"{\n"
-                 +"  protected:\n"
+                 +"  private:\n"
                  +"  //Objects for temporary deserialization (to avoid creating\n"
                  +"  //new ones all the time):\n");
 
@@ -914,13 +764,21 @@ public class ProtocolDefinition{
         }
 
         hppWrite("\n"
-                 +"  bool handle(const Message&message) throw();\n"
+                 +"public:\n"
+                 +"  bool handle(const std::vector<char>& message,\n"
+                 +"              const int32_t sessionID,\n"
+                 +"              std::multimap<int32_t,std::vector<char> >& toBeSent,\n"
+                 +"              TimeMicro& timeout) throw();\n"
                  +"\n");
 
         cppWrite("\n"
-                 +"  bool "+protocolName+"Handler::handle(const Message&message) throw()\n"
+                 +"  bool "+protocolName+"Handler::handle(const std::vector<char>& message,\n"
+                 +"                  const int32_t sessionID,\n"
+                 +"                  std::multimap<int32_t,std::vector<char> >& toBeSent\n,"
+                 +"                  TimeMicro& timeout) throw()\n"
                  +"  {\n"
-                 +"    switch(message.getMessageType())\n"
+                 +"\n"
+                 +"    switch("+protocolName+"Protocol::getMessageType(message))\n"
                  +"    {\n");
 
         for(MessageDefinition md : this.messageDefinitions){
@@ -932,11 +790,15 @@ public class ProtocolDefinition{
                 if(md.pieceDefinitions.length>0)
                     cppWrite(",\n"
                              +"                              "
-                             +"this->deserialized_"+md.name+")\n");
-                else
-                    cppWrite(")\n");
+                             +"this->deserialized_"+md.name);
+                cppWrite(")\n");
                 cppWrite("             && this->handle_"+protocolVersion
-                         +"_"+md.name+"();\n");
+                         +"_"+md.name+"(sessionID,toBeSent,timeout");
+                for(PieceDefinition pd : md.pieceDefinitions)
+                    cppWrite(",\n"
+                             +"                      "
+                             +"this->deserialized_"+md.name+"."+pd.name);
+                cppWrite(");\n");
             }
         }
         
@@ -947,14 +809,81 @@ public class ProtocolDefinition{
 
         hppWrite("  //Handlers for various message types:\n");
         for(MessageDefinition md : this.messageDefinitions){
-            if(md.sentBy.equals(Sender.CLIENT))
+            if(md.sentBy.equals(Sender.CLIENT)){
                 hppWrite("  virtual bool handle"+"_"+protocolVersion
-                         +"_"+md.name+"() throw() =0;\n");
+                         +"_"+md.name+"(const int32_t sessionID,\n"
+                         +"                  "
+                         +"std::multimap<int32_t,std::vector<char> >& toBeSent,\n"
+                         +"                  "
+                         +"TimeMicro& timeout");
+                for(PieceDefinition pd : md.pieceDefinitions)
+                    hppWrite(",\n"
+                             +"                  "
+                             +pd.type.toCppConstType(this.flagSetDefinitions)
+                             +" "+pd.name);
+
+                hppWrite(") throw() =0;\n");
+            }
         }
 
-        hppWrite("  virtual ~"+protocolName+"Handler() throw() {}");
+        hppWrite("  virtual ~"+protocolName+"Handler() throw() {}\n");
 
         hppWrite("};\n");
+
+    }
+
+    private void javaWriteHandler() throws Exception{
+        javaWrite("\n"
+                 +"astract class "+protocolName+"Handler\n"
+                 +"{\n"
+                 +"\n");
+
+        javaWrite("\n"
+                  +"  boolean handle(final Message message){"
+                  +"\n"
+                  +"    switch("+protocolName+"Protocol.getMessageType(message))\n"
+                  +"    {\n");
+
+        for(MessageDefinition md : this.messageDefinitions){
+            if(md.sentBy.equals(Sender.SERVER)){
+                javaWrite("    case "+protocolName+"Protocol."
+                          +md.name+"_"+protocolVersion+":\n"
+                          +"      final "+protocolName+"Protocol.Deserialized_"
+                          +protocolVersion+"_"
+                          +md.name+" deserialized = \n"
+                          +"             new "+protocolName+"Protocol.Deserialized_"
+                          +protocolVersion+"_"+md.name+"(message)\n");
+                javaWrite("             return this.handle_"+protocolVersion
+                          +"_"+md.name+"(");
+                for(PieceDefinition pd : md.pieceDefinitions)
+                    javaWrite(",\n"
+                             +"                      "
+                             +"deserialized."+pd.name);
+                javaWrite(");\n");
+            }
+        }
+        
+        javaWrite("    default:\n"
+                 +"      return false;\n"
+                 +"    }\n"
+                 +"  }\n");
+
+        javaWrite("  //Handlers for various message types:\n");
+        for(MessageDefinition md : this.messageDefinitions){
+            if(md.sentBy.equals(Sender.SERVER)){
+                javaWrite("  abstract boolean handle"+"_"+protocolVersion
+                         +"_"+md.name+"(");
+                for(PieceDefinition pd : md.pieceDefinitions)
+                    javaWrite(",\n"
+                              +"                  "
+                              +pd.type.toJavaFinalType(this.flagSetDefinitions)
+                              +" "+pd.name);
+
+                javaWrite(");\n");
+            }
+        }
+
+        javaWrite("}\n");
 
     }
 
@@ -974,6 +903,7 @@ public class ProtocolDefinition{
 
         this.javaWriteLookupMessageType();
         this.hppWriteMessageTypeToString();
+        this.hppWriteGetMessageType();
         this.hppWriteMessageToString();
 
         for(MessageDefinition messageDefinition : this.messageDefinitions){
@@ -983,7 +913,7 @@ public class ProtocolDefinition{
         this.writeFooter();
 
         this.hppWriteHandler();
-
+        this.javaWriteHandler();
 
         this.javaWriter.flush();
         this.javaWriter.close();
