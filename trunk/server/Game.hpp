@@ -37,39 +37,45 @@
 #pragma once
 
 #include <list>
-#include <string>
 #include <vector>
 #include <set>
-#include "Message.hpp" //For Message class
+#include <map>
 
 /** Some thread will create an object of a class deriving from
-    Game. The IO model used for networking, as well as socket details
-    are not visible from within Game.
+    TurnGame. The IO model used for networking, as well as socket details
+    are not visible from within TurnGame.
 */
 
-class Game
+class TurnGame
 {
 public:
   
-  typedef int32_t Identifier;
+  //typedef int32_t Identifier;
 
-  //TODO: Does the game need to know the nicks? Probably no...
-  std::vector<std::string> nicks;
-  uint16_t currentPlayerNumber;
+  //typedef std::string Nick;
+  //typedef std::vector<std::string> Nicks;
+  //TODO: Does the game need to know the string nicks? Probably no...
+  //Nicks nicks;
 
-  /** Can be called from derived classes to shuffle order of
-      "nicks". Also sets "currentPlayerNumber" to 0.
-   */
-  void shuffleNicks() throw();
+  //First player - 0, second - 1, third - 2, etc...
+  typedef int8_t Player;
 
-  /** Can be called from derived classes to change
-      "currentPlayerNumber". It simply does "currentPlayerNumber =
-      (currentPlayerNumber + 1) % nicks.size()".
-   */
-  void nextPlayer() throw();
+  Player turn;
 
-  Game() throw() {};
-  virtual ~Game() throw() {};
+  //TODO: server has to guard that if Player p sends a move, then it's
+  //p's turn.
+
+  const Player numberOfPlayers;
+
+  void firstPlayer() throw() {turn = 0;}
+
+  void nextPlayer() throw() {turn=(turn+1)%numberOfPlayers;}
+
+  TurnGame(const Player numberOfPlayers) throw()
+    :numberOfPlayers(numberOfPlayers)
+  {}
+
+  virtual ~TurnGame() throw() {}
 
   /** After all the players have joined the game, server will call
       "initialize(...)". A game should become initialized, so that the
@@ -92,24 +98,28 @@ public:
       "initialize(...)" shall return "true" if game can be started
       normally and "false" if game cannot be started for some reason.
   */
-  virtual bool initialize(std::vector<Message>& initialMessages) throw() =0;
+  virtual bool initialize(std::multimap<Player,std::vector<char> >& initialMessages)
+    throw() =0;
 
-  /** Values representing what effect a move has on the game. Values
-      >=0 mean that a move is invalid. In such a case the value says
-      which player sent an invalid move. Negative values are reserved
-      for valid moves. See constants "CONTINUE" and "END". 
+  /** Values representing what effect a move has on the game. This is
+      specified as a bit flag, where the bits look as follows:
+
+      ...more significant bits... | CONTINUE
+
+      When CONTINUE bit is set to 1, game shall continue, when set to
+      0, game shall end.
   */
-  typedef int16_t MoveResult;
+  typedef uint8_t MoveResult;
 
-  //Move is valid and the game is going on
-  static const MoveResult CONTINUE = -1;
-  //Move is valid and the game is finished
-  static const MoveResult END = -2;
 
-};
+  //Bit mask for checking whether the game shall be ended.
+  static const MoveResult CONTINUITY_MASK = 0x01;
+  static const MoveResult CONTINUE = 0x00;
+  static const MoveResult END = 0x01;
 
-class AlternatingTurnGame : public Game
-{  
+  static const MoveResult VALIDITY_MASK = 0x02;
+  static const MoveResult VALID = 0x00;
+  static const MoveResult INVALID = 0x02;
 
   /** Move of each player is described  as a bit vector. Each game has
      to define  how moves are encoded  within such a  vector.  A valid
@@ -161,10 +171,15 @@ class AlternatingTurnGame : public Game
       server will expect a move from
       "nicks[currentPlayerNumber]". "currentPlayerNumber" has to
       remain in the interval <0,nicks.size()-1>.
+
+      "move(...)" shall set invalidSenders to something else than
+      empty set in case some moves sent were invalid. Still the game
+      can continue, or end. TODO: who removes those players, game or
+      server?
   */
-  virtual MoveResult move(const Message& move,
-                          std::vector<Message>& moveMessages,
-                          std::list< std::set<int16_t> >& endResult)
+  virtual MoveResult move(const std::vector<char>& move,
+                          std::multimap<Player,std::vector<char> >& moveMessages,
+                          std::list< std::set<Player> >& endResult)
     throw() =0;
 
 };

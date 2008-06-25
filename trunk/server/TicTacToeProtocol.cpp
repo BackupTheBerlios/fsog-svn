@@ -32,14 +32,26 @@
 
 #include "../server/TicTacToeProtocol.hpp"
 
-  bool TicTacToeHandler::handle(const Message&message) throw()
+  bool TicTacToeHandler::handle(const std::vector<char>& message,
+                  const int32_t sessionID,
+                  std::multimap<int32_t,std::vector<char> >& toBeSent
+,                  TimeMicro& timeout) throw()
   {
-    switch(message.getMessageType())
+
+    switch(TicTacToeProtocol::getMessageType(message))
     {
     case TicTacToeProtocol::MAKE_MOVE_1:
       return TicTacToeProtocol::deserialize_1_MAKE_MOVE(message,
                               this->deserialized_MAKE_MOVE)
-             && this->handle_1_MAKE_MOVE();
+             && this->handle_1_MAKE_MOVE(sessionID,toBeSent,timeout,
+                      this->deserialized_MAKE_MOVE.row,
+                      this->deserialized_MAKE_MOVE.column);
+    case TicTacToeProtocol::MOVE_MADE_1:
+      return TicTacToeProtocol::deserialize_1_MOVE_MADE(message,
+                              this->deserialized_MOVE_MADE)
+             && this->handle_1_MOVE_MADE(sessionID,toBeSent,timeout,
+                      this->deserialized_MOVE_MADE.row,
+                      this->deserialized_MOVE_MADE.column);
     default:
       return false;
     }

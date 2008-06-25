@@ -36,12 +36,24 @@
 #include "TicTacToe.hpp"
 #include <set>
 
-bool TicTacToe::initialize(std::vector<Message>& initialMessages) throw()
+bool TicTacToe::initialize(std::multimap<Player,std::vector<char> >& messages) throw()
 {
-  if(this->nicks.size()!=2)
+  //Initialization fails if table was created not for 2 players:
+  if(this->numberOfPlayers!=2)
     return false;
-  //Randomize order of players:
-  this->shuffleNicks();
+
+  //We expect move only from the first player:
+  this->firstPlayer();
+
+  //TODO: It's possible to prepare such a multimap once for all games.
+
+  std::vector<char> youAreFirst;
+  TicTacToeProtocol::serialize_1_YOU_ARE_FIRST(youAreFirst);
+  messages.insert(std::pair<Player,std::vector<char> >(0,youAreFirst));
+
+  std::vector<char> youAreSecond;
+  TicTacToeProtocol::serialize_1_YOU_ARE_SECOND(youAreSecond);
+  messages.insert(std::pair<Player,std::vector<char> >(1,youAreSecond));
   
   //Initialize board to be 3x3 with all empty fields:
   //TODO: not efficient. Have static empty board.
@@ -51,20 +63,23 @@ bool TicTacToe::initialize(std::vector<Message>& initialMessages) throw()
   
   //Ready for playing! After this function returns server will send
   //initial information to clients and will await move from the
-  //first player (which is nick[0]).
+  //players specified.
   return true;
 }
 
-Game::MoveResult TicTacToe::move(const Message& move,
-                                 std::vector<Message>& moveMessages,
-                                 std::list< std::set<uint16_t> >& endResult)
+TurnGame::MoveResult TicTacToe::move(const std::vector<char>& move,
+                                     std::multimap<Player,std::vector<char> >& moveMessages,
+                                     std::list< std::set<Player> >& endResult)
   throw()
 {
   //First we deserialize the move. If deserialization fails, current
   //player sent invalid move.
+  //TODO: It would be easier: deserialize(move,this->row,this->column)
   if(!TicTacToeProtocol::deserialize_1_MAKE_MOVE(move,
                                                  this->deserialized_1_MAKE_MOVE))
-    return currentPlayerNumber;
+    {
+      return INVALID|END;
+    }
   
   int8_t& row = this->deserialized_1_MAKE_MOVE.row;
   int8_t& column = this->deserialized_1_MAKE_MOVE.column;
@@ -72,12 +87,22 @@ Game::MoveResult TicTacToe::move(const Message& move,
   //Let's see whether the move is valid (both coordinates are within
   //<0,2> and the pointed field is still empty):
   if(row<0 || row>2 || column<0 || column>2 || board[row][column]!=EMPTY)
-    return currentPlayerNumber;
+    {
+      return INVALID|END;
+    }
+
+  //OK, move is valid. Let's introduce game state change.
   
   const Field c = currentPlayersField();
   
   board[row][column] = c;
   empty--;
+
+  //Send a message to all players with what move was made:
+  std::vector<char> moveMade;
+  TicTacToeProtocol::serialize_1_MOVE_MADE(row,column,moveMade);
+  moveMessages.insert(std::pair<Player,std::vector<char> >(0,moveMade));
+  moveMessages.insert(std::pair<Player,std::vector<char> >(1,moveMade));
   
   //Let's see whether we have 3--in--a--row after this move:
   if( (board[row][0]==c && board[row][1]==c && board[row][2]==c)
@@ -87,23 +112,23 @@ Game::MoveResult TicTacToe::move(const Message& move,
     {
       //Yes. The current player just won. We need to set "endResult"
       //correctly and return "END":
-      endResult.push_back(std::set<uint16_t>());
-      endResult.rbegin()->insert(currentPlayerNumber);
-      endResult.push_back(std::set<uint16_t>());
-      endResult.rbegin()->insert(1-currentPlayerNumber);
-      return END;
+      endResult.push_back(std::set<Player>());
+      endResult.back().insert(turn);
+      endResult.push_back(std::set<Player>());
+      endResult.back().insert(1-turn);
+      return VALID|END;
     }
   
-  //If all fields are filled, it's draw.
+  //If all fields are filled, it's a draw.
   if(empty==0)
     {
-      endResult.push_back(std::set<uint16_t>());
-      endResult.rbegin()->insert(0);
-      endResult.rbegin()->insert(1);
-      return END;
+      endResult.push_back(std::set<Player>());
+      endResult.back().insert(0);
+      endResult.back().insert(1);
+      return VALID|END;
     }
 
   //Game shall continue.
-  this->Game::nextPlayer();
-  return CONTINUE;
+  this->nextPlayer();
+  return VALID|CONTINUE;
 }

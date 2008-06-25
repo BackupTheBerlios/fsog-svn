@@ -37,27 +37,26 @@
 #pragma once
 
 #include <string>
+#include <sstream>
+#include <iostream>
 
 class CommandLine
 {
 private:
-  static bool m_printNetworkPackets;
-
+  static bool s_printNetworkPackets;
+  static long s_port;
 public:
-  static void parse(const int argc,
-                    char** argv)
-  {
-    for(int i=0;i<argc;i++)
-      {
-        const std::string option=std::string(argv[i]);
-        if(option==std::string("-p"))
-          m_printNetworkPackets=true;
-      }
-  }
+  static bool parse(const int argc,
+                    const char*const*const argv);
 
   static bool printNetworkPackets()
   {
-    return CommandLine::m_printNetworkPackets;
+    return CommandLine::s_printNetworkPackets;
+  }
+  
+  static long port()
+  {
+    return CommandLine::s_port;
   }
 
 };

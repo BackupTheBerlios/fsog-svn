@@ -46,7 +46,7 @@ const Field EMPTY = 0x00;
 const Field X = 0x01;
 const Field O = 0x02;
 
-class TicTacToe : public AlternatingTurnGame
+class TicTacToe : public TurnGame
 {
 private:
   //Our 3x3 board:
@@ -59,19 +59,21 @@ private:
 
   Field currentPlayersField() const throw()
   {
-    return (currentPlayerNumber == 0 ? X : O);
+    return (this->turn==0 ? X : O);
   }
 
 public:
 
-  TicTacToe() throw() {}
+  TicTacToe(const Player numberOfPlayers) throw()
+    :TurnGame(numberOfPlayers)
+  {}
 
   ~TicTacToe() throw() {}
 
-  bool initialize(std::vector<Message>& initialMessages) throw();
+  bool initialize(std::multimap<Player,std::vector<char> >& initialMessages) throw();
 
-  MoveResult move(const Message& move,
-                  std::vector<Message>& moveMessages,
-                  std::list< std::set<uint16_t> >& endResult) throw();
+  MoveResult move(const std::vector<char>& move,
+                  std::multimap<Player,std::vector<char> >& moveMessages,
+                  std::list<std::set<Player> >& endResult) throw();
 
 };

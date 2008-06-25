@@ -1,2 +1,2 @@
-#!/bin/bash
-./thousandServer -p
+#!/bin/bash -x
+./thousandServer -p 3000 --print-packets

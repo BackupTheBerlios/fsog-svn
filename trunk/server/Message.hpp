@@ -49,133 +49,155 @@
    input, respectively.
 */
 
-class Message : public std::vector<char>
+class Message
 {
 private:
   //Appends value to message
   template<class T>
-  void appendInteger(const T value,
-                     const unsigned numberOfBytes)
+  static void appendInteger(const T value,
+                            const unsigned numberOfBytes,
+                            std::vector<char>&message)
     throw()
   {
     for(unsigned i=0;i<numberOfBytes;i++)
       {
-        this->push_back(static_cast<char>(0xFF & (value>>(8*(numberOfBytes-1-i)))));
+        message.push_back(static_cast<char>(0xFF & (value>>(8*(numberOfBytes-1-i)))));
       }
   }
 
 public:
   template<class T>
-  void append1Byte(const T value)
+  static void append1Byte(const T value,
+                          std::vector<char>&message)
     throw()
   {
-    this->appendInteger(value,1);
+    appendInteger(value,1,message);
   }
 
   template<class T>
-  void append2Bytes(const T value)
+  static void append2Bytes(const T value,
+                           std::vector<char>&message)
     throw()
   {
-    this->appendInteger(value,2);
+    appendInteger(value,2,message);
   }
 
   template<class T>
-  void append3Bytes(const T value)
+  static void append3Bytes(const T value,
+                           std::vector<char>&message)
     throw()
   {
-    this->appendInteger(value,3);
+    appendInteger(value,3,message);
   }
 
   template<class T>
-  void append4Bytes(const T value)
+  static void append4Bytes(const T value,
+                           std::vector<char>&message)
     throw()
   {
-    this->appendInteger(value,4);
+    appendInteger(value,4,message);
   }
 
-  void appendCString(const std::string& value)
-    throw()
-  {
-    this->insert(this->end(),
-                 value.begin(),
-                 value.end());
-    this->push_back(0);
-  }
-
-  //Read value from this message
   template<class T>
-  static bool read1Byte(Message::const_iterator&it,
-                        const Message::const_iterator&messageEnd,
+  static void append8Bytes(const T value,
+                           std::vector<char>&message)
+    throw()
+  {
+    appendInteger(value,8,message);
+  }
+
+  static void appendCString(const std::string& value,
+                            std::vector<char>&message)
+    throw()
+  {
+    message.insert(message.end(),
+                   value.begin(),
+                   value.end());
+    message.push_back(0);
+  }
+
+  static void appendBinary(const std::vector<char>& value,
+                           std::vector<char>&message)
+    throw()
+  {
+    //TODO: handle error if value.size()>0x7FFF
+    message.push_back(0x7F&(value.size()>>8));
+    message.push_back(0xFF&value.size());
+
+    message.insert(message.end(),
+                   value.begin(),
+                   value.end());
+  }
+
+  //Read value from message
+  template<class T>
+  static bool readNBytes(std::vector<char>::const_iterator&it,
+                         const std::vector<char>::const_iterator&messageEnd,
+                         const short n,
+                         T&result)
+    throw()
+  {
+    if(it+n>messageEnd)
+      return false;
+
+    result=0;
+    for(short i=8*(n-1);i>=0;i-=8)
+      result|=(static_cast<T>(*it++))<<i;
+
+    return true;
+  }
+
+  //Read value from message
+  template<class T>
+  static bool read1Byte(std::vector<char>::const_iterator&it,
+                        const std::vector<char>::const_iterator&messageEnd,
                         T&result)
     throw()
   {
-    if(it+1>messageEnd)
-      return false;
-
-    result=(*it++);
-    
-    return true;
+    return Message::readNBytes(it,messageEnd,1,result);
   }
 
-  //Read value from this message
+  //Read value from message
   template<class T>
-  static bool read2Bytes(Message::const_iterator&it,
-                         const Message::const_iterator&messageEnd,
+  static bool read2Bytes(std::vector<char>::const_iterator&it,
+                         const std::vector<char>::const_iterator&messageEnd,
                          T&result)
     throw()
   {
-    if(it+2>messageEnd)
-      return false;
-
-    result=0;
-
-    result|=(static_cast<short>(*it++))<<8;
-    result|=(static_cast<short>(*it++));
-    
-    return true;
+    return Message::readNBytes(it,messageEnd,2,result);
   }
 
-  //Read value from this message
+  //Read value from message
   template<class T>
-  static bool read3Bytes(Message::const_iterator&it,
-                         const Message::const_iterator&messageEnd,
+  static bool read3Bytes(std::vector<char>::const_iterator&it,
+                         const std::vector<char>::const_iterator&messageEnd,
                          T&result)
     throw()
   {
-    if(it+3>messageEnd)
-      return false;
-    
-    result=0;
-
-    result|=(static_cast<short>(*it++))<<16;
-    result|=(static_cast<short>(*it++))<<8;
-    result|=(static_cast<short>(*it++));
-    
-    return true;
+    return Message::readNBytes(it,messageEnd,3,result);
   }
 
-  //Read value from this message
+  //Read value from message
   template<class T>
-  static bool read4Bytes(Message::const_iterator&it,
-                         const Message::const_iterator&messageEnd,
+  static bool read4Bytes(std::vector<char>::const_iterator&it,
+                         const std::vector<char>::const_iterator&messageEnd,
                          T&result)
     throw()
   {
-    if(it+4>messageEnd)
-      return false;
-
-    result=0;
-
-    result|=(static_cast<short>(*it++))<<24;
-    result|=(static_cast<short>(*it++))<<16;
-    result|=(static_cast<short>(*it++))<<8;
-    result|=(static_cast<short>(*it++));
-    
-    return true;
+    return Message::readNBytes(it,messageEnd,4,result);
   }
 
-  static bool readCString(Message::const_iterator&it,
-                          const Message::const_iterator&messageEnd,
+  template<class T>
+  static bool read8Bytes(std::vector<char>::const_iterator&it,
+                         const std::vector<char>::const_iterator&messageEnd,
+                         T&result)
+    throw()
+  {
+    return Message::readNBytes(it,messageEnd,8,result);
+  }
+
+  static bool readCString(std::vector<char>::const_iterator&it,
+                          const std::vector<char>::const_iterator&messageEnd,
                           std::string&result)
   {
     std::ostringstream output;
@@ -194,24 +216,31 @@ public:
       }
   }
   
-
-  //This method can be used for rapid message
-  //type lookup, so you don't need to try
-  //deserializing using all deserializers.
-  //Remember that deserialization can still
-  //fail, even if this method returns
-  //some known type. It doesn't read the whole
-  //message, just the part where message type
-  //is present. If the message type cannot be
-  //determined, 0 is returned. This could happen
-  //e.g. if message is empty.
-  int8_t getMessageType() const throw()
+  static bool readBinary(std::vector<char>::const_iterator&it,
+                         const std::vector<char>::const_iterator&messageEnd,
+                         std::vector<char>&result)
   {
-    const Message& message = *this;
-    if(message.size()<2)
-      return 0;
-    
-    return message[1];
+    if(it==messageEnd)
+      return false;
+
+    char first = *(it++);
+
+    if(it==messageEnd)
+      return false;
+
+    char second = *(it++);
+
+    const uint16_t length
+      =(first<<8)|second;
+
+    if(it+length>messageEnd)
+      return false;
+
+    result.insert(result.end(),
+                  it,
+                  it+length);
+
+    return true;
   }
 
 };

@@ -36,4 +36,48 @@
 
 #include "CommandLine.hpp"
 
-bool CommandLine::m_printNetworkPackets=false;
+bool CommandLine::s_printNetworkPackets=false;
+long CommandLine::s_port=false;
+
+bool CommandLine::parse(const int argc,
+                        const char*const*const argv)
+  {
+    s_printNetworkPackets=false;
+    s_port=-1;
+
+    for(int i=1;i<argc;i++)
+      {
+        const std::string option=std::string(argv[i]);
+        if(option=="--print-packets")
+          s_printNetworkPackets=true;
+        else if(option=="-p")
+          {
+            //Interpret as port.
+            i++;
+            if(i>=argc)
+              {
+                std::cerr<<"Missing argument for -p option."<<std::endl;
+                return false;
+              }
+            std::istringstream stream(argv[i]);
+            if(!(stream>>s_port))
+              {
+                std::cerr<<"Incorrect argument for -p option."<<std::endl;
+                return false;
+              }
+          }
+        else
+          {
+            std::cerr<<"Unrecognized option: "<<option<<std::endl;
+            return false;
+          }
+      }
+    //Check mandatory options:
+    if(s_port==-1)
+      {
+        std::cerr<<"Missing mandatory -p option."<<std::endl;
+        return false;
+      }
+
+    return true;
+  }

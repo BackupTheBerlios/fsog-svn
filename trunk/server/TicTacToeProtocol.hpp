@@ -35,6 +35,8 @@
 #include <string>
 #include <sstream>
 #include <cctype>
+#include <map>
+#include "Time.hpp"
 #include "Message.hpp"
 
 
@@ -45,8 +47,14 @@ public:
   //Can be used for switching to detect
   //which deserializer should be used.
     static const int8_t UNKNOWN_MESSAGE_1 = 0;
+    //Server says that client is the first to move.
+    static const int8_t YOU_ARE_FIRST_1 = 1;
+    //Server says that client is the second to move.
+    static const int8_t YOU_ARE_SECOND_1 = 2;
     //Simple TicTacToe move.
-    static const int8_t MAKE_MOVE_1 = 1;
+    static const int8_t MAKE_MOVE_1 = 3;
+    //Simple TicTacToe move. No need to say who made this move.
+    static const int8_t MOVE_MADE_1 = 4;
 
 
 
@@ -57,23 +65,45 @@ public:
     switch(messageType)
     {
       case UNKNOWN_MESSAGE_1: return "UNKNOWN_MESSAGE";
+      case YOU_ARE_FIRST_1: return "YOU_ARE_FIRST";
+      case YOU_ARE_SECOND_1: return "YOU_ARE_SECOND";
       case MAKE_MOVE_1: return "MAKE_MOVE";
+      case MOVE_MADE_1: return "MOVE_MADE";
     }
 
 
     return "ERROR. No such message in this protocol version!";
   }
 
+  //This method can be used for rapid message
+  //type lookup, so you don't need to try
+  //deserializing using all deserializers.
+  //Remember that deserialization can still
+  //fail, even if this method returns
+  //some known type. It doesn't read the whole
+  //message, just the part where message type
+  //is present. If the message type cannot be
+  //determined, 0 is returned. This could happen
+  //e.g. if message is empty.
+  static int8_t getMessageType(const std::vector<char>& message) throw()
+  {
+    if(message.size()<2)
+      return 0;
+    
+    return message[1];
+  }
+
   //Represent message as string
-  static std::string messageToString(const Message& message)
+  static std::string messageToString(const std::vector<char>& message)
     throw()
   {
     std::ostringstream output;
 
     output
-      <<"Message type: "<<messageTypeToString(message.getMessageType())      <<", number of bytes: "<<message.size()<<std::endl;
+      <<"Message type: "<<messageTypeToString(getMessageType(message))
+      <<", number of bytes: "<<message.size()<<std::endl;
 
-    const char*const hex = "0123456789abcdef";
+    const char*const hex = "0123456789ABCDEF";
 
     int_fast16_t i=0;
     for(std::vector<char>::const_iterator it=message.begin();
@@ -91,50 +121,35 @@ public:
 
     return output.str();
   }
-  //Message MAKE_MOVE:
+  //Message YOU_ARE_FIRST:
 
-  //This message is sent by CLIENT.
+  //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 1.
-  //Simple TicTacToe move.
+  //Server says that client is the first to move.
 
-  static void serialize_1_MAKE_MOVE(
-        //In which row player puts her X or O.
-        const int8_t row,
-
-        //In which row player puts her X or O.
-        const int8_t column,
-    Message&outputMessage)
+  static void serialize_1_YOU_ARE_FIRST(    std::vector<char>&outputMessage)
     throw()
   {
     outputMessage.resize(0);
     //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
+    Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(1);
+    Message::append1Byte(1,outputMessage);
 
-    //Serialize row:
-    outputMessage.append1Byte(row);
-    //Serialize column:
-    outputMessage.append1Byte(column);
   }
 
-  class Deserialized_1_MAKE_MOVE
+  class Deserialized_1_YOU_ARE_FIRST
   {
   public:
-    //In which row player puts her X or O.
-    int8_t row;
-    //In which row player puts her X or O.
-    int8_t column;
   };
 
-  static bool deserialize_1_MAKE_MOVE(const Message&inputMessage,
-        Deserialized_1_MAKE_MOVE&output)
+  static bool deserialize_1_YOU_ARE_FIRST(const std::vector<char>&inputMessage)
   throw()
   {
-    Message::const_iterator it
+    std::vector<char>::const_iterator it
      = inputMessage.begin();
-    const Message::const_iterator messageEnd
+    const std::vector<char>::const_iterator messageEnd
      = inputMessage.end();
     
     //Check protocol version:
@@ -153,6 +168,192 @@ public:
 
     //Deserialize pieces:
 
+    return true;
+  }
+
+  //Message YOU_ARE_SECOND:
+
+  //This message is sent by SERVER.
+
+  //In protocol version 1 this message has id 2.
+  //Server says that client is the second to move.
+
+  static void serialize_1_YOU_ARE_SECOND(    std::vector<char>&outputMessage)
+    throw()
+  {
+    outputMessage.resize(0);
+    //Let the receiver know which protocol version this is:
+    Message::append1Byte(1,outputMessage);
+    //Let the receiver know what kind of message this is:
+    Message::append1Byte(2,outputMessage);
+
+  }
+
+  class Deserialized_1_YOU_ARE_SECOND
+  {
+  public:
+  };
+
+  static bool deserialize_1_YOU_ARE_SECOND(const std::vector<char>&inputMessage)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=2)
+      return false;
+
+    //Deserialize pieces:
+
+    return true;
+  }
+
+  //Message MAKE_MOVE:
+
+  //This message is sent by CLIENT.
+
+  //In protocol version 1 this message has id 3.
+  //Simple TicTacToe move.
+
+  static void serialize_1_MAKE_MOVE(
+        //In which row player puts her X or O.
+        const int8_t row,
+
+        //In which column player puts her X or O.
+        const int8_t column,
+    std::vector<char>&outputMessage)
+    throw()
+  {
+    outputMessage.resize(0);
+    //Let the receiver know which protocol version this is:
+    Message::append1Byte(1,outputMessage);
+    //Let the receiver know what kind of message this is:
+    Message::append1Byte(3,outputMessage);
+
+    //Serialize row:
+    Message::append1Byte(row,outputMessage);
+    //Serialize column:
+    Message::append1Byte(column,outputMessage);
+  }
+
+  class Deserialized_1_MAKE_MOVE
+  {
+  public:
+    //In which row player puts her X or O.
+    int8_t row;
+    //In which column player puts her X or O.
+    int8_t column;
+  };
+
+  static bool deserialize_1_MAKE_MOVE(const std::vector<char>&inputMessage,
+        Deserialized_1_MAKE_MOVE&output)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=3)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize row:
+    if(!Message::read1Byte(it,messageEnd,output.row))
+      return false;
+    //Deserialize column:
+    if(!Message::read1Byte(it,messageEnd,output.column))
+      return false;
+    return true;
+  }
+
+  //Message MOVE_MADE:
+
+  //This message is sent by CLIENT.
+
+  //In protocol version 1 this message has id 4.
+  //Simple TicTacToe move. No need to say who made this move.
+
+  static void serialize_1_MOVE_MADE(
+        //In which row player puts her X or O.
+        const int8_t row,
+
+        //In which column player puts her X or O.
+        const int8_t column,
+    std::vector<char>&outputMessage)
+    throw()
+  {
+    outputMessage.resize(0);
+    //Let the receiver know which protocol version this is:
+    Message::append1Byte(1,outputMessage);
+    //Let the receiver know what kind of message this is:
+    Message::append1Byte(4,outputMessage);
+
+    //Serialize row:
+    Message::append1Byte(row,outputMessage);
+    //Serialize column:
+    Message::append1Byte(column,outputMessage);
+  }
+
+  class Deserialized_1_MOVE_MADE
+  {
+  public:
+    //In which row player puts her X or O.
+    int8_t row;
+    //In which column player puts her X or O.
+    int8_t column;
+  };
+
+  static bool deserialize_1_MOVE_MADE(const std::vector<char>&inputMessage,
+        Deserialized_1_MOVE_MADE&output)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=4)
+      return false;
+
+    //Deserialize pieces:
+
     //Deserialize row:
     if(!Message::read1Byte(it,messageEnd,output.row))
       return false;
@@ -166,13 +367,28 @@ public:
 
 class TicTacToeHandler
 {
-  protected:
+  private:
   //Objects for temporary deserialization (to avoid creating
   //new ones all the time):
   TicTacToeProtocol::Deserialized_1_MAKE_MOVE deserialized_MAKE_MOVE;
+  TicTacToeProtocol::Deserialized_1_MOVE_MADE deserialized_MOVE_MADE;
 
-  bool handle(const Message&message) throw();
+public:
+  bool handle(const std::vector<char>& message,
+              const int32_t sessionID,
+              std::multimap<int32_t,std::vector<char> >& toBeSent,
+              TimeMicro& timeout) throw();
 
   //Handlers for various message types:
-  virtual bool handle_1_MAKE_MOVE() throw() =0;
-  virtual ~TicTacToeHandler() throw() {}};
+  virtual bool handle_1_MAKE_MOVE(const int32_t sessionID,
+                  std::multimap<int32_t,std::vector<char> >& toBeSent,
+                  TimeMicro& timeout,
+                  const int8_t row,
+                  const int8_t column) throw() =0;
+  virtual bool handle_1_MOVE_MADE(const int32_t sessionID,
+                  std::multimap<int32_t,std::vector<char> >& toBeSent,
+                  TimeMicro& timeout,
+                  const int8_t row,
+                  const int8_t column) throw() =0;
+  virtual ~TicTacToeHandler() throw() {}
+};
