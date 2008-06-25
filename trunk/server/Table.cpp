@@ -33,30 +33,14 @@
         Denmark
 */
 
+#include "Table.hpp"
 
-#include "Protocol.hpp"
+int64_t Table::tableCounter = 1;
 
-/**
-   SearcherTripple represents 3 people searching for a game.
-   The intersection of searching cryteria of all 3 people is
-   remembered.
-*/
-
-class SearcherTripple
+int64_t Table::nextTableId() throw()
 {
-public:
-  SearcherTripple(const SearcherPair&pair,
-                  const std::list<User>::iterator newUser,
-                  const ThousandProtocol::Deserialized_1_SEARCH_GAME&cryteria)
-    :user0(pair.user0),
-     user1(pair.user1),
-     user2(newUser),
-     cryteria(cryteria)
-  {}
-
-  //TODO maybe reference to SearcherPair, so we don't need 3, but 2.
-  const std::list<User>::iterator user0;
-  const std::list<User>::iterator user1;
-  const std::list<User>::iterator user2;
-  const ThousandProtocol::Deserialized_1_SEARCH_GAME cryteria;
-};
+  int64_t result = std::rand();
+  //TODO: 16bit rand() @ 16bit my_rand() @ 32bit counter.
+  result=(result<<32)|Table::tableCounter++;
+  return result;
+}

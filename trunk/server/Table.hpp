@@ -36,40 +36,61 @@
 
 #pragma once
 
-#include <netinet/in.h>
-#include <cstring>
-#include <sstream>
+#include "Game.hpp"
 
-/** Class for representing a network address.
- */
-
-class Address
+class Table
 {
 public:
-  struct sockaddr_in address;
+  typedef int64_t TableId;
+
+private:
+  static int64_t tableCounter;
+  static TableId nextTableId() throw();
+
+public:
+  TurnGame* p_game;
+  const TableId id;
 
   /**
-     Necessary for using Address as a key in a map.
+     0 is not a valid TablePlayerId. It starts at 1.
    */
-  bool operator<(const Address& other) const
+  typedef uint8_t TablePlayerId;
+
+  std::map<TablePlayerId,int32_t> tablePlayerIdToSessionId;
+
+  /**
+     If 0 is returned, no player can be added.
+  */
+  TablePlayerId nextTablePlayerId() throw()
   {
-    return std::memcmp(&(this->address),
-                       &(other.address),
-                       sizeof(struct sockaddr_in)) < 0;
+    if(tablePlayerIdToSessionId.empty())
+      return 1;
+
+    TablePlayerId biggest = tablePlayerIdToSessionId.rbegin()->first;
+
+    if(biggest<255)
+      return biggest+1;
+
+    //Will loop around after counter exhaustion.
+    for(TablePlayerId id = 1; id != 0; id++)
+      if(tablePlayerIdToSessionId.count(id)==0)
+        return id;
+
+    return 0;
   }
 
-  bool operator==(const Address& other) const
+  Table()
+    :p_game(0),
+     id(Table::nextTableId())
   {
-    return std::memcmp(&(this->address),
-                       &(other.address),
-                       sizeof(struct sockaddr_in)) == 0;
   }
 
-  std::string toString() const
+  virtual ~Table()
   {
-    std::ostringstream output;
-    output<<"Port: "<<this->address.sin_port;
-    return output.str();
+    if(this->p_game)
+      {
+        delete this->p_game;
+        this->p_game=0;
+      }
   }
-
 };
