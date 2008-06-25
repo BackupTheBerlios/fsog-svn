@@ -33,22 +33,35 @@
         Denmark
 */
 
+import java.net.Socket;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+public class Receiver extends Thread{
 
-/** This class is a simple client, which should be used for
- * "stretch testing" the server.
- */
+    private final Socket socket;
+    private final GeneralProtocol.GeneralHandler generalHandler;
 
-public class StretchClient {
-    public static void main(String[] args) throws IOException {
+    public Receiver(final Socket socket,
+                    final GeneralProtocol.GeneralHandler generalHandler){
+        this.socket = socket;
+        this.generalHandler = generalHandler;
+    }
 
-        if (args.length != 1) {
-            System.out.println("Usage: java StretchClient <hostname>");
-            return;
+    public void run(){
+
+        while(true){
+            try{
+                //Receive message:
+                //TODO: Is Socket's buffer long enough for storing,
+                //say, 100 messages if handling takes a long time?
+                final Message message
+                    = TransportProtocol.receive(this.socket);
+
+                this.generalHandler.handle(message);
+            }catch(final Exception e){
+                System.err.println("Exception: "+e);
+                System.err.println("Stack trace:");
+                e.printStackTrace();
+            }
         }
-
     }
 }

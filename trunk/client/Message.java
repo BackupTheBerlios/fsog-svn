@@ -70,22 +70,37 @@ class Message{
         this.appendInteger(value,1);
     }
 
-    public void append2Bytes(final short value){
+    public void append2Bytes(final long value){
         this.appendInteger(value,2);
     }
 
-    public void append3Bytes(final int value){
+    public void append3Bytes(final long value){
         this.appendInteger(value,3);
     }
 
-    public void append4Bytes(final int value){
+    public void append4Bytes(final long value){
         this.appendInteger(value,4);
+    }
+
+    public void append8Bytes(final long value){
+        this.appendInteger(value,8);
     }
 
     public void appendCString(final String string){
         for(int i=0;i<string.length();i++)
             this.data.add((byte)string.charAt(i));
         this.data.add((byte)0);
+    }
+
+    public void appendBinary(final java.util.Vector<Byte> value){
+        final int length = value.size();
+        if(length>0x7FFF){
+            //TODO: Better handling here.
+            System.exit(3);
+        }
+        this.data.add((byte)(0xFF&(length>>8)));
+        this.data.add((byte)(0xFF&length));
+        this.data.addAll(value);
     }
 
     //Read value from this message
@@ -108,9 +123,9 @@ class Message{
             byte b;
 
             b = iterator.next();
-            result|=((short)b)<<8;
+            result|=(0xFF&(short)b)<<8;
             b = iterator.next();
-            result|=((short)b);
+            result|=(0xFF&(short)b);
 
             return result;
         }catch(final NoSuchElementException e){
@@ -127,11 +142,11 @@ class Message{
             byte b;
 
             b = iterator.next();
-            result|=((short)b)<<16;
+            result|=(0xFF&(int)b)<<16;
             b = iterator.next();
-            result|=((short)b)<<8;
+            result|=(0xFF&(int)b)<<8;
             b = iterator.next();
-            result|=((short)b);
+            result|=(0xFF&(int)b);
 
             return result;
         }catch(final NoSuchElementException e){
@@ -149,13 +164,44 @@ class Message{
             byte b;
 
             b = iterator.next();
-            result|=((short)b)<<24;
+            result|=(0xFF&(int)b)<<24;
             b = iterator.next();
-            result|=((short)b)<<16;
+            result|=(0xFF&(int)b)<<16;
             b = iterator.next();
-            result|=((short)b)<<8;
+            result|=(0xFF&(int)b)<<8;
             b = iterator.next();
-            result|=((short)b);
+            result|=(0xFF&(int)b);
+
+            return result;
+        }catch(final NoSuchElementException e){
+            throw new MessageDeserializationException(e);
+        }
+    }
+    
+    //Read value from this message
+    public static long read8Bytes(Iterator<Byte> iterator)
+        throws MessageDeserializationException
+    {
+        try{
+            long result=0L;
+            byte b;
+
+            b = iterator.next();
+            result|=(0xFFL&(long)b)<<56;
+            b = iterator.next();
+            result|=(0xFFL&(long)b)<<48;
+            b = iterator.next();
+            result|=(0xFFL&(long)b)<<40;
+            b = iterator.next();
+            result|=(0xFFL&(long)b)<<32;
+            b = iterator.next();
+            result|=(0xFFL&(long)b)<<24;
+            b = iterator.next();
+            result|=(0xFFL&(long)b)<<16;
+            b = iterator.next();
+            result|=(0xFFL&(long)b)<<8;
+            b = iterator.next();
+            result|=(0xFFL&(long)b);
 
             return result;
         }catch(final NoSuchElementException e){
@@ -183,6 +229,29 @@ class Message{
         }
     }
 
+    //Read value from this message
+    public static java.util.Vector<Byte> readBinary(Iterator<Byte> iterator)
+        throws MessageDeserializationException
+    {
+        try{
+
+            final byte firstByte = iterator.next();
+            final byte secondByte = iterator.next();
+
+            final int incomingMessageLength
+                = ((0x7F&((int)firstByte))<<8)|(0xFF&((int)secondByte));
+
+            java.util.Vector<Byte> result = new java.util.Vector<Byte>();
+
+            for(int i=0;i<incomingMessageLength;i++)
+                result.add(iterator.next());
+
+            return result;
+        }catch(final NoSuchElementException e){
+            throw new MessageDeserializationException(e);
+        }
+    }
+
     //Represent this message as string
     public String toString(){
 
@@ -195,17 +264,28 @@ class Message{
 
         output.append("Number of bytes: "+this.data.size()+"\n");
 
+        output.append("Plain view:\n");
+
+        for(int i=0; i<this.data.size()&&i<1024;i++){
+            final byte b = this.data.get(i);
+            if(b==' '||Character.isLetterOrDigit(b))
+                output.append((char)b);
+            else
+                output.append('.');
+
+            if(i%10==9)
+                output.append("\n");
+        }
+
+        output.append("\nHex view:\n");
+
         for(int i=0; i<this.data.size()&&i<1024;i++){
             
             final byte b = this.data.get(i);
 
-            output.append(""+hex[(b>>4) & 0x0F]
-                          +hex[b & 0x0F]
-                          +" ("+(b==' '||Character.isLetterOrDigit(b)
-                                 ?b
-                                 :'_')
-                          +") ");
-            if(i%10==0)
+            output.append(""+hex[(b>>4) & 0x0F]+hex[b & 0x0F]+" ");
+
+            if(i%10==9)
                 output.append("\n");
         }
         
