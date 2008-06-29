@@ -36,7 +36,7 @@
 #include "TicTacToe.hpp"
 #include <set>
 
-bool TicTacToe::initialize(std::multimap<Player,std::vector<char> >& messages) throw()
+bool TicTacToe::initialize(std::list<PlayerAddressedMessage>& messages) throw()
 {
   //Initialization fails if table was created not for 2 players:
   if(this->numberOfPlayers!=2)
@@ -47,13 +47,11 @@ bool TicTacToe::initialize(std::multimap<Player,std::vector<char> >& messages) t
 
   //TODO: It's possible to prepare such a multimap once for all games.
 
-  std::vector<char> youAreFirst;
-  TicTacToeProtocol::serialize_1_YOU_ARE_FIRST(youAreFirst);
-  messages.insert(std::pair<Player,std::vector<char> >(0,youAreFirst));
+  messages.push_back(PlayerAddressedMessage(0));
+  TicTacToeProtocol::serialize_1_YOU_ARE_FIRST(messages.back().message);
 
-  std::vector<char> youAreSecond;
-  TicTacToeProtocol::serialize_1_YOU_ARE_SECOND(youAreSecond);
-  messages.insert(std::pair<Player,std::vector<char> >(1,youAreSecond));
+  messages.push_back(PlayerAddressedMessage(1));
+  TicTacToeProtocol::serialize_1_YOU_ARE_SECOND(messages.back().message);
   
   //Initialize board to be 3x3 with all empty fields:
   //TODO: not efficient. Have static empty board.
@@ -68,7 +66,7 @@ bool TicTacToe::initialize(std::multimap<Player,std::vector<char> >& messages) t
 }
 
 TurnGame::MoveResult TicTacToe::move(const std::vector<char>& move,
-                                     std::multimap<Player,std::vector<char> >& moveMessages,
+                                     std::list<PlayerAddressedMessage>& moveMessages,
                                      std::list< std::set<Player> >& endResult)
   throw()
 {
@@ -99,10 +97,13 @@ TurnGame::MoveResult TicTacToe::move(const std::vector<char>& move,
   empty--;
 
   //Send a message to all players with what move was made:
+  //TODO: maybe only to the player who did not make the move?
   std::vector<char> moveMade;
   TicTacToeProtocol::serialize_1_MOVE_MADE(row,column,moveMade);
-  moveMessages.insert(std::pair<Player,std::vector<char> >(0,moveMade));
-  moveMessages.insert(std::pair<Player,std::vector<char> >(1,moveMade));
+  moveMessages.push_back(PlayerAddressedMessage(0));
+  moveMessages.back().message = moveMade;
+  moveMessages.push_back(PlayerAddressedMessage(1));
+  moveMessages.back().message = moveMade;
   
   //Let's see whether we have 3--in--a--row after this move:
   if( (board[row][0]==c && board[row][1]==c && board[row][2]==c)

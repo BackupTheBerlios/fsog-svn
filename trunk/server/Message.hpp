@@ -133,7 +133,7 @@ public:
   template<class T>
   static bool readNBytes(std::vector<char>::const_iterator&it,
                          const std::vector<char>::const_iterator&messageEnd,
-                         const short n,
+                         const char n,
                          T&result)
     throw()
   {
@@ -141,9 +141,14 @@ public:
       return false;
 
     result=0;
-    for(short i=8*(n-1);i>=0;i-=8)
-      result|=(static_cast<T>(*it++))<<i;
+    T tempByte;
+    const T mask = static_cast<T>(0x00FF);
 
+    for(char i=8*(n-1);i>=0;i-=8)
+      {
+        tempByte = (static_cast<T>(*it++)) & mask;
+        result|=(tempByte<<i);
+      }
     return true;
   }
 

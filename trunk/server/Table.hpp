@@ -36,13 +36,13 @@
 
 #pragma once
 
+#include <map>
+#include "Definitions.hpp"
 #include "Game.hpp"
+#include "TablePlayer.hpp"
 
 class Table
 {
-public:
-  typedef int64_t TableId;
-
 private:
   static int64_t tableCounter;
   static TableId nextTableId() throw();
@@ -51,29 +51,27 @@ public:
   TurnGame* p_game;
   const TableId id;
 
-  /**
-     0 is not a valid TablePlayerId. It starts at 1.
-   */
-  typedef uint8_t TablePlayerId;
+  //Is table player id necessary?
+  std::map<TablePlayerId,TablePlayer*> tablePlayerIdToTablePlayerPointer;
 
-  std::map<TablePlayerId,int32_t> tablePlayerIdToSessionId;
+  std::vector<TablePlayer*> turnGamePlayerToTablePlayerPointer;
 
   /**
      If 0 is returned, no player can be added.
   */
   TablePlayerId nextTablePlayerId() throw()
   {
-    if(tablePlayerIdToSessionId.empty())
+    if(tablePlayerIdToTablePlayerPointer.empty())
       return 1;
 
-    TablePlayerId biggest = tablePlayerIdToSessionId.rbegin()->first;
+    TablePlayerId biggest = tablePlayerIdToTablePlayerPointer.rbegin()->first;
 
     if(biggest<255)
       return biggest+1;
 
     //Will loop around after counter exhaustion.
     for(TablePlayerId id = 1; id != 0; id++)
-      if(tablePlayerIdToSessionId.count(id)==0)
+      if(tablePlayerIdToTablePlayerPointer.count(id)==0)
         return id;
 
     return 0;

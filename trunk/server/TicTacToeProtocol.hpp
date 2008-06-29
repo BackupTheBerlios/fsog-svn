@@ -35,10 +35,10 @@
 #include <string>
 #include <sstream>
 #include <cctype>
-#include <map>
+#include <list>
 #include "Time.hpp"
 #include "Message.hpp"
-
+#include "SessionAddressedMessage.hpp"
 
 class TicTacToeProtocol
 {
@@ -376,17 +376,17 @@ class TicTacToeHandler
 public:
   bool handle(const std::vector<char>& message,
               const int32_t sessionID,
-              std::multimap<int32_t,std::vector<char> >& toBeSent,
+              std::list<SessionAddressedMessage>& toBeSent,
               TimeMicro& timeout) throw();
 
   //Handlers for various message types:
   virtual bool handle_1_MAKE_MOVE(const int32_t sessionID,
-                  std::multimap<int32_t,std::vector<char> >& toBeSent,
+                  std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,
                   const int8_t row,
                   const int8_t column) throw() =0;
   virtual bool handle_1_MOVE_MADE(const int32_t sessionID,
-                  std::multimap<int32_t,std::vector<char> >& toBeSent,
+                  std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,
                   const int8_t row,
                   const int8_t column) throw() =0;

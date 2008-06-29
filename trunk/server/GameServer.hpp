@@ -41,6 +41,7 @@
 #include "Time.hpp"
 #include "Table.hpp"
 #include "GeneralProtocol.hpp"
+#include "SessionAddressedMessage.hpp"
 
 class GameServer : GeneralHandler
 {
@@ -48,16 +49,16 @@ public:
   /** message received from client on old or new session. */
   void received(const std::vector<char>& message,
                 const int32_t sessionID,
-                std::multimap<int32_t,std::vector<char> >& messagesToBeSent,
+                std::list<SessionAddressedMessage>& messagesToBeSent,
                 TimeMicro& timeout) throw();
   
   /** Session terminated. */
   void terminated(const int32_t& sessionID,
-                  std::multimap<int32_t,std::vector<char> >& toBeSent,
+                  std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout) throw();
 
   /** Timeout happened. */
-  void timeout(std::multimap<int32_t,std::vector<char> >& toBeSent,
+  void timeout(std::list<SessionAddressedMessage>& toBeSent,
                TimeMicro& timeout) throw();
                   
 private:
@@ -65,22 +66,22 @@ private:
   std::list<Table> tables;
   typedef std::list<Table>::iterator TableIterator;
 
-  std::map<int32_t,TableIterator> sessionIdToTableIterator;
-  std::map<Table::TableId,TableIterator> tableIdToTableIterator;
+  std::map<int32_t,TablePlayer*> sessionIdToTablePlayerPointer;
+  std::map<TableId,TableIterator> tableIdToTableIterator;
 
   bool handle_1_CREATE_TICTACTOE_TABLE(const int32_t sessionID,
-                                       std::multimap<int32_t,std::vector<char> >& toBeSent,
+                                       std::list<SessionAddressedMessage>& toBeSent,
                                        TimeMicro& timeout) throw();
 
   bool handle_1_JOIN_TABLE_TO_PLAY
   (const int32_t sessionID,
-   std::multimap<int32_t,std::vector<char> >& toBeSent,
+   std::list<SessionAddressedMessage>& toBeSent,
    TimeMicro& timeout,
    const int64_t tableId,
    const std::string& screenName) throw();
   
   bool handle_1_MAKE_MOVE(const int32_t sessionID,
-                          std::multimap<int32_t,std::vector<char> >& toBeSent,
+                          std::list<SessionAddressedMessage>& toBeSent,
                           TimeMicro& timeout,
                           const std::vector<char>& move) throw();
 };

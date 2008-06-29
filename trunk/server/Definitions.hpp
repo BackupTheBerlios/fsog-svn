@@ -37,43 +37,17 @@
 #pragma once
 
 #include <stdint.h>
-#include <vector>
-#include "Game.hpp"
-#include "TicTacToeProtocol.hpp"
 
-typedef uint8_t Field;
-const Field EMPTY = 0x00;
-const Field X = 0x01;
-const Field O = 0x02;
+//Used in TurnGame to identify players.
+//First player - 0, second - 1, third - 2, etc...
+typedef int8_t Player;
 
-class TicTacToe : public TurnGame
-{
-private:
-  //Our 3x3 board:
-  std::vector<std::vector<Field> > board;
-  //Used for counting how many fields are still empty:
-  uint8_t empty;
+//Secret for joining tables.
+typedef int64_t TableId;
 
-  //Temporary object for deserializing move message:
-  TicTacToeProtocol::Deserialized_1_MAKE_MOVE deserialized_1_MAKE_MOVE;
-
-  Field currentPlayersField() const throw()
-  {
-    return (this->turn==0 ? X : O);
-  }
-
-public:
-
-  TicTacToe(const Player numberOfPlayers) throw()
-    :TurnGame(numberOfPlayers)
-  {}
-
-  ~TicTacToe() throw() {}
-
-  bool initialize(std::list<PlayerAddressedMessage>& initialMessages) throw();
-
-  MoveResult move(const std::vector<char>& move,
-                  std::list<PlayerAddressedMessage>& moveMessages,
-                  std::list<std::set<Player> >& endResult) throw();
-
-};
+/**
+   0 is not a valid TablePlayerId. It starts at 1.
+   
+*/
+typedef uint8_t TablePlayerId;
+  

@@ -34,7 +34,7 @@
 
   bool GeneralHandler::handle(const std::vector<char>& message,
                   const int32_t sessionID,
-                  std::multimap<int32_t,std::vector<char> >& toBeSent
+                  std::list<SessionAddressedMessage>& toBeSent
 ,                  TimeMicro& timeout) throw()
   {
 

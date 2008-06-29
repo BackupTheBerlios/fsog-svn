@@ -36,44 +36,18 @@
 
 #pragma once
 
-#include <stdint.h>
 #include <vector>
-#include "Game.hpp"
-#include "TicTacToeProtocol.hpp"
-
-typedef uint8_t Field;
-const Field EMPTY = 0x00;
-const Field X = 0x01;
-const Field O = 0x02;
-
-class TicTacToe : public TurnGame
+class SessionAddressedMessage
 {
-private:
-  //Our 3x3 board:
-  std::vector<std::vector<Field> > board;
-  //Used for counting how many fields are still empty:
-  uint8_t empty;
-
-  //Temporary object for deserializing move message:
-  TicTacToeProtocol::Deserialized_1_MAKE_MOVE deserialized_1_MAKE_MOVE;
-
-  Field currentPlayersField() const throw()
-  {
-    return (this->turn==0 ? X : O);
-  }
-
 public:
+  //To which session deliver the message:
+  const int32_t sessionId;
+  //Message content:
+  std::vector<char> message;
 
-  TicTacToe(const Player numberOfPlayers) throw()
-    :TurnGame(numberOfPlayers)
-  {}
-
-  ~TicTacToe() throw() {}
-
-  bool initialize(std::list<PlayerAddressedMessage>& initialMessages) throw();
-
-  MoveResult move(const std::vector<char>& move,
-                  std::list<PlayerAddressedMessage>& moveMessages,
-                  std::list<std::set<Player> >& endResult) throw();
-
+  SessionAddressedMessage(const int32_t sessionId)
+    :sessionId(sessionId),
+     message()
+  {
+  }
 };

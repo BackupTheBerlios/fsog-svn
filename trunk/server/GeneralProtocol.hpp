@@ -35,10 +35,10 @@
 #include <string>
 #include <sstream>
 #include <cctype>
-#include <map>
+#include <list>
 #include "Time.hpp"
 #include "Message.hpp"
-
+#include "SessionAddressedMessage.hpp"
 
 class GeneralProtocol
 {
@@ -57,8 +57,8 @@ public:
     static const int8_t YOU_JOINED_TABLE_1 = 4;
     //Sent by server after new player joined a table to already present people.
     static const int8_t NEW_PLAYER_JOINED_TABLE_1 = 5;
-    //Sent by server when game is started. Some initialization messages can be sent right after. Move from first player(s) is awaited after that.
-    static const int8_t GAME_STARTED_1 = 6;
+    //Sent by server when game is started. Some initialization message can be sent within. Move from first player(s) is awaited after that.
+    static const int8_t GAME_STARTED_AND_INITIAL_MESSAGE_1 = 6;
     //Sent by client when making a move.
     static const int8_t MAKE_MOVE_1 = 7;
     //Sent by server after client made a move.
@@ -78,7 +78,7 @@ public:
       case JOIN_TABLE_TO_PLAY_1: return "JOIN_TABLE_TO_PLAY";
       case YOU_JOINED_TABLE_1: return "YOU_JOINED_TABLE";
       case NEW_PLAYER_JOINED_TABLE_1: return "NEW_PLAYER_JOINED_TABLE";
-      case GAME_STARTED_1: return "GAME_STARTED";
+      case GAME_STARTED_AND_INITIAL_MESSAGE_1: return "GAME_STARTED_AND_INITIAL_MESSAGE";
       case MAKE_MOVE_1: return "MAKE_MOVE";
       case MOVE_MADE_1: return "MOVE_MADE";
     }
@@ -447,14 +447,17 @@ public:
     return true;
   }
 
-  //Message GAME_STARTED:
+  //Message GAME_STARTED_AND_INITIAL_MESSAGE:
 
   //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 6.
-  //Sent by server when game is started. Some initialization messages can be sent right after. Move from first player(s) is awaited after that.
+  //Sent by server when game is started. Some initialization message can be sent within. Move from first player(s) is awaited after that.
 
-  static void serialize_1_GAME_STARTED(    std::vector<char>&outputMessage)
+  static void serialize_1_GAME_STARTED_AND_INITIAL_MESSAGE(
+        //Initial game--specific message.
+        const std::vector<char>& initialMessage,
+    std::vector<char>&outputMessage)
     throw()
   {
     outputMessage.resize(0);
@@ -463,14 +466,19 @@ public:
     //Let the receiver know what kind of message this is:
     Message::append1Byte(6,outputMessage);
 
+    //Serialize initialMessage:
+    Message::appendBinary(initialMessage,outputMessage);
   }
 
-  class Deserialized_1_GAME_STARTED
+  class Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE
   {
   public:
+    //Initial game--specific message.
+    std::vector<char> initialMessage;
   };
 
-  static bool deserialize_1_GAME_STARTED(const std::vector<char>&inputMessage)
+  static bool deserialize_1_GAME_STARTED_AND_INITIAL_MESSAGE(const std::vector<char>&inputMessage,
+        Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE&output)
   throw()
   {
     std::vector<char>::const_iterator it
@@ -494,6 +502,9 @@ public:
 
     //Deserialize pieces:
 
+    //Deserialize initialMessage:
+    if(!Message::readBinary(it,messageEnd,output.initialMessage))
+      return false;
     return true;
   }
 
@@ -632,20 +643,20 @@ class GeneralHandler
 public:
   bool handle(const std::vector<char>& message,
               const int32_t sessionID,
-              std::multimap<int32_t,std::vector<char> >& toBeSent,
+              std::list<SessionAddressedMessage>& toBeSent,
               TimeMicro& timeout) throw();
 
   //Handlers for various message types:
   virtual bool handle_1_CREATE_TICTACTOE_TABLE(const int32_t sessionID,
-                  std::multimap<int32_t,std::vector<char> >& toBeSent,
+                  std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout) throw() =0;
   virtual bool handle_1_JOIN_TABLE_TO_PLAY(const int32_t sessionID,
-                  std::multimap<int32_t,std::vector<char> >& toBeSent,
+                  std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,
                   const int64_t tableId,
                   const std::string& screenName) throw() =0;
   virtual bool handle_1_MAKE_MOVE(const int32_t sessionID,
-                  std::multimap<int32_t,std::vector<char> >& toBeSent,
+                  std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,
                   const std::vector<char>& move) throw() =0;
   virtual ~GeneralHandler() throw() {}

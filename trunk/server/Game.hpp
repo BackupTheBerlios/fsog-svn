@@ -39,7 +39,9 @@
 #include <list>
 #include <vector>
 #include <set>
-#include <map>
+#include "Definitions.hpp"
+#include "PlayerAddressedMessage.hpp"
+
 
 /** Some thread will create an object of a class deriving from
     TurnGame. The IO model used for networking, as well as socket details
@@ -50,16 +52,6 @@ class TurnGame
 {
 public:
   
-  //typedef int32_t Identifier;
-
-  //typedef std::string Nick;
-  //typedef std::vector<std::string> Nicks;
-  //TODO: Does the game need to know the string nicks? Probably no...
-  //Nicks nicks;
-
-  //First player - 0, second - 1, third - 2, etc...
-  typedef int8_t Player;
-
   Player turn;
 
   //TODO: server has to guard that if Player p sends a move, then it's
@@ -98,7 +90,7 @@ public:
       "initialize(...)" shall return "true" if game can be started
       normally and "false" if game cannot be started for some reason.
   */
-  virtual bool initialize(std::multimap<Player,std::vector<char> >& initialMessages)
+  virtual bool initialize(std::list<PlayerAddressedMessage>& initialMessages)
     throw() =0;
 
   /** Values representing what effect a move has on the game. This is
@@ -178,7 +170,7 @@ public:
       server?
   */
   virtual MoveResult move(const std::vector<char>& move,
-                          std::multimap<Player,std::vector<char> >& moveMessages,
+                          std::list<PlayerAddressedMessage>& moveMessages,
                           std::list< std::set<Player> >& endResult)
     throw() =0;
 
