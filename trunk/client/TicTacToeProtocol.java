@@ -288,7 +288,7 @@ public class TicTacToeProtocol{
   */
 
 
-static abstract class TicTacToeHandler
+static abstract class AbstractTicTacToeHandler
 {
 
 

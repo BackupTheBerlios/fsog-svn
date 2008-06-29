@@ -33,36 +33,38 @@
         Denmark
 */
 
-import java.net.Socket;
+/** Thread--safe. */
 
-public class Receiver extends Thread{
+public class Table {
 
-    private final Socket socket;
-    private final GeneralProtocol.AbstractGeneralHandler generalHandler;
-
-    public Receiver(final Socket socket,
-                    final GeneralProtocol.AbstractGeneralHandler generalHandler){
-        this.socket = socket;
-        this.generalHandler = generalHandler;
+    private final java.util.TreeMap<Byte,TablePlayer> players;
+    private Byte myTablePlayerId;
+    
+    //Constructor:
+    public Table(){
+        this.players = new java.util.TreeMap<Byte,TablePlayer>();
+        this.myTablePlayerId = null;
     }
 
-    public void run(){
-
-        try{
-            while(true){
-                //Receive message:
-                //TODO: Is Socket's buffer long enough for storing,
-                //say, 100 messages if handling takes a long time?
-                final Message message
-                    = TransportProtocol.receive(this.socket);
-                
-                this.generalHandler.handle(message);
-            }
-        }catch(final Exception e){
-            System.err.println("Exception: "+e);
-            System.err.println("Stack trace:");
-            e.printStackTrace();
-            //TODO: Maybe this.socket.close()?
+    public synchronized java.util.TreeMap<Byte,TablePlayer> getPlayersDeepCopy(){
+        java.util.TreeMap<Byte,TablePlayer> deepCopy
+            = new java.util.TreeMap<Byte,TablePlayer>();
+        for(java.util.Map.Entry<Byte,TablePlayer> e : this.players.entrySet()){
+            deepCopy.put(new Byte(e.getKey()),
+                         e.getValue().clone());
         }
+        return deepCopy;
+    }
+
+    /** After this method is called, no thread can use me. */
+    public synchronized void addMe(final Byte tablePlayerId,
+                                   final TablePlayer me){
+        this.players.put(tablePlayerId,me);
+        this.myTablePlayerId = tablePlayerId;
+    }
+
+    public synchronized void addPlayer(final Byte tablePlayerId,
+                                       final TablePlayer player){
+        this.players.put(tablePlayerId,player);
     }
 }

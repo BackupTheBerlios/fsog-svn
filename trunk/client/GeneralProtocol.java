@@ -48,8 +48,8 @@ public class GeneralProtocol{
     YOU_JOINED_TABLE_1,
     //Sent by server after new player joined a table to already present people.
     NEW_PLAYER_JOINED_TABLE_1,
-    //Sent by server when game is started. Some initialization messages can be sent right after. Move from first player(s) is awaited after that.
-    GAME_STARTED_1,
+    //Sent by server when game is started. Some initialization message can be sent within. Move from first player(s) is awaited after that.
+    GAME_STARTED_AND_INITIAL_MESSAGE_1,
     //Sent by client when making a move.
     MAKE_MOVE_1,
     //Sent by server after client made a move.
@@ -81,7 +81,7 @@ public class GeneralProtocol{
         case 3: return MessageType.JOIN_TABLE_TO_PLAY_1;
         case 4: return MessageType.YOU_JOINED_TABLE_1;
         case 5: return MessageType.NEW_PLAYER_JOINED_TABLE_1;
-        case 6: return MessageType.GAME_STARTED_1;
+        case 6: return MessageType.GAME_STARTED_AND_INITIAL_MESSAGE_1;
         case 7: return MessageType.MAKE_MOVE_1;
         case 8: return MessageType.MOVE_MADE_1;
         default: return MessageType.UNKNOWN_MESSAGE_1;
@@ -359,16 +359,18 @@ public class GeneralProtocol{
     }
   }
 
-  //Message GAME_STARTED:
+  //Message GAME_STARTED_AND_INITIAL_MESSAGE:
 
   //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 6.
-  //Sent by server when game is started. Some initialization messages can be sent right after. Move from first player(s) is awaited after that.
+  //Sent by server when game is started. Some initialization message can be sent within. Move from first player(s) is awaited after that.
 
   /* Message sent by SERVER only,
      no need to serialize on other side (here).
-  public static Message serialize_1_GAME_STARTED(){
+  public static Message serialize_1_GAME_STARTED_AND_INITIAL_MESSAGE(
+        //Initial game--specific message.
+        final java.util.Vector<Byte> initialMessage){
     final Message outputMessage
      = new Message();
 
@@ -377,13 +379,17 @@ public class GeneralProtocol{
     //Let the receiver know what kind of message this is:
     outputMessage.append1Byte(6);
 
+    //Serialize initialMessage:
+    outputMessage.appendBinary(initialMessage);
     return outputMessage;
   }
 
   */
 
-  public static class Deserialized_1_GAME_STARTED{
-    public Deserialized_1_GAME_STARTED(final Message inputMessage)
+  public static class Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE{
+    //Initial game--specific message.
+    public final java.util.Vector<Byte> initialMessage;
+    public Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE(final Message inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -397,6 +403,8 @@ public class GeneralProtocol{
         if(iterator.next()!=6)
           throw new MessageDeserializationException();
 
+    //Deserialize initialMessage:
+      this.initialMessage = Message.readBinary(iterator);
       }catch(NoSuchElementException e){
         throw new MessageDeserializationException(e);
       }
@@ -508,7 +516,7 @@ public class GeneralProtocol{
   }
 
 
-static abstract class GeneralHandler
+static abstract class AbstractGeneralHandler
 {
 
 
@@ -546,12 +554,12 @@ static abstract class GeneralHandler
           return false;
         }
     }
-    case GAME_STARTED_1:
+    case GAME_STARTED_AND_INITIAL_MESSAGE_1:
       {
         try{
-          final GeneralProtocol.Deserialized_1_GAME_STARTED deserialized = 
-              new GeneralProtocol.Deserialized_1_GAME_STARTED(message);
-        return this.handle_1_GAME_STARTED();
+          final GeneralProtocol.Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE deserialized = 
+              new GeneralProtocol.Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE(message);
+        return this.handle_1_GAME_STARTED_AND_INITIAL_MESSAGE(deserialized.initialMessage);
         }catch(final MessageDeserializationException e){
           return false;
         }
@@ -575,7 +583,7 @@ static abstract class GeneralHandler
   public abstract boolean handle_1_YOU_JOINED_TABLE(final byte tablePlayerId);
   public abstract boolean handle_1_NEW_PLAYER_JOINED_TABLE(final String screenName,
                   final byte tablePlayerId);
-  public abstract boolean handle_1_GAME_STARTED();
+  public abstract boolean handle_1_GAME_STARTED_AND_INITIAL_MESSAGE(final java.util.Vector<Byte> initialMessage);
   public abstract boolean handle_1_MOVE_MADE(final java.util.Vector<Byte> move);
 }
 }

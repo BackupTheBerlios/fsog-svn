@@ -33,36 +33,22 @@
         Denmark
 */
 
-import java.net.Socket;
+/** Thread--safe. */
 
-public class Receiver extends Thread{
+public class TablePlayer implements Cloneable{
 
-    private final Socket socket;
-    private final GeneralProtocol.AbstractGeneralHandler generalHandler;
-
-    public Receiver(final Socket socket,
-                    final GeneralProtocol.AbstractGeneralHandler generalHandler){
-        this.socket = socket;
-        this.generalHandler = generalHandler;
+    private String screenName;
+    
+    //Constructor:
+    public TablePlayer(final String screenName){
+        this.screenName = screenName;
     }
 
-    public void run(){
+    public synchronized TablePlayer clone(){
+            return new TablePlayer(this.screenName);
+    }
 
-        try{
-            while(true){
-                //Receive message:
-                //TODO: Is Socket's buffer long enough for storing,
-                //say, 100 messages if handling takes a long time?
-                final Message message
-                    = TransportProtocol.receive(this.socket);
-                
-                this.generalHandler.handle(message);
-            }
-        }catch(final Exception e){
-            System.err.println("Exception: "+e);
-            System.err.println("Stack trace:");
-            e.printStackTrace();
-            //TODO: Maybe this.socket.close()?
-        }
+    public synchronized String toString(){
+        return ""+this.screenName;
     }
 }

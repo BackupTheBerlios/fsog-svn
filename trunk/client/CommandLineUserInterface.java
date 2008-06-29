@@ -33,36 +33,29 @@
         Denmark
 */
 
-import java.net.Socket;
+public class CommandLineUserInterface extends UserInterface{
+    private final Table table;
 
-public class Receiver extends Thread{
-
-    private final Socket socket;
-    private final GeneralProtocol.AbstractGeneralHandler generalHandler;
-
-    public Receiver(final Socket socket,
-                    final GeneralProtocol.AbstractGeneralHandler generalHandler){
-        this.socket = socket;
-        this.generalHandler = generalHandler;
+    public CommandLineUserInterface(final Table table){
+        this.table = table;
     }
 
-    public void run(){
-
-        try{
-            while(true){
-                //Receive message:
-                //TODO: Is Socket's buffer long enough for storing,
-                //say, 100 messages if handling takes a long time?
-                final Message message
-                    = TransportProtocol.receive(this.socket);
-                
-                this.generalHandler.handle(message);
-            }
-        }catch(final Exception e){
-            System.err.println("Exception: "+e);
-            System.err.println("Stack trace:");
-            e.printStackTrace();
-            //TODO: Maybe this.socket.close()?
+    private synchronized void printTable(){
+        System.out.print("Players at table now: ");
+        boolean first = true;
+        for(java.util.Map.Entry<Byte,TablePlayer> e
+                : this.table.getPlayersDeepCopy().entrySet()){
+            if(!first)
+                System.out.print(", ");
+            System.out.print(""+e.getValue());
+            first = false;
         }
+        System.out.println(".");
+    }
+
+    public synchronized void newPlayer(final Byte tablePlayerId,
+                                       final TablePlayer player){
+        System.out.println(""+player+" joined the table.");
+        this.printTable();
     }
 }

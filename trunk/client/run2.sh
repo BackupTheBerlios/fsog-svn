@@ -1,2 +1,2 @@
-#!/bin/bash
-java ConsoleThousand -p pwabdr -s localhost -n nick2
+#!/bin/bash -x
+java TableJoiner localhost 3000 "$(cat tableId.txt)" Superman -d

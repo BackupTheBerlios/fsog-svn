@@ -35,34 +35,44 @@
 
 import java.net.Socket;
 
-public class Receiver extends Thread{
+public class Sender extends Thread{
 
     private final Socket socket;
-    private final GeneralProtocol.AbstractGeneralHandler generalHandler;
+    private final java.util.LinkedList<Message> messages;
 
-    public Receiver(final Socket socket,
-                    final GeneralProtocol.AbstractGeneralHandler generalHandler){
+    public Sender(final Socket socket){
         this.socket = socket;
-        this.generalHandler = generalHandler;
+        this.messages = new java.util.LinkedList<Message>();
+    }
+
+    public synchronized void send(final Message message){
+        this.messages.addLast(message);
+        this.notify();
+    }
+
+    private synchronized Message get() throws InterruptedException{
+        while(this.messages.size()==0)
+            this.wait();
+        return messages.removeFirst();
     }
 
     public void run(){
 
         try{
             while(true){
-                //Receive message:
-                //TODO: Is Socket's buffer long enough for storing,
-                //say, 100 messages if handling takes a long time?
                 final Message message
-                    = TransportProtocol.receive(this.socket);
+                    = this.get();
                 
-                this.generalHandler.handle(message);
+                TransportProtocol.send(message,
+                                       this.socket);
             }
+        }catch(final InterruptedException e){
+            //Thread interrupted, so we exit the loop.
         }catch(final Exception e){
             System.err.println("Exception: "+e);
             System.err.println("Stack trace:");
             e.printStackTrace();
-            //TODO: Maybe this.socket.close()?
+            //TODO: Terminate program?
         }
     }
 }

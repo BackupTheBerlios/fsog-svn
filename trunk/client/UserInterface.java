@@ -33,36 +33,7 @@
         Denmark
 */
 
-import java.net.Socket;
-
-public class Receiver extends Thread{
-
-    private final Socket socket;
-    private final GeneralProtocol.AbstractGeneralHandler generalHandler;
-
-    public Receiver(final Socket socket,
-                    final GeneralProtocol.AbstractGeneralHandler generalHandler){
-        this.socket = socket;
-        this.generalHandler = generalHandler;
-    }
-
-    public void run(){
-
-        try{
-            while(true){
-                //Receive message:
-                //TODO: Is Socket's buffer long enough for storing,
-                //say, 100 messages if handling takes a long time?
-                final Message message
-                    = TransportProtocol.receive(this.socket);
-                
-                this.generalHandler.handle(message);
-            }
-        }catch(final Exception e){
-            System.err.println("Exception: "+e);
-            System.err.println("Stack trace:");
-            e.printStackTrace();
-            //TODO: Maybe this.socket.close()?
-        }
-    }
+public abstract class UserInterface{
+    public abstract void newPlayer(final Byte tablePlayerId,
+                                   final TablePlayer player);
 }
