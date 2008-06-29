@@ -103,11 +103,13 @@ public class GeneralProtocolDefinition{
                                  "New player's table player id."));
 
         protocol.defineMessage
-            ("GAME_STARTED",
+            ("GAME_STARTED_AND_INITIAL_MESSAGE",
              "Sent by server when game is started."
-             +" Some initialization messages can be sent right after."
+             +" Some initialization message can be sent within."
              +" Move from first player(s) is awaited after that.",
-             Sender.SERVER);
+             Sender.SERVER,
+             new PieceDefinition(PieceType.BINARY,"initialMessage",
+                                 "Initial game--specific message."));
 
         protocol.defineMessage
             ("MAKE_MOVE",

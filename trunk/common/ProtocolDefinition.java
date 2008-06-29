@@ -204,10 +204,10 @@ public class ProtocolDefinition{
                  +"#include <string>\n"
                  +"#include <sstream>\n"
                  +"#include <cctype>\n"
-                 +"#include <map>\n"
+                 +"#include <list>\n"
                  +"#include \"Time.hpp\"\n"
                  +"#include \"Message.hpp\"\n"
-                 +"\n"
+                 +"#include \"SessionAddressedMessage.hpp\"\n"
                  +"\n");
 
         //Class Message is now in fixed file, not generated one.
@@ -767,14 +767,14 @@ public class ProtocolDefinition{
                  +"public:\n"
                  +"  bool handle(const std::vector<char>& message,\n"
                  +"              const int32_t sessionID,\n"
-                 +"              std::multimap<int32_t,std::vector<char> >& toBeSent,\n"
+                 +"              std::list<SessionAddressedMessage>& toBeSent,\n"
                  +"              TimeMicro& timeout) throw();\n"
                  +"\n");
 
         cppWrite("\n"
                  +"  bool "+protocolName+"Handler::handle(const std::vector<char>& message,\n"
                  +"                  const int32_t sessionID,\n"
-                 +"                  std::multimap<int32_t,std::vector<char> >& toBeSent\n,"
+                 +"                  std::list<SessionAddressedMessage>& toBeSent\n,"
                  +"                  TimeMicro& timeout) throw()\n"
                  +"  {\n"
                  +"\n"
@@ -813,7 +813,7 @@ public class ProtocolDefinition{
                 hppWrite("  virtual bool handle"+"_"+protocolVersion
                          +"_"+md.name+"(const int32_t sessionID,\n"
                          +"                  "
-                         +"std::multimap<int32_t,std::vector<char> >& toBeSent,\n"
+                         +"std::list<SessionAddressedMessage>& toBeSent,\n"
                          +"                  "
                          +"TimeMicro& timeout");
                 for(PieceDefinition pd : md.pieceDefinitions)
@@ -834,32 +834,43 @@ public class ProtocolDefinition{
 
     private void javaWriteHandler() throws Exception{
         javaWrite("\n"
-                 +"astract class "+protocolName+"Handler\n"
+                 +"static abstract class Abstract"+protocolName+"Handler\n"
                  +"{\n"
                  +"\n");
 
         javaWrite("\n"
-                  +"  boolean handle(final Message message){"
+                  +"  public boolean handle(final Message message){"
                   +"\n"
-                  +"    switch("+protocolName+"Protocol.getMessageType(message))\n"
+                  +"    switch("+protocolName
+                  +"Protocol.lookupMessageType(message))\n"
                   +"    {\n");
 
         for(MessageDefinition md : this.messageDefinitions){
             if(md.sentBy.equals(Sender.SERVER)){
-                javaWrite("    case "+protocolName+"Protocol."
+                javaWrite("    case "//+protocolName+"Protocol.MessageType."
                           +md.name+"_"+protocolVersion+":\n"
-                          +"      final "+protocolName+"Protocol.Deserialized_"
+                          +"      {\n"
+                          +"        try{\n"
+                          +"          final "+protocolName+"Protocol.Deserialized_"
                           +protocolVersion+"_"
                           +md.name+" deserialized = \n"
-                          +"             new "+protocolName+"Protocol.Deserialized_"
-                          +protocolVersion+"_"+md.name+"(message)\n");
-                javaWrite("             return this.handle_"+protocolVersion
+                          +"              new "+protocolName+"Protocol.Deserialized_"
+                          +protocolVersion+"_"+md.name+"(message);\n");
+                javaWrite("        return this.handle_"+protocolVersion
                           +"_"+md.name+"(");
-                for(PieceDefinition pd : md.pieceDefinitions)
-                    javaWrite(",\n"
-                             +"                      "
-                             +"deserialized."+pd.name);
+                boolean first = true;
+                for(PieceDefinition pd : md.pieceDefinitions){
+                    if(!first)
+                        javaWrite(",\n"
+                                  +"                      ");
+                    javaWrite("deserialized."+pd.name);
+                    first = false;
+                }
                 javaWrite(");\n");
+                javaWrite("        }catch(final MessageDeserializationException e){\n"
+                          +"          return false;\n"
+                          +"        }\n"
+                          +"    }\n");
             }
         }
         
@@ -871,14 +882,17 @@ public class ProtocolDefinition{
         javaWrite("  //Handlers for various message types:\n");
         for(MessageDefinition md : this.messageDefinitions){
             if(md.sentBy.equals(Sender.SERVER)){
-                javaWrite("  abstract boolean handle"+"_"+protocolVersion
+                javaWrite("  public abstract boolean handle"+"_"+protocolVersion
                          +"_"+md.name+"(");
-                for(PieceDefinition pd : md.pieceDefinitions)
-                    javaWrite(",\n"
-                              +"                  "
-                              +pd.type.toJavaFinalType(this.flagSetDefinitions)
+                boolean first = true;
+                for(PieceDefinition pd : md.pieceDefinitions){
+                    if(!first)
+                        javaWrite(",\n"
+                                  +"                  ");
+                    javaWrite(pd.type.toJavaFinalType(this.flagSetDefinitions)
                               +" "+pd.name);
-
+                    first = false;
+                }
                 javaWrite(");\n");
             }
         }
@@ -910,10 +924,11 @@ public class ProtocolDefinition{
             this.writeMessageDefinition(messageDefinition);
         }
 
+        this.javaWriteHandler();
+
         this.writeFooter();
 
         this.hppWriteHandler();
-        this.javaWriteHandler();
 
         this.javaWriter.flush();
         this.javaWriter.close();
