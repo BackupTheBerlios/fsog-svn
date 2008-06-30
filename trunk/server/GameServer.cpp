@@ -107,7 +107,8 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
 
   Table& table = *tableIterator;
   
-  if(sessionIdToTablePlayerPointer.find(sessionId)!=sessionIdToTablePlayerPointer.end())
+  if(sessionIdToTablePlayerPointer.find(sessionId)
+     != sessionIdToTablePlayerPointer.end())
     {
       //TODO: What if session was at another table already?
       std::cout<<"Session at another table!"<<std::endl;
@@ -128,24 +129,27 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
   TablePlayer* tablePlayerPointer
     = new TablePlayer(sessionId,screenName,table,tablePlayerId);
 
-  sessionIdToTablePlayerPointer.insert(std::pair<int32_t,TablePlayer*>(sessionId,
-                                                                tablePlayerPointer));
+  sessionIdToTablePlayerPointer.insert
+    (std::pair<int32_t,TablePlayer*>(sessionId,
+                                     tablePlayerPointer));
 
   //Let old players know that new player is here:
   //Also let the new player know what old players are here:
-  std::vector<char> toOthers;
+  std::vector<char> toOldPlayers;
   GeneralProtocol::serialize_1_NEW_PLAYER_JOINED_TABLE(screenName,
                                                        tablePlayerId,
-                                                       toOthers);
+                                                       toOldPlayers);
 
   for(std::map<TablePlayerId,TablePlayer*>::const_iterator it
         = table.tablePlayerIdToTablePlayerPointer.begin();
       it!=table.tablePlayerIdToTablePlayerPointer.end();
       it++)
     {
+      //Message to each old player that joiner joined:
       toBeSent.push_back(SessionAddressedMessage(it->second->sessionId));
-      toBeSent.back().message = toOthers;
+      toBeSent.back().message = toOldPlayers;
 
+      //Message to joiner that each old player is here:
       toBeSent.push_back(SessionAddressedMessage(sessionId));
       GeneralProtocol::serialize_1_NEW_PLAYER_JOINED_TABLE
         (it->second->screenName,
@@ -169,11 +173,16 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
     {
       //Assign turnGamePlayer to each TablePlayer:
       Player turnGamePlayer = 0;
+      table.turnGamePlayerToTablePlayerPointer.resize(table.p_game->numberOfPlayers);
       for(std::map<TablePlayerId,TablePlayer*>::iterator it
             = table.tablePlayerIdToTablePlayerPointer.begin();
-          it!= table.tablePlayerIdToTablePlayerPointer.end();
+          it != table.tablePlayerIdToTablePlayerPointer.end();
           it++)
-        it->second->turnGamePlayer = (turnGamePlayer++);
+        {
+          table.turnGamePlayerToTablePlayerPointer[turnGamePlayer] = it->second;
+          it->second->turnGamePlayer = turnGamePlayer;
+          turnGamePlayer++;
+        }
 
       std::list<PlayerAddressedMessage> initialMessages;
 
@@ -186,9 +195,18 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
 
       for(std::list<PlayerAddressedMessage>::const_iterator it
             = initialMessages.begin();
-          it!=initialMessages.end();
+          it != initialMessages.end();
           it++)
         {
+          if(it->player >= table.turnGamePlayerToTablePlayerPointer.size())
+            {
+              std::cout<<"TurnGame wanted to send message to player"
+                       <<it->player<<", while there are only "
+                       <<table.turnGamePlayerToTablePlayerPointer.size()
+                       <<" players in the game."
+                       <<std::endl;
+              return false;
+            }
           const int32_t adresseeSessionId
             = table.turnGamePlayerToTablePlayerPointer[it->player]->sessionId;
 
