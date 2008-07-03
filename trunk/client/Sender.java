@@ -37,21 +37,37 @@ import java.net.Socket;
 
 public class Sender extends Thread{
 
-    private final Socket socket;
+    private Socket socket;
     private final java.util.LinkedList<Message> messages;
 
-    public Sender(final Socket socket){
-        this.socket = socket;
+    private static Sender instance = new Sender();
+
+    private Sender(){
+        this.socket = null;
         this.messages = new java.util.LinkedList<Message>();
+        this.start();
     }
 
-    public synchronized void send(final Message message){
+    public static void setSocket(final Socket socket){
+        Sender.instance.socket(socket);
+    }        
+
+    public static void send(final Message message){
+        Sender.instance.queue(message);
+    }
+
+    public synchronized void socket(final Socket socket){
+        this.socket = socket;
+        this.notify();
+    }
+
+    public synchronized void queue(final Message message){
         this.messages.addLast(message);
         this.notify();
     }
 
     private synchronized Message get() throws InterruptedException{
-        while(this.messages.size()==0)
+        while(this.messages.size()==0 || this.socket==null)
             this.wait();
         return messages.removeFirst();
     }

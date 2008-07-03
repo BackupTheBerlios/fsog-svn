@@ -34,6 +34,7 @@
 */
 
 import java.net.Socket;
+import javax.swing.*;
 
 public class TableJoiner{
 
@@ -59,23 +60,15 @@ public class TableJoiner{
                              serverPort);
             d("Socket created: "+socket);
 
-            final Table table = new Table();
+            Sender.setSocket(socket);
 
-            final UserInterface ui = new CommandLineUserInterface(table);
-
-            final Sender sender = new Sender(socket);
-            sender.start();
-
-            final GeneralProtocol.AbstractGeneralHandler handler
-                = new GeneralHandler(ui,sender,table);
-
-            final Receiver receiver = new Receiver(socket,
-                                                   handler);
-            receiver.start();
-
-            sender.send
-                (GeneralProtocol.serialize_1_JOIN_TABLE_TO_PLAY(tableId,
-                                                                screenName));
+            SwingUtilities.invokeLater(new Runnable(){
+                    public void run() {
+                        createGUI(socket,
+                                  tableId,
+                                  screenName);
+                    }
+                });
 
         }catch(final Exception e){
             System.err.println("Exception: "+e);
@@ -83,4 +76,36 @@ public class TableJoiner{
             e.printStackTrace();
         }
     }
+
+    /**
+     * Create the GUI. For thread safety, this method should
+     * be invoked from the event-dispatching thread.
+     */
+    private static void createGUI(final Socket socket,
+                                  final Long tableId,
+                                  final String screenName) {
+
+        //Create and set up the window.
+        final JFrame frame = new JFrame("FSOG");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        //Add contents to the window.
+        final JTablePanel jTablePanel = new JTablePanel();
+        frame.add(jTablePanel);
+
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+
+        final Receiver receiver = new Receiver(socket,
+                                               jTablePanel);
+        receiver.start();
+
+        //TODO: tableId could be null.
+        Sender.send
+            (GeneralProtocol.serialize_1_JOIN_TABLE_TO_PLAY(tableId,
+                                                            screenName));
+
+    }
+
 }

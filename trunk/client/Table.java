@@ -56,6 +56,13 @@ public class Table {
         return deepCopy;
     }
 
+    public synchronized TablePlayer getTablePlayerCopy(final byte tablePlayerId){
+        final TablePlayer tablePlayer =  this.players.get(tablePlayerId);
+        if(tablePlayer == null)
+            return null;
+        return tablePlayer.clone();
+    }
+
     /** After this method is called, no thread can use me. */
     public synchronized void addMe(final Byte tablePlayerId,
                                    final TablePlayer me){

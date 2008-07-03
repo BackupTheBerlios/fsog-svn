@@ -44,6 +44,10 @@ public class TablePlayer implements Cloneable{
         this.screenName = screenName;
     }
 
+    public synchronized String getScreenNameCopy(){
+        return new String(this.screenName);
+    }
+
     public synchronized TablePlayer clone(){
             return new TablePlayer(this.screenName);
     }

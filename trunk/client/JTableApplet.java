@@ -33,29 +33,44 @@
         Denmark
 */
 
-public class CommandLineUserInterface{
-    private final Table table;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
 
-    public CommandLineUserInterface(final Table table){
-        this.table = table;
+public class JTableApplet extends JApplet{
+
+    protected void loadAppletParameters() {
+        //Get the applet parameters.
+        String at = getParameter("t");
     }
 
-    private synchronized void printTable(){
-        System.out.print("Players at table now: ");
-        boolean first = true;
-        for(java.util.Map.Entry<Byte,TablePlayer> e
-                : this.table.getPlayersDeepCopy().entrySet()){
-            if(!first)
-                System.out.print(", ");
-            System.out.print(""+e.getValue());
-            first = false;
+    /**
+     * Create the GUI. For thread safety, this method should
+     * be invoked from the event-dispatching thread.
+     */
+    private void createGUI() {
+        System.err.println("Creating...");
+        this.add(new JTablePanel());
+        System.err.println("Created...");
+    }
+
+    //Called when this applet is loaded into the browser.
+    public void init() {
+        loadAppletParameters();
+
+        try {
+            SwingUtilities.invokeAndWait(new Runnable() {
+                    public void run() {createGUI();}
+                });
+        } catch (Exception e) { 
+            System.err.println("createGUI didn't successfully complete");
         }
-        System.out.println(".");
+        System.err.println("init() done.");
     }
 
-    public synchronized void newPlayer(final Byte tablePlayerId,
-                                       final TablePlayer player){
-        System.out.println(""+player+" joined the table.");
-        this.printTable();
+    public void start() {
+    }
+
+    public void stop() {
     }
 }

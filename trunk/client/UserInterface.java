@@ -32,8 +32,3 @@
         2740 Skovlunde
         Denmark
 */
-
-public abstract class UserInterface{
-    public abstract void newPlayer(final Byte tablePlayerId,
-                                   final TablePlayer player);
-}

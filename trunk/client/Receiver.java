@@ -38,10 +38,10 @@ import java.net.Socket;
 public class Receiver extends Thread{
 
     private final Socket socket;
-    private final GeneralProtocol.AbstractGeneralHandler generalHandler;
+    private final GeneralProtocol.GeneralHandler generalHandler;
 
     public Receiver(final Socket socket,
-                    final GeneralProtocol.AbstractGeneralHandler generalHandler){
+                    final GeneralProtocol.GeneralHandler generalHandler){
         this.socket = socket;
         this.generalHandler = generalHandler;
     }
@@ -56,7 +56,12 @@ public class Receiver extends Thread{
                 final Message message
                     = TransportProtocol.receive(this.socket);
                 
-                this.generalHandler.handle(message);
+                if(!GeneralProtocol.handle(message,this.generalHandler)){
+                    System.err.println("Message handling failed. Message type:"
+                                       +GeneralProtocol.lookupMessageType(message));
+                    System.err.println("Message:");
+                    System.err.println(message.toString());
+                }
             }
         }catch(final Exception e){
             System.err.println("Exception: "+e);

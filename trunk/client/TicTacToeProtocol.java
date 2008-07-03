@@ -288,11 +288,9 @@ public class TicTacToeProtocol{
   */
 
 
-static abstract class AbstractTicTacToeHandler
-{
+  public static boolean handle(final Message message,
+                               final TicTacToeHandler handler){
 
-
-  public boolean handle(final Message message){
     switch(TicTacToeProtocol.lookupMessageType(message))
     {
     case YOU_ARE_FIRST_1:
@@ -300,7 +298,7 @@ static abstract class AbstractTicTacToeHandler
         try{
           final TicTacToeProtocol.Deserialized_1_YOU_ARE_FIRST deserialized = 
               new TicTacToeProtocol.Deserialized_1_YOU_ARE_FIRST(message);
-        return this.handle_1_YOU_ARE_FIRST();
+        return handler.handle_1_YOU_ARE_FIRST();
         }catch(final MessageDeserializationException e){
           return false;
         }
@@ -310,7 +308,7 @@ static abstract class AbstractTicTacToeHandler
         try{
           final TicTacToeProtocol.Deserialized_1_YOU_ARE_SECOND deserialized = 
               new TicTacToeProtocol.Deserialized_1_YOU_ARE_SECOND(message);
-        return this.handle_1_YOU_ARE_SECOND();
+        return handler.handle_1_YOU_ARE_SECOND();
         }catch(final MessageDeserializationException e){
           return false;
         }
@@ -319,6 +317,10 @@ static abstract class AbstractTicTacToeHandler
       return false;
     }
   }
+
+public static interface TicTacToeHandler
+{
+
   //Handlers for various message types:
   public abstract boolean handle_1_YOU_ARE_FIRST();
   public abstract boolean handle_1_YOU_ARE_SECOND();
