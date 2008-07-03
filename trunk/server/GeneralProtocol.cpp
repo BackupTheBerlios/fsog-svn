@@ -43,6 +43,11 @@
     case GeneralProtocol::CREATE_TICTACTOE_TABLE_1:
       return GeneralProtocol::deserialize_1_CREATE_TICTACTOE_TABLE(message)
              && this->handle_1_CREATE_TICTACTOE_TABLE(sessionID,toBeSent,timeout);
+    case GeneralProtocol::SAY_1:
+      return GeneralProtocol::deserialize_1_SAY(message,
+                              this->deserialized_SAY)
+             && this->handle_1_SAY(sessionID,toBeSent,timeout,
+                      this->deserialized_SAY.text);
     case GeneralProtocol::JOIN_TABLE_TO_PLAY_1:
       return GeneralProtocol::deserialize_1_JOIN_TABLE_TO_PLAY(message,
                               this->deserialized_JOIN_TABLE_TO_PLAY)

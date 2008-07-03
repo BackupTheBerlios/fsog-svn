@@ -220,6 +220,39 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
   return true;
 }
 
+bool GameServer::handle_1_SAY(const int32_t sessionId,
+                              std::list<SessionAddressedMessage>& toBeSent,
+                              TimeMicro& /*timeout*/,
+                              const std::string& text) throw()
+{
+  std::map<int32_t,TablePlayer*>::const_iterator entry
+    = sessionIdToTablePlayerPointer.find(sessionId);
+
+  if(entry == sessionIdToTablePlayerPointer.end())
+    {
+      //TODO: Handle this problem better.
+      return false;
+    }
+
+  TablePlayer& tablePlayer = *(entry->second);
+
+  std::vector<char> toAll;
+  GeneralProtocol::serialize_1_SAID(tablePlayer.tablePlayerId,
+                                    text,
+                                    toAll);
+
+  for(std::map<TablePlayerId,TablePlayer*>::const_iterator it
+        = tablePlayer.table.tablePlayerIdToTablePlayerPointer.begin();
+      it!=tablePlayer.table.tablePlayerIdToTablePlayerPointer.end();
+      it++)
+    {
+      //Message to each old player that joiner joined:
+      toBeSent.push_back(SessionAddressedMessage(it->second->sessionId));
+      toBeSent.back().message = toAll;
+    }
+  return true;
+}
+
 bool GameServer::handle_1_MAKE_MOVE
 (const int32_t /*sessionID*/,
  std::list<SessionAddressedMessage>& /*toBeSent*/,

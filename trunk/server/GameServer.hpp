@@ -73,12 +73,16 @@ private:
                                        std::list<SessionAddressedMessage>& toBeSent,
                                        TimeMicro& timeout) throw();
 
-  bool handle_1_JOIN_TABLE_TO_PLAY
-  (const int32_t sessionID,
-   std::list<SessionAddressedMessage>& toBeSent,
-   TimeMicro& timeout,
-   const int64_t tableId,
-   const std::string& screenName) throw();
+  bool handle_1_SAY(const int32_t sessionID,
+                    std::list<SessionAddressedMessage>& toBeSent,
+                    TimeMicro& timeout,
+                    const std::string& text) throw();
+
+  bool handle_1_JOIN_TABLE_TO_PLAY(const int32_t sessionID,
+                                   std::list<SessionAddressedMessage>& toBeSent,
+                                   TimeMicro& timeout,
+                                   const int64_t tableId,
+                                   const std::string& screenName) throw();
   
   bool handle_1_MAKE_MOVE(const int32_t sessionID,
                           std::list<SessionAddressedMessage>& toBeSent,
