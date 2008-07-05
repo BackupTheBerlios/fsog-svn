@@ -52,6 +52,7 @@
 class Message
 {
 private:
+
   //Appends value to message
   template<class T>
   static void appendInteger(const T value,
@@ -61,8 +62,32 @@ private:
   {
     for(unsigned i=0;i<numberOfBytes;i++)
       {
-        message.push_back(static_cast<char>(0xFF & (value>>(8*(numberOfBytes-1-i)))));
+        message.push_back(static_cast<char>
+                          (0x00FF & (value>>(8*(numberOfBytes-1-i)))));
       }
+  }
+
+  //Read value from message
+  template<class T>
+  static bool readNBytes(std::vector<char>::const_iterator&it,
+                         const std::vector<char>::const_iterator&messageEnd,
+                         const char n,
+                         T&result)
+    throw()
+  {
+    if(it+n>messageEnd)
+      return false;
+
+    result=0;
+    T tempByte;
+    const T mask = static_cast<T>(0x00FF);
+
+    for(char i=8*(n-1);i>=0;i-=8)
+      {
+        tempByte = (static_cast<T>(*it++)) & mask;
+        result|=(tempByte<<i);
+      }
+    return true;
   }
 
 public:
@@ -121,35 +146,27 @@ public:
     throw()
   {
     //TODO: handle error if value.size()>0x7FFF
-    message.push_back(0x7F&(value.size()>>8));
-    message.push_back(0xFF&value.size());
+    message.reserve(message.size()+2+value.size());
+    Message::append2Bytes(value.size(),message);
 
     message.insert(message.end(),
                    value.begin(),
                    value.end());
   }
 
-  //Read value from message
-  template<class T>
-  static bool readNBytes(std::vector<char>::const_iterator&it,
-                         const std::vector<char>::const_iterator&messageEnd,
-                         const char n,
-                         T&result)
+  static void appendVector(const std::vector<int8_t>& v,
+                           std::vector<char>&message)
     throw()
   {
-    if(it+n>messageEnd)
-      return false;
+    //TODO: handle error if value.size()>0x7FFF
+    message.reserve(message.size()+2+v.size());
+    Message::append2Bytes(v.size(),message);
 
-    result=0;
-    T tempByte;
-    const T mask = static_cast<T>(0x00FF);
-
-    for(char i=8*(n-1);i>=0;i-=8)
-      {
-        tempByte = (static_cast<T>(*it++)) & mask;
-        result|=(tempByte<<i);
-      }
-    return true;
+    for(std::vector<int8_t>::const_iterator it
+          = v.begin();
+        it != v.end();
+        it++)
+      Message::append1Byte(*it,message);
   }
 
   //Read value from message
@@ -209,9 +226,8 @@ public:
     char c;
     while(true)
       {
-        if(it==messageEnd)
+        if(!Message::read1Byte(it,messageEnd,c))
           return false;
-        c=(*it++);
         if(c==0)
           {
             result=output.str();
@@ -225,18 +241,10 @@ public:
                          const std::vector<char>::const_iterator&messageEnd,
                          std::vector<char>&result)
   {
-    if(it==messageEnd)
+    int_fast16_t length;
+    if(!Message::read2Bytes(it,messageEnd,length)
+       || length<0)
       return false;
-
-    char first = *(it++);
-
-    if(it==messageEnd)
-      return false;
-
-    char second = *(it++);
-
-    const uint16_t length
-      =(first<<8)|second;
 
     if(it+length>messageEnd)
       return false;
@@ -248,4 +256,27 @@ public:
     return true;
   }
 
+  static bool readVector(std::vector<char>::const_iterator&it,
+                         const std::vector<char>::const_iterator&messageEnd,
+                         std::vector<int8_t>&result)
+  {
+    //TODO: All methods should resemble this one for its nice calls to
+    //simpler methods.
+    
+    int_fast16_t length;
+    if(!Message::read2Bytes(it,messageEnd,length)
+       || length<0)
+      return false;
+
+    result.reserve(length);
+
+    int8_t temp;
+    for(int_fast16_t i=0; i<length; i++)
+      {
+        if(!Message::read1Byte(it,messageEnd,temp))
+          return false;
+        result.push_back(temp);
+      }
+    return true;
+  }
 };

@@ -46,11 +46,11 @@ class TablePlayer
 {
 public:
   //What is my session id?
-  const int32_t sessionId;
+  const SessionId sessionId;
   //My screen name:
   const std::string screenName;
   //Table I'm playing at:
-  const Table& table;
+  Table& table;
   //TablePlayerId at the table I'm playing at:
   const TablePlayerId tablePlayerId;
   //Game Player in the game I'm playing:
@@ -59,9 +59,9 @@ public:
 
 public:
   
-  TablePlayer(const int32_t sessionId,
+  TablePlayer(const SessionId sessionId,
               const std::string& screenName,
-              const Table&table,
+              Table&table,
               const TablePlayerId tablePlayerId)
     :sessionId(sessionId),
      screenName(screenName),

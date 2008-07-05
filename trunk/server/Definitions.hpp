@@ -49,5 +49,6 @@ typedef int64_t TableId;
    0 is not a valid TablePlayerId. It starts at 1.
    
 */
-typedef uint8_t TablePlayerId;
+typedef int8_t TablePlayerId;
   
+typedef int32_t SessionId;

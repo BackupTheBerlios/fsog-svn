@@ -37,15 +37,17 @@
 #pragma once
 
 #include <vector>
+#include "Definitions.hpp"
+
 class SessionAddressedMessage
 {
 public:
   //To which session deliver the message:
-  const int32_t sessionId;
+  const SessionId sessionId;
   //Message content:
   std::vector<char> message;
 
-  SessionAddressedMessage(const int32_t sessionId)
+  SessionAddressedMessage(const SessionId sessionId)
     :sessionId(sessionId),
      message()
   {

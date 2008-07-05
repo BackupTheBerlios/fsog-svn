@@ -38,7 +38,7 @@
 #include "TicTacToe.hpp"
 
 void GameServer::received(const std::vector<char>& message,
-                          const int32_t sessionID,
+                          const SessionId sessionID,
                           std::list<SessionAddressedMessage>& toBeSent,
                           TimeMicro& timeout) throw()
 {
@@ -53,7 +53,7 @@ void GameServer::received(const std::vector<char>& message,
     std::cout<<"GameServer: handling message failed!"<<std::endl;
 }
 
-bool GameServer::handle_1_CREATE_TICTACTOE_TABLE(const int32_t sessionID,
+bool GameServer::handle_1_CREATE_TICTACTOE_TABLE(const SessionId sessionID,
                                                  std::list<SessionAddressedMessage>& toBeSent,
                                                  TimeMicro& /*timeout*/) throw()
 {
@@ -68,6 +68,9 @@ bool GameServer::handle_1_CREATE_TICTACTOE_TABLE(const int32_t sessionID,
   table.p_game = new TicTacToe(2);
   if(!table.p_game)
     {
+      std::cout<<"Game allocation failed."<<std::endl
+               <<"In "<<__func__<<", file "<<__FILE__
+               <<", line"<<__LINE__<<std::endl;
       tables.pop_front();
       return false;
     }
@@ -82,8 +85,49 @@ bool GameServer::handle_1_CREATE_TICTACTOE_TABLE(const int32_t sessionID,
   return true;
 }
 
+void GameServer::terminated(const SessionId& sessionId,
+                            std::list<SessionAddressedMessage>& toBeSent,
+                            TimeMicro& /*timeout*/) throw()
+{
+  std::map<SessionId,TablePlayer*>::iterator entry
+    = sessionIdToTablePlayerPointer.find(sessionId);
+
+  if(entry == sessionIdToTablePlayerPointer.end())
+    {
+      //Strange, session doesn't exist!
+      return;
+    }
+
+  const TablePlayer* tablePlayerPointer = entry->second;
+
+  //At which table was the leaving player playing?
+  Table& table = tablePlayerPointer->table;
+  
+  std::vector<char> toOthers;
+  GeneralProtocol::serialize_1_PLAYER_LEFT_TABLE(tablePlayerPointer->tablePlayerId,
+                                                 toOthers);
+
+  sessionIdToTablePlayerPointer.erase(entry);
+
+  table.tablePlayerIdToTablePlayerPointer.erase(tablePlayerPointer->tablePlayerId);
+
+  delete tablePlayerPointer;
+  tablePlayerPointer = 0;
+
+  for(std::map<TablePlayerId,TablePlayer*>::const_iterator it
+        = table.tablePlayerIdToTablePlayerPointer.begin();
+      it!=table.tablePlayerIdToTablePlayerPointer.end();
+      it++)
+    {
+      //Message to each old player that joiner joined:
+      toBeSent.push_back(SessionAddressedMessage(it->second->sessionId));
+      toBeSent.back().message = toOthers;
+    }
+  //TODO: Finish! What with started game? Delete table?
+}
+
 bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
-(const int32_t sessionId,
+(const SessionId sessionId,
  std::list<SessionAddressedMessage>& toBeSent,
  TimeMicro& /*timeout*/,
  const int64_t tableId,
@@ -95,10 +139,12 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
 
   if(entryIterator == tableIdToTableIterator.end())
     {
-      //TODO: Send a message back to client saying table doesn't
+      //Send a message back to client saying table doesn't
       //exist.
-      std::cout<<"No table with id: "<<tableId<<std::endl;
-      return false;
+      toBeSent.push_back(SessionAddressedMessage(sessionId));
+      GeneralProtocol::serialize_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID
+        (toBeSent.back().message);
+      return true;
     }
 
   //Table exists.
@@ -111,7 +157,9 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
      != sessionIdToTablePlayerPointer.end())
     {
       //TODO: What if session was at another table already?
-      std::cout<<"Session at another table!"<<std::endl;
+      std::cout<<"Session with id: "<<sessionId<<"at another table."<<std::endl
+               <<"In "<<__func__<<", file "<<__FILE__
+               <<", line"<<__LINE__<<std::endl;
       return false;
     }
 
@@ -121,7 +169,9 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
   if(!tablePlayerId)
     {
       //TODO: better handling of this problem. Perhaps a message.
-      std::cout<<"Invalid tablePlayerId!"<<std::endl;
+      std::cout<<"No more tablePlayerId available."<<std::endl
+               <<"In "<<__func__<<", file "<<__FILE__
+               <<", line"<<__LINE__<<std::endl;
       return false;
     }
 
@@ -130,7 +180,7 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
     = new TablePlayer(sessionId,screenName,table,tablePlayerId);
 
   sessionIdToTablePlayerPointer.insert
-    (std::pair<int32_t,TablePlayer*>(sessionId,
+    (std::pair<SessionId,TablePlayer*>(sessionId,
                                      tablePlayerPointer));
 
   //Let old players know that new player is here:
@@ -171,15 +221,26 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
   //If enough players, start the game!
   if(table.p_game->numberOfPlayers==table.tablePlayerIdToTablePlayerPointer.size())
     {
+      //We need to calculate which players are not given initial
+      //message. First we say it's all of the players, and we subtract
+      //later in a loop those that get initial message.
+      std::set<SessionId> whoDoesNotGetInitialMessage;
+
+      //This information is sent to client in "GAME_START_..." message.
+      std::vector<TablePlayerId> turnGamePlayerToTablePlayerId;
+  
       //Assign turnGamePlayer to each TablePlayer:
       Player turnGamePlayer = 0;
       table.turnGamePlayerToTablePlayerPointer.resize(table.p_game->numberOfPlayers);
+      turnGamePlayerToTablePlayerId.resize(table.p_game->numberOfPlayers);
       for(std::map<TablePlayerId,TablePlayer*>::iterator it
             = table.tablePlayerIdToTablePlayerPointer.begin();
           it != table.tablePlayerIdToTablePlayerPointer.end();
           it++)
         {
+          whoDoesNotGetInitialMessage.insert(it->second->sessionId);
           table.turnGamePlayerToTablePlayerPointer[turnGamePlayer] = it->second;
+          turnGamePlayerToTablePlayerId[turnGamePlayer] = it->first;
           it->second->turnGamePlayer = turnGamePlayer;
           turnGamePlayer++;
         }
@@ -190,29 +251,50 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
         {
           delete table.p_game;
           table.p_game = 0;
+          //TODO: When returning false, calling session should be removed.
           return false;
         }
 
+      //Send "GAME_STARTED_WITH_INITIAL_MESSAGE" to those who need it:
       for(std::list<PlayerAddressedMessage>::const_iterator it
             = initialMessages.begin();
           it != initialMessages.end();
           it++)
         {
-          if(it->player >= table.turnGamePlayerToTablePlayerPointer.size())
+          if(it->player >= table.turnGamePlayerToTablePlayerPointer.size()
+             || it->player < 0)
             {
               std::cout<<"TurnGame wanted to send message to player"
                        <<it->player<<", while there are only "
                        <<table.turnGamePlayerToTablePlayerPointer.size()
                        <<" players in the game."
-                       <<std::endl;
+                       <<std::endl
+                       <<"In "<<__func__<<", file "<<__FILE__
+                       <<", line"<<__LINE__<<std::endl;
               return false;
             }
-          const int32_t adresseeSessionId
+          const SessionId adresseeSessionId
             = table.turnGamePlayerToTablePlayerPointer[it->player]->sessionId;
 
           toBeSent.push_back(SessionAddressedMessage(adresseeSessionId));
-          GeneralProtocol::serialize_1_GAME_STARTED_AND_INITIAL_MESSAGE
-            (it->message,
+          GeneralProtocol::serialize_1_GAME_STARTED_WITH_INITIAL_MESSAGE
+            (turnGamePlayerToTablePlayerId,
+             it->message,
+             toBeSent.back().message);
+
+          whoDoesNotGetInitialMessage.erase(adresseeSessionId);
+        }
+
+      //Send START_GAME_NO_INITIAL_MESSAGE to those who didn't get
+      //initial message:
+      for(std::set<SessionId>::const_iterator it
+            = whoDoesNotGetInitialMessage.begin();
+          it != whoDoesNotGetInitialMessage.end();
+          it++)
+        {
+          toBeSent.push_back(SessionAddressedMessage(*it));
+          GeneralProtocol::serialize_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE
+            (turnGamePlayerToTablePlayerId,
              toBeSent.back().message);
         }
     }
@@ -220,17 +302,19 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
   return true;
 }
 
-bool GameServer::handle_1_SAY(const int32_t sessionId,
+bool GameServer::handle_1_SAY(const SessionId sessionId,
                               std::list<SessionAddressedMessage>& toBeSent,
                               TimeMicro& /*timeout*/,
                               const std::string& text) throw()
 {
-  std::map<int32_t,TablePlayer*>::const_iterator entry
+  std::map<SessionId,TablePlayer*>::const_iterator entry
     = sessionIdToTablePlayerPointer.find(sessionId);
 
   if(entry == sessionIdToTablePlayerPointer.end())
     {
-      //TODO: Handle this problem better.
+      std::cout<<"Unknown sessionId "<<sessionId<<"."<<std::endl
+               <<"In "<<__func__<<", file "<<__FILE__
+               <<", line"<<__LINE__<<std::endl;
       return false;
     }
 
@@ -254,7 +338,7 @@ bool GameServer::handle_1_SAY(const int32_t sessionId,
 }
 
 bool GameServer::handle_1_MAKE_MOVE
-(const int32_t /*sessionID*/,
+(const SessionId /*sessionID*/,
  std::list<SessionAddressedMessage>& /*toBeSent*/,
  TimeMicro& /*timeout*/,
  const std::vector<char>& /*move*/) throw()

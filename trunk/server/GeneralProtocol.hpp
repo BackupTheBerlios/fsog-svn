@@ -53,20 +53,26 @@ public:
     static const int8_t TABLE_CREATED_1 = 2;
     //Sent by client when saying something (chat message).
     static const int8_t SAY_1 = 3;
-    //Sent by server when someone sais something (chat message).
+    //Sent by server when someone says something (chat message).
     static const int8_t SAID_1 = 4;
     //Sent by client when joining some table to play.
     static const int8_t JOIN_TABLE_TO_PLAY_1 = 5;
     //Sent by server to new player who joined a table.
     static const int8_t YOU_JOINED_TABLE_1 = 6;
+    //Sent by server to new player who joined a table.
+    static const int8_t JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1 = 7;
     //Sent by server after new player joined a table to already present people.
-    static const int8_t NEW_PLAYER_JOINED_TABLE_1 = 7;
-    //Sent by server when game is started. Some initialization message can be sent within. Move from first player(s) is awaited after that.
-    static const int8_t GAME_STARTED_AND_INITIAL_MESSAGE_1 = 8;
+    static const int8_t NEW_PLAYER_JOINED_TABLE_1 = 8;
+    //Sent by server when a player left.
+    static const int8_t PLAYER_LEFT_TABLE_1 = 9;
+    //Sent by server when game is started and no initial message is designated for the receiver.
+    static const int8_t GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1 = 10;
+    //Sent by server when game is started and an initial message is designated for the receiver.
+    static const int8_t GAME_STARTED_WITH_INITIAL_MESSAGE_1 = 11;
     //Sent by client when making a move.
-    static const int8_t MAKE_MOVE_1 = 9;
+    static const int8_t MAKE_MOVE_1 = 12;
     //Sent by server after client made a move.
-    static const int8_t MOVE_MADE_1 = 10;
+    static const int8_t MOVE_MADE_1 = 13;
 
 
 
@@ -83,8 +89,11 @@ public:
       case SAID_1: return "SAID";
       case JOIN_TABLE_TO_PLAY_1: return "JOIN_TABLE_TO_PLAY";
       case YOU_JOINED_TABLE_1: return "YOU_JOINED_TABLE";
+      case JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1: return "JOINING_TABLE_FAILED_INCORRECT_TABLE_ID";
       case NEW_PLAYER_JOINED_TABLE_1: return "NEW_PLAYER_JOINED_TABLE";
-      case GAME_STARTED_AND_INITIAL_MESSAGE_1: return "GAME_STARTED_AND_INITIAL_MESSAGE";
+      case PLAYER_LEFT_TABLE_1: return "PLAYER_LEFT_TABLE";
+      case GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1: return "GAME_STARTED_WITHOUT_INITIAL_MESSAGE";
+      case GAME_STARTED_WITH_INITIAL_MESSAGE_1: return "GAME_STARTED_WITH_INITIAL_MESSAGE";
       case MAKE_MOVE_1: return "MAKE_MOVE";
       case MOVE_MADE_1: return "MOVE_MADE";
     }
@@ -316,7 +325,7 @@ public:
   //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 4.
-  //Sent by server when someone sais something (chat message).
+  //Sent by server when someone says something (chat message).
 
   static void serialize_1_SAID(
         //Who said it.
@@ -514,11 +523,61 @@ public:
     return true;
   }
 
-  //Message NEW_PLAYER_JOINED_TABLE:
+  //Message JOINING_TABLE_FAILED_INCORRECT_TABLE_ID:
 
   //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 7.
+  //Sent by server to new player who joined a table.
+
+  static void serialize_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(    std::vector<char>&outputMessage)
+    throw()
+  {
+    outputMessage.resize(0);
+    //Let the receiver know which protocol version this is:
+    Message::append1Byte(1,outputMessage);
+    //Let the receiver know what kind of message this is:
+    Message::append1Byte(7,outputMessage);
+
+  }
+
+  class Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID
+  {
+  public:
+  };
+
+  static bool deserialize_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(const std::vector<char>&inputMessage)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=7)
+      return false;
+
+    //Deserialize pieces:
+
+    return true;
+  }
+
+  //Message NEW_PLAYER_JOINED_TABLE:
+
+  //This message is sent by SERVER.
+
+  //In protocol version 1 this message has id 8.
   //Sent by server after new player joined a table to already present people.
 
   static void serialize_1_NEW_PLAYER_JOINED_TABLE(
@@ -534,7 +593,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(7,outputMessage);
+    Message::append1Byte(8,outputMessage);
 
     //Serialize screenName:
     Message::appendCString(screenName,outputMessage);
@@ -571,7 +630,7 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=7)
+    if(messageKind!=8)
       return false;
 
     //Deserialize pieces:
@@ -585,16 +644,16 @@ public:
     return true;
   }
 
-  //Message GAME_STARTED_AND_INITIAL_MESSAGE:
+  //Message PLAYER_LEFT_TABLE:
 
   //This message is sent by SERVER.
 
-  //In protocol version 1 this message has id 8.
-  //Sent by server when game is started. Some initialization message can be sent within. Move from first player(s) is awaited after that.
+  //In protocol version 1 this message has id 9.
+  //Sent by server when a player left.
 
-  static void serialize_1_GAME_STARTED_AND_INITIAL_MESSAGE(
-        //Initial game--specific message.
-        const std::vector<char>& initialMessage,
+  static void serialize_1_PLAYER_LEFT_TABLE(
+        //Leaving player's table player id.
+        const int8_t tablePlayerId,
     std::vector<char>&outputMessage)
     throw()
   {
@@ -602,21 +661,21 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(8,outputMessage);
+    Message::append1Byte(9,outputMessage);
 
-    //Serialize initialMessage:
-    Message::appendBinary(initialMessage,outputMessage);
+    //Serialize tablePlayerId:
+    Message::append1Byte(tablePlayerId,outputMessage);
   }
 
-  class Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE
+  class Deserialized_1_PLAYER_LEFT_TABLE
   {
   public:
-    //Initial game--specific message.
-    std::vector<char> initialMessage;
+    //Leaving player's table player id.
+    int8_t tablePlayerId;
   };
 
-  static bool deserialize_1_GAME_STARTED_AND_INITIAL_MESSAGE(const std::vector<char>&inputMessage,
-        Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE&output)
+  static bool deserialize_1_PLAYER_LEFT_TABLE(const std::vector<char>&inputMessage,
+        Deserialized_1_PLAYER_LEFT_TABLE&output)
   throw()
   {
     std::vector<char>::const_iterator it
@@ -635,11 +694,143 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=8)
+    if(messageKind!=9)
       return false;
 
     //Deserialize pieces:
 
+    //Deserialize tablePlayerId:
+    if(!Message::read1Byte(it,messageEnd,output.tablePlayerId))
+      return false;
+    return true;
+  }
+
+  //Message GAME_STARTED_WITHOUT_INITIAL_MESSAGE:
+
+  //This message is sent by SERVER.
+
+  //In protocol version 1 this message has id 10.
+  //Sent by server when game is started and no initial message is designated for the receiver.
+
+  static void serialize_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(
+        //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
+        const std::vector<int8_t>& turnGamePlayerToTablePlayerId,
+    std::vector<char>&outputMessage)
+    throw()
+  {
+    outputMessage.resize(0);
+    //Let the receiver know which protocol version this is:
+    Message::append1Byte(1,outputMessage);
+    //Let the receiver know what kind of message this is:
+    Message::append1Byte(10,outputMessage);
+
+    //Serialize turnGamePlayerToTablePlayerId:
+    Message::appendVector(turnGamePlayerToTablePlayerId,outputMessage);
+  }
+
+  class Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE
+  {
+  public:
+    //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
+    std::vector<int8_t > turnGamePlayerToTablePlayerId;
+  };
+
+  static bool deserialize_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(const std::vector<char>&inputMessage,
+        Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE&output)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=10)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize turnGamePlayerToTablePlayerId:
+    if(!Message::readVector(it,messageEnd,output.turnGamePlayerToTablePlayerId))
+      return false;
+    return true;
+  }
+
+  //Message GAME_STARTED_WITH_INITIAL_MESSAGE:
+
+  //This message is sent by SERVER.
+
+  //In protocol version 1 this message has id 11.
+  //Sent by server when game is started and an initial message is designated for the receiver.
+
+  static void serialize_1_GAME_STARTED_WITH_INITIAL_MESSAGE(
+        //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
+        const std::vector<int8_t>& turnGamePlayerToTablePlayerId,
+
+        //Game-specific initial information.
+        const std::vector<char>& initialMessage,
+    std::vector<char>&outputMessage)
+    throw()
+  {
+    outputMessage.resize(0);
+    //Let the receiver know which protocol version this is:
+    Message::append1Byte(1,outputMessage);
+    //Let the receiver know what kind of message this is:
+    Message::append1Byte(11,outputMessage);
+
+    //Serialize turnGamePlayerToTablePlayerId:
+    Message::appendVector(turnGamePlayerToTablePlayerId,outputMessage);
+    //Serialize initialMessage:
+    Message::appendBinary(initialMessage,outputMessage);
+  }
+
+  class Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE
+  {
+  public:
+    //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
+    std::vector<int8_t > turnGamePlayerToTablePlayerId;
+    //Game-specific initial information.
+    std::vector<char> initialMessage;
+  };
+
+  static bool deserialize_1_GAME_STARTED_WITH_INITIAL_MESSAGE(const std::vector<char>&inputMessage,
+        Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE&output)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=11)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize turnGamePlayerToTablePlayerId:
+    if(!Message::readVector(it,messageEnd,output.turnGamePlayerToTablePlayerId))
+      return false;
     //Deserialize initialMessage:
     if(!Message::readBinary(it,messageEnd,output.initialMessage))
       return false;
@@ -650,7 +841,7 @@ public:
 
   //This message is sent by CLIENT.
 
-  //In protocol version 1 this message has id 9.
+  //In protocol version 1 this message has id 12.
   //Sent by client when making a move.
 
   static void serialize_1_MAKE_MOVE(
@@ -663,7 +854,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(9,outputMessage);
+    Message::append1Byte(12,outputMessage);
 
     //Serialize move:
     Message::appendBinary(move,outputMessage);
@@ -696,7 +887,7 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=9)
+    if(messageKind!=12)
       return false;
 
     //Deserialize pieces:
@@ -711,7 +902,7 @@ public:
 
   //This message is sent by SERVER.
 
-  //In protocol version 1 this message has id 10.
+  //In protocol version 1 this message has id 13.
   //Sent by server after client made a move.
 
   static void serialize_1_MOVE_MADE(
@@ -724,7 +915,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(10,outputMessage);
+    Message::append1Byte(13,outputMessage);
 
     //Serialize move:
     Message::appendBinary(move,outputMessage);
@@ -757,7 +948,7 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=10)
+    if(messageKind!=13)
       return false;
 
     //Deserialize pieces:
@@ -781,24 +972,24 @@ class GeneralHandler
 
 public:
   bool handle(const std::vector<char>& message,
-              const int32_t sessionID,
+              const SessionId sessionID,
               std::list<SessionAddressedMessage>& toBeSent,
               TimeMicro& timeout) throw();
 
   //Handlers for various message types:
-  virtual bool handle_1_CREATE_TICTACTOE_TABLE(const int32_t sessionID,
+  virtual bool handle_1_CREATE_TICTACTOE_TABLE(const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout) throw() =0;
-  virtual bool handle_1_SAY(const int32_t sessionID,
+  virtual bool handle_1_SAY(const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,
                   const std::string& text) throw() =0;
-  virtual bool handle_1_JOIN_TABLE_TO_PLAY(const int32_t sessionID,
+  virtual bool handle_1_JOIN_TABLE_TO_PLAY(const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,
                   const int64_t tableId,
                   const std::string& screenName) throw() =0;
-  virtual bool handle_1_MAKE_MOVE(const int32_t sessionID,
+  virtual bool handle_1_MAKE_MOVE(const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,
                   const std::vector<char>& move) throw() =0;

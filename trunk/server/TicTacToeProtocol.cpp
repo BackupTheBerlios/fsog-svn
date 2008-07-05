@@ -33,7 +33,7 @@
 #include "../server/TicTacToeProtocol.hpp"
 
   bool TicTacToeHandler::handle(const std::vector<char>& message,
-                  const int32_t sessionID,
+                  const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent
 ,                  TimeMicro& timeout) throw()
   {
@@ -46,12 +46,6 @@
              && this->handle_1_MAKE_MOVE(sessionID,toBeSent,timeout,
                       this->deserialized_MAKE_MOVE.row,
                       this->deserialized_MAKE_MOVE.column);
-    case TicTacToeProtocol::MOVE_MADE_1:
-      return TicTacToeProtocol::deserialize_1_MOVE_MADE(message,
-                              this->deserialized_MOVE_MADE)
-             && this->handle_1_MOVE_MADE(sessionID,toBeSent,timeout,
-                      this->deserialized_MOVE_MADE.row,
-                      this->deserialized_MOVE_MADE.column);
     default:
       return false;
     }

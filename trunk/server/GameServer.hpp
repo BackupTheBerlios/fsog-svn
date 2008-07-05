@@ -48,12 +48,12 @@ class GameServer : GeneralHandler
 public:
   /** message received from client on old or new session. */
   void received(const std::vector<char>& message,
-                const int32_t sessionID,
+                const SessionId sessionID,
                 std::list<SessionAddressedMessage>& messagesToBeSent,
                 TimeMicro& timeout) throw();
   
   /** Session terminated. */
-  void terminated(const int32_t& sessionID,
+  void terminated(const SessionId& sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout) throw();
 
@@ -66,25 +66,25 @@ private:
   std::list<Table> tables;
   typedef std::list<Table>::iterator TableIterator;
 
-  std::map<int32_t,TablePlayer*> sessionIdToTablePlayerPointer;
+  std::map<SessionId,TablePlayer*> sessionIdToTablePlayerPointer;
   std::map<TableId,TableIterator> tableIdToTableIterator;
 
-  bool handle_1_CREATE_TICTACTOE_TABLE(const int32_t sessionID,
+  bool handle_1_CREATE_TICTACTOE_TABLE(const SessionId sessionID,
                                        std::list<SessionAddressedMessage>& toBeSent,
                                        TimeMicro& timeout) throw();
 
-  bool handle_1_SAY(const int32_t sessionID,
+  bool handle_1_SAY(const SessionId sessionID,
                     std::list<SessionAddressedMessage>& toBeSent,
                     TimeMicro& timeout,
                     const std::string& text) throw();
 
-  bool handle_1_JOIN_TABLE_TO_PLAY(const int32_t sessionID,
+  bool handle_1_JOIN_TABLE_TO_PLAY(const SessionId sessionID,
                                    std::list<SessionAddressedMessage>& toBeSent,
                                    TimeMicro& timeout,
                                    const int64_t tableId,
                                    const std::string& screenName) throw();
   
-  bool handle_1_MAKE_MOVE(const int32_t sessionID,
+  bool handle_1_MAKE_MOVE(const SessionId sessionID,
                           std::list<SessionAddressedMessage>& toBeSent,
                           TimeMicro& timeout,
                           const std::vector<char>& move) throw();

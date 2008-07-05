@@ -56,26 +56,26 @@ bool CommandLine::parse(const int argc,
             i++;
             if(i>=argc)
               {
-                std::cerr<<"Missing argument for -p option."<<std::endl;
+                std::cout<<"Missing argument for -p option."<<std::endl;
                 return false;
               }
             std::istringstream stream(argv[i]);
             if(!(stream>>s_port))
               {
-                std::cerr<<"Incorrect argument for -p option."<<std::endl;
+                std::cout<<"Incorrect argument for -p option."<<std::endl;
                 return false;
               }
           }
         else
           {
-            std::cerr<<"Unrecognized option: "<<option<<std::endl;
+            std::cout<<"Unrecognized option: "<<option<<std::endl;
             return false;
           }
       }
     //Check mandatory options:
     if(s_port==-1)
       {
-        std::cerr<<"Missing mandatory -p option."<<std::endl;
+        std::cout<<"Missing mandatory -p option."<<std::endl;
         return false;
       }
 

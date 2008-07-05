@@ -66,11 +66,11 @@ public:
 
     TablePlayerId biggest = tablePlayerIdToTablePlayerPointer.rbegin()->first;
 
-    if(biggest<255)
+    //Maximum 20 players at table:
+    if(biggest<19)
       return biggest+1;
 
-    //Will loop around after counter exhaustion.
-    for(TablePlayerId id = 1; id != 0; id++)
+    for(TablePlayerId id = 1; id<20; id++)
       if(tablePlayerIdToTablePlayerPointer.count(id)==0)
         return id;
 

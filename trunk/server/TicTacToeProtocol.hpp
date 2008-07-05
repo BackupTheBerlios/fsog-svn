@@ -47,14 +47,10 @@ public:
   //Can be used for switching to detect
   //which deserializer should be used.
     static const int8_t UNKNOWN_MESSAGE_1 = 0;
-    //Server says that client is the first to move.
-    static const int8_t YOU_ARE_FIRST_1 = 1;
-    //Server says that client is the second to move.
-    static const int8_t YOU_ARE_SECOND_1 = 2;
     //Simple TicTacToe move.
-    static const int8_t MAKE_MOVE_1 = 3;
+    static const int8_t MAKE_MOVE_1 = 1;
     //Simple TicTacToe move. No need to say who made this move.
-    static const int8_t MOVE_MADE_1 = 4;
+    static const int8_t MOVE_MADE_1 = 2;
 
 
 
@@ -65,8 +61,6 @@ public:
     switch(messageType)
     {
       case UNKNOWN_MESSAGE_1: return "UNKNOWN_MESSAGE";
-      case YOU_ARE_FIRST_1: return "YOU_ARE_FIRST";
-      case YOU_ARE_SECOND_1: return "YOU_ARE_SECOND";
       case MAKE_MOVE_1: return "MAKE_MOVE";
       case MOVE_MADE_1: return "MOVE_MADE";
     }
@@ -121,111 +115,11 @@ public:
 
     return output.str();
   }
-  //Message YOU_ARE_FIRST:
-
-  //This message is sent by SERVER.
-
-  //In protocol version 1 this message has id 1.
-  //Server says that client is the first to move.
-
-  static void serialize_1_YOU_ARE_FIRST(    std::vector<char>&outputMessage)
-    throw()
-  {
-    outputMessage.resize(0);
-    //Let the receiver know which protocol version this is:
-    Message::append1Byte(1,outputMessage);
-    //Let the receiver know what kind of message this is:
-    Message::append1Byte(1,outputMessage);
-
-  }
-
-  class Deserialized_1_YOU_ARE_FIRST
-  {
-  public:
-  };
-
-  static bool deserialize_1_YOU_ARE_FIRST(const std::vector<char>&inputMessage)
-  throw()
-  {
-    std::vector<char>::const_iterator it
-     = inputMessage.begin();
-    const std::vector<char>::const_iterator messageEnd
-     = inputMessage.end();
-    
-    //Check protocol version:
-    char protocolVersion=0;
-    if(!Message::read1Byte(it,messageEnd,protocolVersion))
-      return false;
-    if(protocolVersion!=1)
-      return false;
-    
-    //Check message kind:
-    char messageKind=0;
-    if(!Message::read1Byte(it,messageEnd,messageKind))
-      return false;
-    if(messageKind!=1)
-      return false;
-
-    //Deserialize pieces:
-
-    return true;
-  }
-
-  //Message YOU_ARE_SECOND:
-
-  //This message is sent by SERVER.
-
-  //In protocol version 1 this message has id 2.
-  //Server says that client is the second to move.
-
-  static void serialize_1_YOU_ARE_SECOND(    std::vector<char>&outputMessage)
-    throw()
-  {
-    outputMessage.resize(0);
-    //Let the receiver know which protocol version this is:
-    Message::append1Byte(1,outputMessage);
-    //Let the receiver know what kind of message this is:
-    Message::append1Byte(2,outputMessage);
-
-  }
-
-  class Deserialized_1_YOU_ARE_SECOND
-  {
-  public:
-  };
-
-  static bool deserialize_1_YOU_ARE_SECOND(const std::vector<char>&inputMessage)
-  throw()
-  {
-    std::vector<char>::const_iterator it
-     = inputMessage.begin();
-    const std::vector<char>::const_iterator messageEnd
-     = inputMessage.end();
-    
-    //Check protocol version:
-    char protocolVersion=0;
-    if(!Message::read1Byte(it,messageEnd,protocolVersion))
-      return false;
-    if(protocolVersion!=1)
-      return false;
-    
-    //Check message kind:
-    char messageKind=0;
-    if(!Message::read1Byte(it,messageEnd,messageKind))
-      return false;
-    if(messageKind!=2)
-      return false;
-
-    //Deserialize pieces:
-
-    return true;
-  }
-
   //Message MAKE_MOVE:
 
   //This message is sent by CLIENT.
 
-  //In protocol version 1 this message has id 3.
+  //In protocol version 1 this message has id 1.
   //Simple TicTacToe move.
 
   static void serialize_1_MAKE_MOVE(
@@ -241,7 +135,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(3,outputMessage);
+    Message::append1Byte(1,outputMessage);
 
     //Serialize row:
     Message::append1Byte(row,outputMessage);
@@ -278,7 +172,7 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=3)
+    if(messageKind!=1)
       return false;
 
     //Deserialize pieces:
@@ -294,9 +188,9 @@ public:
 
   //Message MOVE_MADE:
 
-  //This message is sent by CLIENT.
+  //This message is sent by SERVER.
 
-  //In protocol version 1 this message has id 4.
+  //In protocol version 1 this message has id 2.
   //Simple TicTacToe move. No need to say who made this move.
 
   static void serialize_1_MOVE_MADE(
@@ -312,7 +206,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(4,outputMessage);
+    Message::append1Byte(2,outputMessage);
 
     //Serialize row:
     Message::append1Byte(row,outputMessage);
@@ -349,7 +243,7 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=4)
+    if(messageKind!=2)
       return false;
 
     //Deserialize pieces:
@@ -371,21 +265,15 @@ class TicTacToeHandler
   //Objects for temporary deserialization (to avoid creating
   //new ones all the time):
   TicTacToeProtocol::Deserialized_1_MAKE_MOVE deserialized_MAKE_MOVE;
-  TicTacToeProtocol::Deserialized_1_MOVE_MADE deserialized_MOVE_MADE;
 
 public:
   bool handle(const std::vector<char>& message,
-              const int32_t sessionID,
+              const SessionId sessionID,
               std::list<SessionAddressedMessage>& toBeSent,
               TimeMicro& timeout) throw();
 
   //Handlers for various message types:
-  virtual bool handle_1_MAKE_MOVE(const int32_t sessionID,
-                  std::list<SessionAddressedMessage>& toBeSent,
-                  TimeMicro& timeout,
-                  const int8_t row,
-                  const int8_t column) throw() =0;
-  virtual bool handle_1_MOVE_MADE(const int32_t sessionID,
+  virtual bool handle_1_MAKE_MOVE(const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,
                   const int8_t row,

@@ -45,14 +45,6 @@ bool TicTacToe::initialize(std::list<PlayerAddressedMessage>& messages) throw()
   //We expect move only from the first player:
   this->firstPlayer();
 
-  //TODO: It's possible to prepare such a multimap once for all games.
-
-  messages.push_back(PlayerAddressedMessage(0));
-  TicTacToeProtocol::serialize_1_YOU_ARE_FIRST(messages.back().message);
-
-  messages.push_back(PlayerAddressedMessage(1));
-  TicTacToeProtocol::serialize_1_YOU_ARE_SECOND(messages.back().message);
-  
   //Initialize board to be 3x3 with all empty fields:
   //TODO: not efficient. Have static empty board.
   this->board
@@ -98,12 +90,10 @@ TurnGame::MoveResult TicTacToe::move(const std::vector<char>& move,
 
   //Send a message to all players with what move was made:
   //TODO: maybe only to the player who did not make the move?
-  std::vector<char> moveMade;
-  TicTacToeProtocol::serialize_1_MOVE_MADE(row,column,moveMade);
   moveMessages.push_back(PlayerAddressedMessage(0));
-  moveMessages.back().message = moveMade;
+  TicTacToeProtocol::serialize_1_MOVE_MADE(row,column,moveMessages.back().message);
   moveMessages.push_back(PlayerAddressedMessage(1));
-  moveMessages.back().message = moveMade;
+  TicTacToeProtocol::serialize_1_MOVE_MADE(row,column,moveMessages.back().message);
   
   //Let's see whether we have 3--in--a--row after this move:
   if( (board[row][0]==c && board[row][1]==c && board[row][2]==c)
@@ -120,7 +110,8 @@ TurnGame::MoveResult TicTacToe::move(const std::vector<char>& move,
       return VALID|END;
     }
   
-  //If all fields are filled, it's a draw.
+  //If all fields are filled, but three--in--a--row was not detected,
+  //it's a draw.
   if(empty==0)
     {
       endResult.push_back(std::set<Player>());

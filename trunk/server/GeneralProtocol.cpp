@@ -33,7 +33,7 @@
 #include "../server/GeneralProtocol.hpp"
 
   bool GeneralHandler::handle(const std::vector<char>& message,
-                  const int32_t sessionID,
+                  const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent
 ,                  TimeMicro& timeout) throw()
   {
