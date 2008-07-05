@@ -74,4 +74,9 @@ public class Table {
                                        final TablePlayer player){
         this.players.put(tablePlayerId,player);
     }
+
+    public synchronized void removePlayer(final Byte tablePlayerId){
+        this.players.remove(tablePlayerId);
+    }
+
 }

@@ -234,17 +234,32 @@ class Message{
         throws MessageDeserializationException
     {
         try{
-
-            final byte firstByte = iterator.next();
-            final byte secondByte = iterator.next();
-
             final int incomingMessageLength
-                = ((0x7F&((int)firstByte))<<8)|(0xFF&((int)secondByte));
+                = Message.read2Bytes(iterator);
 
             java.util.Vector<Byte> result = new java.util.Vector<Byte>();
 
             for(int i=0;i<incomingMessageLength;i++)
                 result.add(iterator.next());
+
+            return result;
+        }catch(final NoSuchElementException e){
+            throw new MessageDeserializationException(e);
+        }
+    }
+
+    //Read value from this message
+    public static java.util.Vector<Byte> readVector(Iterator<Byte> iterator)
+        throws MessageDeserializationException
+    {
+        try{
+            final int incomingMessageLength
+                = Message.read2Bytes(iterator);
+
+            java.util.Vector<Byte> result = new java.util.Vector<Byte>();
+            
+            for(int i=0;i<incomingMessageLength;i++)
+                result.add(Message.read1Byte(iterator));
 
             return result;
         }catch(final NoSuchElementException e){

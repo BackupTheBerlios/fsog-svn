@@ -44,16 +44,22 @@ public class GeneralProtocol{
     TABLE_CREATED_1,
     //Sent by client when saying something (chat message).
     SAY_1,
-    //Sent by server when someone sais something (chat message).
+    //Sent by server when someone says something (chat message).
     SAID_1,
     //Sent by client when joining some table to play.
     JOIN_TABLE_TO_PLAY_1,
     //Sent by server to new player who joined a table.
     YOU_JOINED_TABLE_1,
+    //Sent by server to new player who joined a table.
+    JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1,
     //Sent by server after new player joined a table to already present people.
     NEW_PLAYER_JOINED_TABLE_1,
-    //Sent by server when game is started. Some initialization message can be sent within. Move from first player(s) is awaited after that.
-    GAME_STARTED_AND_INITIAL_MESSAGE_1,
+    //Sent by server when a player left.
+    PLAYER_LEFT_TABLE_1,
+    //Sent by server when game is started and no initial message is designated for the receiver.
+    GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1,
+    //Sent by server when game is started and an initial message is designated for the receiver.
+    GAME_STARTED_WITH_INITIAL_MESSAGE_1,
     //Sent by client when making a move.
     MAKE_MOVE_1,
     //Sent by server after client made a move.
@@ -86,10 +92,13 @@ public class GeneralProtocol{
         case 4: return MessageType.SAID_1;
         case 5: return MessageType.JOIN_TABLE_TO_PLAY_1;
         case 6: return MessageType.YOU_JOINED_TABLE_1;
-        case 7: return MessageType.NEW_PLAYER_JOINED_TABLE_1;
-        case 8: return MessageType.GAME_STARTED_AND_INITIAL_MESSAGE_1;
-        case 9: return MessageType.MAKE_MOVE_1;
-        case 10: return MessageType.MOVE_MADE_1;
+        case 7: return MessageType.JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1;
+        case 8: return MessageType.NEW_PLAYER_JOINED_TABLE_1;
+        case 9: return MessageType.PLAYER_LEFT_TABLE_1;
+        case 10: return MessageType.GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1;
+        case 11: return MessageType.GAME_STARTED_WITH_INITIAL_MESSAGE_1;
+        case 12: return MessageType.MAKE_MOVE_1;
+        case 13: return MessageType.MOVE_MADE_1;
         default: return MessageType.UNKNOWN_MESSAGE_1;
         }
     }catch(Exception e){
@@ -250,7 +259,7 @@ public class GeneralProtocol{
   //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 4.
-  //Sent by server when someone sais something (chat message).
+  //Sent by server when someone says something (chat message).
 
   /* Message sent by SERVER only,
      no need to serialize on other side (here).
@@ -417,11 +426,55 @@ public class GeneralProtocol{
     }
   }
 
-  //Message NEW_PLAYER_JOINED_TABLE:
+  //Message JOINING_TABLE_FAILED_INCORRECT_TABLE_ID:
 
   //This message is sent by SERVER.
 
   //In protocol version 1 this message has id 7.
+  //Sent by server to new player who joined a table.
+
+  /* Message sent by SERVER only,
+     no need to serialize on other side (here).
+  public static Message serialize_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(){
+    final Message outputMessage
+     = new Message();
+
+    //Let the receiver know which protocol version this is:
+    outputMessage.append1Byte(1);
+    //Let the receiver know what kind of message this is:
+    outputMessage.append1Byte(7);
+
+    return outputMessage;
+  }
+
+  */
+
+  public static class Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID{
+    public Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(final Message inputMessage)
+      throws MessageDeserializationException{
+      try{
+        final Iterator<Byte> iterator
+         = inputMessage.iterator();
+
+        //Check protocol version:
+        if(iterator.next()!=1)
+          throw new MessageDeserializationException();
+
+        //Check kind of message:
+        if(iterator.next()!=7)
+          throw new MessageDeserializationException();
+
+      }catch(NoSuchElementException e){
+        throw new MessageDeserializationException(e);
+      }
+    }
+  }
+
+  //Message NEW_PLAYER_JOINED_TABLE:
+
+  //This message is sent by SERVER.
+
+  //In protocol version 1 this message has id 8.
   //Sent by server after new player joined a table to already present people.
 
   /* Message sent by SERVER only,
@@ -437,7 +490,7 @@ public class GeneralProtocol{
     //Let the receiver know which protocol version this is:
     outputMessage.append1Byte(1);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(7);
+    outputMessage.append1Byte(8);
 
     //Serialize screenName:
     outputMessage.appendCString(screenName);
@@ -464,7 +517,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=7)
+        if(iterator.next()!=8)
           throw new MessageDeserializationException();
 
     //Deserialize screenName:
@@ -477,37 +530,37 @@ public class GeneralProtocol{
     }
   }
 
-  //Message GAME_STARTED_AND_INITIAL_MESSAGE:
+  //Message PLAYER_LEFT_TABLE:
 
   //This message is sent by SERVER.
 
-  //In protocol version 1 this message has id 8.
-  //Sent by server when game is started. Some initialization message can be sent within. Move from first player(s) is awaited after that.
+  //In protocol version 1 this message has id 9.
+  //Sent by server when a player left.
 
   /* Message sent by SERVER only,
      no need to serialize on other side (here).
-  public static Message serialize_1_GAME_STARTED_AND_INITIAL_MESSAGE(
-        //Initial game--specific message.
-        final java.util.Vector<Byte> initialMessage){
+  public static Message serialize_1_PLAYER_LEFT_TABLE(
+        //Leaving player's table player id.
+        final byte tablePlayerId){
     final Message outputMessage
      = new Message();
 
     //Let the receiver know which protocol version this is:
     outputMessage.append1Byte(1);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(8);
+    outputMessage.append1Byte(9);
 
-    //Serialize initialMessage:
-    outputMessage.appendBinary(initialMessage);
+    //Serialize tablePlayerId:
+    outputMessage.append1Byte(tablePlayerId);
     return outputMessage;
   }
 
   */
 
-  public static class Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE{
-    //Initial game--specific message.
-    public final java.util.Vector<Byte> initialMessage;
-    public Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE(final Message inputMessage)
+  public static class Deserialized_1_PLAYER_LEFT_TABLE{
+    //Leaving player's table player id.
+    public final byte tablePlayerId;
+    public Deserialized_1_PLAYER_LEFT_TABLE(final Message inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -518,9 +571,121 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=8)
+        if(iterator.next()!=9)
           throw new MessageDeserializationException();
 
+    //Deserialize tablePlayerId:
+      this.tablePlayerId = Message.read1Byte(iterator);
+      }catch(NoSuchElementException e){
+        throw new MessageDeserializationException(e);
+      }
+    }
+  }
+
+  //Message GAME_STARTED_WITHOUT_INITIAL_MESSAGE:
+
+  //This message is sent by SERVER.
+
+  //In protocol version 1 this message has id 10.
+  //Sent by server when game is started and no initial message is designated for the receiver.
+
+  /* Message sent by SERVER only,
+     no need to serialize on other side (here).
+  public static Message serialize_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(
+        //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
+        final java.util.Vector<Byte> turnGamePlayerToTablePlayerId){
+    final Message outputMessage
+     = new Message();
+
+    //Let the receiver know which protocol version this is:
+    outputMessage.append1Byte(1);
+    //Let the receiver know what kind of message this is:
+    outputMessage.append1Byte(10);
+
+    //Serialize turnGamePlayerToTablePlayerId:
+    outputMessage.appendVector(turnGamePlayerToTablePlayerId);
+    return outputMessage;
+  }
+
+  */
+
+  public static class Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE{
+    //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
+    public final java.util.Vector<Byte> turnGamePlayerToTablePlayerId;
+    public Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(final Message inputMessage)
+      throws MessageDeserializationException{
+      try{
+        final Iterator<Byte> iterator
+         = inputMessage.iterator();
+
+        //Check protocol version:
+        if(iterator.next()!=1)
+          throw new MessageDeserializationException();
+
+        //Check kind of message:
+        if(iterator.next()!=10)
+          throw new MessageDeserializationException();
+
+    //Deserialize turnGamePlayerToTablePlayerId:
+      this.turnGamePlayerToTablePlayerId = Message.readVector(iterator);
+      }catch(NoSuchElementException e){
+        throw new MessageDeserializationException(e);
+      }
+    }
+  }
+
+  //Message GAME_STARTED_WITH_INITIAL_MESSAGE:
+
+  //This message is sent by SERVER.
+
+  //In protocol version 1 this message has id 11.
+  //Sent by server when game is started and an initial message is designated for the receiver.
+
+  /* Message sent by SERVER only,
+     no need to serialize on other side (here).
+  public static Message serialize_1_GAME_STARTED_WITH_INITIAL_MESSAGE(
+        //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
+        final java.util.Vector<Byte> turnGamePlayerToTablePlayerId,
+        //Game-specific initial information.
+        final java.util.Vector<Byte> initialMessage){
+    final Message outputMessage
+     = new Message();
+
+    //Let the receiver know which protocol version this is:
+    outputMessage.append1Byte(1);
+    //Let the receiver know what kind of message this is:
+    outputMessage.append1Byte(11);
+
+    //Serialize turnGamePlayerToTablePlayerId:
+    outputMessage.appendVector(turnGamePlayerToTablePlayerId);
+    //Serialize initialMessage:
+    outputMessage.appendBinary(initialMessage);
+    return outputMessage;
+  }
+
+  */
+
+  public static class Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE{
+    //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
+    public final java.util.Vector<Byte> turnGamePlayerToTablePlayerId;
+    //Game-specific initial information.
+    public final java.util.Vector<Byte> initialMessage;
+    public Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE(final Message inputMessage)
+      throws MessageDeserializationException{
+      try{
+        final Iterator<Byte> iterator
+         = inputMessage.iterator();
+
+        //Check protocol version:
+        if(iterator.next()!=1)
+          throw new MessageDeserializationException();
+
+        //Check kind of message:
+        if(iterator.next()!=11)
+          throw new MessageDeserializationException();
+
+    //Deserialize turnGamePlayerToTablePlayerId:
+      this.turnGamePlayerToTablePlayerId = Message.readVector(iterator);
     //Deserialize initialMessage:
       this.initialMessage = Message.readBinary(iterator);
       }catch(NoSuchElementException e){
@@ -533,7 +698,7 @@ public class GeneralProtocol{
 
   //This message is sent by CLIENT.
 
-  //In protocol version 1 this message has id 9.
+  //In protocol version 1 this message has id 12.
   //Sent by client when making a move.
 
   public static Message serialize_1_MAKE_MOVE(
@@ -545,7 +710,7 @@ public class GeneralProtocol{
     //Let the receiver know which protocol version this is:
     outputMessage.append1Byte(1);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(9);
+    outputMessage.append1Byte(12);
 
     //Serialize move:
     outputMessage.appendBinary(move);
@@ -568,7 +733,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=9)
+        if(iterator.next()!=12)
           throw new MessageDeserializationException();
 
     //Deserialize move:
@@ -585,7 +750,7 @@ public class GeneralProtocol{
 
   //This message is sent by SERVER.
 
-  //In protocol version 1 this message has id 10.
+  //In protocol version 1 this message has id 13.
   //Sent by server after client made a move.
 
   /* Message sent by SERVER only,
@@ -599,7 +764,7 @@ public class GeneralProtocol{
     //Let the receiver know which protocol version this is:
     outputMessage.append1Byte(1);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(10);
+    outputMessage.append1Byte(13);
 
     //Serialize move:
     outputMessage.appendBinary(move);
@@ -622,7 +787,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=10)
+        if(iterator.next()!=13)
           throw new MessageDeserializationException();
 
     //Deserialize move:
@@ -670,6 +835,16 @@ public class GeneralProtocol{
           return false;
         }
     }
+    case JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1:
+      {
+        try{
+          final GeneralProtocol.Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID deserialized = 
+              new GeneralProtocol.Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(message);
+        return handler.handle_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID();
+        }catch(final MessageDeserializationException e){
+          return false;
+        }
+    }
     case NEW_PLAYER_JOINED_TABLE_1:
       {
         try{
@@ -681,12 +856,33 @@ public class GeneralProtocol{
           return false;
         }
     }
-    case GAME_STARTED_AND_INITIAL_MESSAGE_1:
+    case PLAYER_LEFT_TABLE_1:
       {
         try{
-          final GeneralProtocol.Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE deserialized = 
-              new GeneralProtocol.Deserialized_1_GAME_STARTED_AND_INITIAL_MESSAGE(message);
-        return handler.handle_1_GAME_STARTED_AND_INITIAL_MESSAGE(deserialized.initialMessage);
+          final GeneralProtocol.Deserialized_1_PLAYER_LEFT_TABLE deserialized = 
+              new GeneralProtocol.Deserialized_1_PLAYER_LEFT_TABLE(message);
+        return handler.handle_1_PLAYER_LEFT_TABLE(deserialized.tablePlayerId);
+        }catch(final MessageDeserializationException e){
+          return false;
+        }
+    }
+    case GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1:
+      {
+        try{
+          final GeneralProtocol.Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE deserialized = 
+              new GeneralProtocol.Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(message);
+        return handler.handle_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(deserialized.turnGamePlayerToTablePlayerId);
+        }catch(final MessageDeserializationException e){
+          return false;
+        }
+    }
+    case GAME_STARTED_WITH_INITIAL_MESSAGE_1:
+      {
+        try{
+          final GeneralProtocol.Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE deserialized = 
+              new GeneralProtocol.Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE(message);
+        return handler.handle_1_GAME_STARTED_WITH_INITIAL_MESSAGE(deserialized.turnGamePlayerToTablePlayerId,
+                      deserialized.initialMessage);
         }catch(final MessageDeserializationException e){
           return false;
         }
@@ -714,9 +910,13 @@ public static interface GeneralHandler
   public abstract boolean handle_1_SAID(final byte tablePlayerId,
                   final String text);
   public abstract boolean handle_1_YOU_JOINED_TABLE(final byte tablePlayerId);
+  public abstract boolean handle_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID();
   public abstract boolean handle_1_NEW_PLAYER_JOINED_TABLE(final String screenName,
                   final byte tablePlayerId);
-  public abstract boolean handle_1_GAME_STARTED_AND_INITIAL_MESSAGE(final java.util.Vector<Byte> initialMessage);
+  public abstract boolean handle_1_PLAYER_LEFT_TABLE(final byte tablePlayerId);
+  public abstract boolean handle_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(final java.util.Vector<Byte> turnGamePlayerToTablePlayerId);
+  public abstract boolean handle_1_GAME_STARTED_WITH_INITIAL_MESSAGE(final java.util.Vector<Byte> turnGamePlayerToTablePlayerId,
+                  final java.util.Vector<Byte> initialMessage);
   public abstract boolean handle_1_MOVE_MADE(final java.util.Vector<Byte> move);
 }
 }

@@ -38,10 +38,6 @@ public class TicTacToeProtocol{
   //which deserializer should be used.
   enum MessageType{
     UNKNOWN_MESSAGE_1,
-    //Server says that client is the first to move.
-    YOU_ARE_FIRST_1,
-    //Server says that client is the second to move.
-    YOU_ARE_SECOND_1,
     //Simple TicTacToe move.
     MAKE_MOVE_1,
     //Simple TicTacToe move. No need to say who made this move.
@@ -68,10 +64,8 @@ public class TicTacToeProtocol{
          = Message.read1Byte(iterator);
         
         switch(byteMessageType){
-        case 1: return MessageType.YOU_ARE_FIRST_1;
-        case 2: return MessageType.YOU_ARE_SECOND_1;
-        case 3: return MessageType.MAKE_MOVE_1;
-        case 4: return MessageType.MOVE_MADE_1;
+        case 1: return MessageType.MAKE_MOVE_1;
+        case 2: return MessageType.MOVE_MADE_1;
         default: return MessageType.UNKNOWN_MESSAGE_1;
         }
     }catch(Exception e){
@@ -79,99 +73,11 @@ public class TicTacToeProtocol{
     }
   }
 
-  //Message YOU_ARE_FIRST:
-
-  //This message is sent by SERVER.
-
-  //In protocol version 1 this message has id 1.
-  //Server says that client is the first to move.
-
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_YOU_ARE_FIRST(){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(1);
-
-    return outputMessage;
-  }
-
-  */
-
-  public static class Deserialized_1_YOU_ARE_FIRST{
-    public Deserialized_1_YOU_ARE_FIRST(final Message inputMessage)
-      throws MessageDeserializationException{
-      try{
-        final Iterator<Byte> iterator
-         = inputMessage.iterator();
-
-        //Check protocol version:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-        //Check kind of message:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-      }catch(NoSuchElementException e){
-        throw new MessageDeserializationException(e);
-      }
-    }
-  }
-
-  //Message YOU_ARE_SECOND:
-
-  //This message is sent by SERVER.
-
-  //In protocol version 1 this message has id 2.
-  //Server says that client is the second to move.
-
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_YOU_ARE_SECOND(){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(2);
-
-    return outputMessage;
-  }
-
-  */
-
-  public static class Deserialized_1_YOU_ARE_SECOND{
-    public Deserialized_1_YOU_ARE_SECOND(final Message inputMessage)
-      throws MessageDeserializationException{
-      try{
-        final Iterator<Byte> iterator
-         = inputMessage.iterator();
-
-        //Check protocol version:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-        //Check kind of message:
-        if(iterator.next()!=2)
-          throw new MessageDeserializationException();
-
-      }catch(NoSuchElementException e){
-        throw new MessageDeserializationException(e);
-      }
-    }
-  }
-
   //Message MAKE_MOVE:
 
   //This message is sent by CLIENT.
 
-  //In protocol version 1 this message has id 3.
+  //In protocol version 1 this message has id 1.
   //Simple TicTacToe move.
 
   public static Message serialize_1_MAKE_MOVE(
@@ -185,7 +91,7 @@ public class TicTacToeProtocol{
     //Let the receiver know which protocol version this is:
     outputMessage.append1Byte(1);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(3);
+    outputMessage.append1Byte(1);
 
     //Serialize row:
     outputMessage.append1Byte(row);
@@ -212,7 +118,7 @@ public class TicTacToeProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=3)
+        if(iterator.next()!=1)
           throw new MessageDeserializationException();
 
     //Deserialize row:
@@ -229,11 +135,13 @@ public class TicTacToeProtocol{
 
   //Message MOVE_MADE:
 
-  //This message is sent by CLIENT.
+  //This message is sent by SERVER.
 
-  //In protocol version 1 this message has id 4.
+  //In protocol version 1 this message has id 2.
   //Simple TicTacToe move. No need to say who made this move.
 
+  /* Message sent by SERVER only,
+     no need to serialize on other side (here).
   public static Message serialize_1_MOVE_MADE(
         //In which row player puts her X or O.
         final byte row,
@@ -245,7 +153,7 @@ public class TicTacToeProtocol{
     //Let the receiver know which protocol version this is:
     outputMessage.append1Byte(1);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(4);
+    outputMessage.append1Byte(2);
 
     //Serialize row:
     outputMessage.append1Byte(row);
@@ -254,8 +162,8 @@ public class TicTacToeProtocol{
     return outputMessage;
   }
 
-  /* Message sent by CLIENT only,
-     no need to serialize on other side (here).
+  */
+
   public static class Deserialized_1_MOVE_MADE{
     //In which row player puts her X or O.
     public final byte row;
@@ -272,7 +180,7 @@ public class TicTacToeProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=4)
+        if(iterator.next()!=2)
           throw new MessageDeserializationException();
 
     //Deserialize row:
@@ -285,30 +193,19 @@ public class TicTacToeProtocol{
     }
   }
 
-  */
-
 
   public static boolean handle(final Message message,
                                final TicTacToeHandler handler){
 
     switch(TicTacToeProtocol.lookupMessageType(message))
     {
-    case YOU_ARE_FIRST_1:
+    case MOVE_MADE_1:
       {
         try{
-          final TicTacToeProtocol.Deserialized_1_YOU_ARE_FIRST deserialized = 
-              new TicTacToeProtocol.Deserialized_1_YOU_ARE_FIRST(message);
-        return handler.handle_1_YOU_ARE_FIRST();
-        }catch(final MessageDeserializationException e){
-          return false;
-        }
-    }
-    case YOU_ARE_SECOND_1:
-      {
-        try{
-          final TicTacToeProtocol.Deserialized_1_YOU_ARE_SECOND deserialized = 
-              new TicTacToeProtocol.Deserialized_1_YOU_ARE_SECOND(message);
-        return handler.handle_1_YOU_ARE_SECOND();
+          final TicTacToeProtocol.Deserialized_1_MOVE_MADE deserialized = 
+              new TicTacToeProtocol.Deserialized_1_MOVE_MADE(message);
+        return handler.handle_1_MOVE_MADE(deserialized.row,
+                      deserialized.column);
         }catch(final MessageDeserializationException e){
           return false;
         }
@@ -322,7 +219,7 @@ public static interface TicTacToeHandler
 {
 
   //Handlers for various message types:
-  public abstract boolean handle_1_YOU_ARE_FIRST();
-  public abstract boolean handle_1_YOU_ARE_SECOND();
+  public abstract boolean handle_1_MOVE_MADE(final byte row,
+                  final byte column);
 }
 }
