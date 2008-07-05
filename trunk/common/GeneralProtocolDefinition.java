@@ -77,6 +77,22 @@ public class GeneralProtocolDefinition{
                                  "ID for newly created table."));
 
         protocol.defineMessage
+            ("SAY",
+             "Sent by client when saying something (chat message).",
+             Sender.CLIENT,
+             new PieceDefinition(PieceType.CSTRING,"text",
+                                 "Text of the chat message."));
+
+        protocol.defineMessage
+            ("SAID",
+             "Sent by server when someone says something (chat message).",
+             Sender.SERVER,
+             new PieceDefinition(PieceType.INT8,"tablePlayerId",
+                                 "Who said it."),
+             new PieceDefinition(PieceType.CSTRING,"text",
+                                 "Text of the chat message."));
+
+        protocol.defineMessage
             ("JOIN_TABLE_TO_PLAY",
              "Sent by client when joining some table to play.",
              Sender.CLIENT,
@@ -91,6 +107,10 @@ public class GeneralProtocolDefinition{
              Sender.SERVER,
              new PieceDefinition(PieceType.INT8,"tablePlayerId",
                                  "New player's table player id."));
+        protocol.defineMessage
+            ("JOINING_TABLE_FAILED_INCORRECT_TABLE_ID",
+             "Sent by server to new player who joined a table.",
+             Sender.SERVER);
                 
         protocol.defineMessage
              ("NEW_PLAYER_JOINED_TABLE",
@@ -103,13 +123,40 @@ public class GeneralProtocolDefinition{
                                  "New player's table player id."));
 
         protocol.defineMessage
-            ("GAME_STARTED_AND_INITIAL_MESSAGE",
-             "Sent by server when game is started."
-             +" Some initialization message can be sent within."
-             +" Move from first player(s) is awaited after that.",
+            ("PLAYER_LEFT_TABLE",
+             "Sent by server when a player left.",
              Sender.SERVER,
+             new PieceDefinition(PieceType.INT8,"tablePlayerId",
+                                 "Leaving player's table player id."));
+
+        //TODO: Definitions.hpp should be defined in protocol, so both
+        //sides know what sizes are the integers, so they can use the
+        //same.
+
+        protocol.defineMessage
+            ("GAME_STARTED_WITHOUT_INITIAL_MESSAGE",
+             "Sent by server when game is started and no initial message is"
+             +" designated for the receiver.",
+             Sender.SERVER,
+             new PieceDefinition(PieceType.VECTOR(PieceType.INT8),
+                                 "turnGamePlayerToTablePlayerId",
+                                 "Specifies how many players will play the"
+                                 +" just-started game, which tablePlayerId"
+                                 +"each of them has, and what's their order."));
+        
+        protocol.defineMessage
+            ("GAME_STARTED_WITH_INITIAL_MESSAGE",
+             "Sent by server when game is started and an initial message is"
+             +" designated for the receiver.",
+             Sender.SERVER,
+             new PieceDefinition(PieceType.VECTOR(PieceType.INT8),
+                                 "turnGamePlayerToTablePlayerId",
+                                 "Specifies how many players will play the"
+                                 +" just-started game, which tablePlayerId"
+                                 +"each of them has, and what's their order."),
              new PieceDefinition(PieceType.BINARY,"initialMessage",
-                                 "Initial game--specific message."));
+                                 "Game-specific initial information."));
+        
 
         protocol.defineMessage
             ("MAKE_MOVE",
@@ -124,6 +171,7 @@ public class GeneralProtocolDefinition{
              Sender.SERVER,
              new PieceDefinition(PieceType.BINARY,"move",
                                  "Game-specific move information."));
+
 
         protocol.write();
     }

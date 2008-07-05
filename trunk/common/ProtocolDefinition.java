@@ -273,6 +273,9 @@ public class ProtocolDefinition{
         throws IOException
     {
 
+        //TODO: When only one message, don't waste one byte in
+        //serialized message for message type.
+
         this.hppWrite("  //Can be used for switching to detect\n"
                       +"  //which deserializer should be used.\n");
 
@@ -766,14 +769,14 @@ public class ProtocolDefinition{
         hppWrite("\n"
                  +"public:\n"
                  +"  bool handle(const std::vector<char>& message,\n"
-                 +"              const int32_t sessionID,\n"
+                 +"              const SessionId sessionID,\n"
                  +"              std::list<SessionAddressedMessage>& toBeSent,\n"
                  +"              TimeMicro& timeout) throw();\n"
                  +"\n");
 
         cppWrite("\n"
                  +"  bool "+protocolName+"Handler::handle(const std::vector<char>& message,\n"
-                 +"                  const int32_t sessionID,\n"
+                 +"                  const SessionId sessionID,\n"
                  +"                  std::list<SessionAddressedMessage>& toBeSent\n,"
                  +"                  TimeMicro& timeout) throw()\n"
                  +"  {\n"
@@ -811,7 +814,7 @@ public class ProtocolDefinition{
         for(MessageDefinition md : this.messageDefinitions){
             if(md.sentBy.equals(Sender.CLIENT)){
                 hppWrite("  virtual bool handle"+"_"+protocolVersion
-                         +"_"+md.name+"(const int32_t sessionID,\n"
+                         +"_"+md.name+"(const SessionId sessionID,\n"
                          +"                  "
                          +"std::list<SessionAddressedMessage>& toBeSent,\n"
                          +"                  "
@@ -834,12 +837,9 @@ public class ProtocolDefinition{
 
     private void javaWriteHandler() throws Exception{
         javaWrite("\n"
-                 +"static abstract class Abstract"+protocolName+"Handler\n"
-                 +"{\n"
-                 +"\n");
-
-        javaWrite("\n"
-                  +"  public boolean handle(final Message message){"
+                  +"  public static boolean handle(final Message message,\n"
+                  +"                               final "+protocolName
+                  +"Handler handler){\n"
                   +"\n"
                   +"    switch("+protocolName
                   +"Protocol.lookupMessageType(message))\n"
@@ -856,7 +856,7 @@ public class ProtocolDefinition{
                           +md.name+" deserialized = \n"
                           +"              new "+protocolName+"Protocol.Deserialized_"
                           +protocolVersion+"_"+md.name+"(message);\n");
-                javaWrite("        return this.handle_"+protocolVersion
+                javaWrite("        return handler.handle_"+protocolVersion
                           +"_"+md.name+"(");
                 boolean first = true;
                 for(PieceDefinition pd : md.pieceDefinitions){
@@ -878,6 +878,11 @@ public class ProtocolDefinition{
                  +"      return false;\n"
                  +"    }\n"
                  +"  }\n");
+
+        javaWrite("\n"
+                 +"public static interface "+protocolName+"Handler\n"
+                 +"{\n"
+                 +"\n");
 
         javaWrite("  //Handlers for various message types:\n");
         for(MessageDefinition md : this.messageDefinitions){

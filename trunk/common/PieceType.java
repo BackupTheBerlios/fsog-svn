@@ -50,6 +50,10 @@ public abstract class PieceType{
     public abstract String toJavaType
         (final List<FlagSetDefinition> flagSetDefinitions);
 
+    /** Can't have Vector<byte>, we need Vector<Byte>.*/
+    public abstract String toJavaReferenceType
+        (final List<FlagSetDefinition> flagSetDefinitions);
+
     public abstract String toCppConstType
         (final List<FlagSetDefinition> flagSetDefinitions);
 
@@ -68,6 +72,7 @@ public abstract class PieceType{
         = new PieceType(){
                 public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "int8_t";}
                 public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "byte";}
+                public String toJavaReferenceType(final List<FlagSetDefinition> flagSetDefinitions){return "Byte";}
                 public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const int8_t";}
                 public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final byte";}
                 public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
@@ -82,6 +87,7 @@ public abstract class PieceType{
         = new PieceType(){
                 public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "int16_t";}
                 public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "short";}
+                public String toJavaReferenceType(final List<FlagSetDefinition> flagSetDefinitions){return "Short";}
                 public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const int16_t";}
                 public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final short";}
                 public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
@@ -96,6 +102,7 @@ public abstract class PieceType{
         = new PieceType(){
                 public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "int32_t";}
                 public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "int";}
+                public String toJavaReferenceType(final List<FlagSetDefinition> flagSetDefinitions){return "Integer";}
                 public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const int32_t";}
                 public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final int";}
                 public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
@@ -110,6 +117,7 @@ public abstract class PieceType{
         = new PieceType(){
                 public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "int64_t";}
                 public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "long";}
+                public String toJavaReferenceType(final List<FlagSetDefinition> flagSetDefinitions){return "Long";}
                 public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const int64_t";}
                 public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final long";}
                 public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
@@ -124,6 +132,7 @@ public abstract class PieceType{
         = new PieceType(){
                 public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "std::string";}
                 public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "String";}
+                public String toJavaReferenceType(final List<FlagSetDefinition> flagSetDefinitions){return "String";}
                 public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const std::string&";}
                 public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final String";}
                 public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
@@ -138,6 +147,7 @@ public abstract class PieceType{
         = new PieceType(){
                 public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "std::vector<char>";}
                 public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "java.util.Vector<Byte>";}
+                public String toJavaReferenceType(final List<FlagSetDefinition> flagSetDefinitions){return "java.util.Vector<Byte>";}
                 public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const std::vector<char>&";}
                 public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final java.util.Vector<Byte>";}
                 public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
@@ -147,6 +157,20 @@ public abstract class PieceType{
                     return "readBinary";
                 }
             };
+
+    public static PieceType VECTOR(final PieceType t){
+        return
+            new PieceType(){
+            public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "std::vector<"+t.toCppType(flagSetDefinitions)+" >";}
+            public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "java.util.Vector<"+t.toJavaReferenceType(flagSetDefinitions)+">";}
+            public String toJavaReferenceType(final List<FlagSetDefinition> flagSetDefinitions){return "java.util.Vector<"+t.toJavaReferenceType(flagSetDefinitions)+">";}
+            public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const std::vector<"+t.toCppType(flagSetDefinitions)+">&";}
+            public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final java.util.Vector<"+t.toJavaReferenceType(flagSetDefinitions)+">";}
+            public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){return "appendVector";}
+            public String getReader(final List<FlagSetDefinition> flagSetDefinitions){return "readVector";}
+        };
+    }
+            
 
     //For representing enum sets:
     private static class FlagSetPieceType extends PieceType{
@@ -200,6 +224,33 @@ public abstract class PieceType{
                     return "short";
                 } else if(size>16 && size<=32){
                     return "int";
+                } else{
+                    throw new UnsupportedOperationException("The flag set "
+                                                 +flagSetDefinition.name
+                                                 +" has unsupported size:"
+                                                 +size);
+                }
+            }
+            throw new UnsupportedOperationException("No such flag set definition:"
+                                +flagSetDefinitionName);
+        }
+
+        public String toJavaReferenceType
+            (final List<FlagSetDefinition> flagSetDefinitions)
+        {
+            for(FlagSetDefinition flagSetDefinition
+                    : flagSetDefinitions){
+                if(flagSetDefinition.name!=this.flagSetDefinitionName)
+                    continue;
+
+                final int size
+                    = flagSetDefinition.flagDefinitions.length;
+                if(size>0 && size<=8){
+                    return "Byte";
+                } else if(size>8 && size<=16){
+                    return "Short";
+                } else if(size>16 && size<=32){
+                    return "Integer";
                 } else{
                     throw new UnsupportedOperationException("The flag set "
                                                  +flagSetDefinition.name
