@@ -33,3 +33,9 @@
         Denmark
 */
 
+public enum Create{
+    CPP_SERIALIZER,
+        CPP_DESERIALIZER,
+        JAVA_SERIALIZER,
+        JAVA_DESERIALIZER
+        }
