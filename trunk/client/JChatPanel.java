@@ -61,13 +61,18 @@ public class JChatPanel extends JPanel implements ActionListener {
     }
 
     public void actionPerformed(ActionEvent evt) {
-        final String text = jTextField.getText();
-        jTextField.selectAll();
+        byte[] text;
+        try{
+            text = jTextField.getText().getBytes("UTF8");
+        }catch(final java.io.UnsupportedEncodingException e){
+            text = new byte[0];
+        }
 
-        Sender.send(GeneralProtocol.serialize_1_SAY(text));
+        Sender.send(GeneralProtocol.serialize_1_SAY(Message.toVector(text)));
 
         //Make sure the new text is visible, even if there
         //was a selection in the text area.
+        jTextField.selectAll();
     }
 
     public void appendLine(final String text){

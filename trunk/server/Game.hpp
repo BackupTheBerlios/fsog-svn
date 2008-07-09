@@ -52,16 +52,17 @@ class TurnGame
 {
 public:
   
-  Player turn;
-
-  //TODO: server has to guard that if Player p sends a move, then it's
+  //Server guards that if Player p sends a move, then it's
   //p's turn.
+  Player turn;
 
   const Player numberOfPlayers;
 
-  void firstPlayer() throw() {turn = 0;}
+  Player getOpponent() const throw() {return 1-turn;}
 
-  void nextPlayer() throw() {turn=(turn+1)%numberOfPlayers;}
+  void setFirstPlayer() throw() {turn = 0;}
+
+  void setNextPlayer() throw() {turn=(turn+1)%numberOfPlayers;}
 
   TurnGame(const Player numberOfPlayers) throw()
     :numberOfPlayers(numberOfPlayers)
@@ -93,27 +94,8 @@ public:
   virtual bool initialize(std::list<PlayerAddressedMessage>& initialMessages)
     throw() =0;
 
-  /** Values representing what effect a move has on the game. This is
-      specified as a bit flag, where the bits look as follows:
-
-      ...more significant bits... | CONTINUE
-
-      When CONTINUE bit is set to 1, game shall continue, when set to
-      0, game shall end.
-  */
-  typedef uint8_t MoveResult;
-
-
-  //Bit mask for checking whether the game shall be ended.
-  static const MoveResult CONTINUITY_MASK = 0x01;
-  static const MoveResult CONTINUE = 0x00;
-  static const MoveResult END = 0x01;
-
-  static const MoveResult VALIDITY_MASK = 0x02;
-  static const MoveResult VALID = 0x00;
-  static const MoveResult INVALID = 0x02;
-
-  /** Move of each player is described  as a bit vector. Each game has
+  /**
+     Move of each player is described  as a bit vector. Each game has
      to define  how moves are encoded  within such a  vector.  A valid
      move is  a move which  is correct according  to the rules  of the
      game  and  current settings  and  game  state.   Observe that  in
@@ -122,52 +104,53 @@ public:
      game. It is  just not a very  good move, but a valid  one. On the
      other hand  moving a pawn 5 fields  away in chess is  not a valid
      move.
-  */
 
-  /** Very often server awaits for a move from a player. When move
-      information arrives, "move(...)" is called. "move(...)" shall
-      verify whether "move" is a valid move. If it's not, "move(...)"
-      shall return "MoveResult::INVALID". If it is, "move(...)" shall
-      update the game state to reflect that a move was made and return
-      "MoveResult::CONTINUE" or "MoveResult::END".  After the function
-      is called, the server will send "moveMessages" to clients, so
-      they know what happened. All information that needs to be sent
-      to players, e.g. what cards was played, shall be put in
-      "moveMessages". Observe that sometimes diferent information is
-      sent to different players, e.g. in the game Thousand, a player
-      gives a card to another player, so that the third player doesn't
-      see what card it is.  The size of "moveMessages" is at least
-      that of "nicks". "move(...)"  shall put information for
-      "nick[i]" in "moveMessages[i]". "move(...)" shall not resize
-      "moveMessages". First "nicks.size()" elements of "moveMessages"
-      are empty messages before "move(...)" is called.
+     TODO: Update this documentation.
 
-      The last parameter is only used when the game is finished,
-      i.e. when "move(...)" returns "END". In such a case "move(...)"
-      should fill "endResult" with nicks of players according to what
-      places they got in the game. Let's assume that Superman, Batman,
-      Spiderman and Flash played a 4--player game. Let's say that
-      Batman won and got 113 points, Superman and Flash took both
-      second place, gathering 72 points each, and Spiderman was last
-      with 64 points. In such a case, "move(...)" should set
-      "endResult" to look like:
-      [{Batman},{Superman,Flash},{Spiderman}].
+     Very often server awaits for a move from a player.  When move
+     information arrives, "move(...)"  is called.  "move(...)" shall
+     verify whether "move" is a valid move. If it's not, "move(...)"
+     shall return "MoveResult::INVALID".  If it is, "move(...)" shall
+     update the game state to reflect that a move was made and return
+     "MoveResult::CONTINUE" or "MoveResult::END".  After the function
+     is called, the server will send "moveMessages" to clients, so
+     they know what happened. All information that needs to be sent to
+     players, e.g.  what cards was played, shall be put in
+     "moveMessages". Observe that sometimes diferent information is
+     sent to different players, e.g. in the game Thousand, a player
+     gives a card to another player, so that the third player doesn't
+     see what card it is.  The size of "moveMessages" is at least that
+     of "nicks".  "move(...)"  shall put information for "nick[i]" in
+     "moveMessages[i]".  "move(...)"  shall not resize
+     "moveMessages". First "nicks.size()" elements of "moveMessages"
+     are empty messages before "move(...)" is called.
 
-      "endResult" is empty before "move(...)" is called. "move(...)"
-      can only modify "endResult" if it returns "END". If "move(...)"
-      returns anything other than "END", "endResult" should be left
-      empty.
+     The last parameter is only used when the game is finished,
+     i.e. when "move(...)" returns "END". In such a case "move(...)"
+     should fill "endResult" with nicks of players according to what
+     places they got in the game. Let's assume that Superman, Batman,
+     Spiderman and Flash played a 4--player game. Let's say that
+     Batman won and got 113 points, Superman and Flash took both
+     second place, gathering 72 points each, and Spiderman was last
+     with 64 points. In such a case, "move(...)" should set
+     "endResult" to look like:
+     [{Batman},{Superman,Flash},{Spiderman}].
 
-      "move(...)" has to take care of changing "currentPlayerNumber"
-      if it returns "CONTINUE". After "move(...)" returns "CONTINUE",
-      server will expect a move from
-      "nicks[currentPlayerNumber]". "currentPlayerNumber" has to
-      remain in the interval <0,nicks.size()-1>.
+     "endResult" is empty before "move(...)" is called. "move(...)"
+     can only modify "endResult" if it returns "END". If "move(...)"
+     returns anything other than "END", "endResult" should be left
+     empty.
 
-      "move(...)" shall set invalidSenders to something else than
-      empty set in case some moves sent were invalid. Still the game
-      can continue, or end. TODO: who removes those players, game or
-      server?
+     "move(...)" has to take care of changing "currentPlayerNumber" if
+     it returns "CONTINUE". After "move(...)" returns "CONTINUE",
+     server will expect a move from
+     "nicks[currentPlayerNumber]". "currentPlayerNumber" has to remain
+     in the interval <0,nicks.size()-1>.
+
+     "move(...)" shall set invalidSenders to something else than empty
+     set in case some moves sent were invalid. Still the game can
+     continue, or end. TODO: who removes those players, game or
+     server?
   */
   virtual MoveResult move(const std::vector<char>& move,
                           std::list<PlayerAddressedMessage>& moveMessages,

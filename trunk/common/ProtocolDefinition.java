@@ -120,14 +120,14 @@ public class ProtocolDefinition{
 
     public void defineMessage(final String name,
                               final String comment,
-                              final Sender sentBy,
+                              final EnumSet<Create> create,
                               final PieceDefinition ... pieceDefinitions)
         throws Exception
     {
         this.messageDefinitions.add
             (new MessageDefinition(name,
                                    comment,
-                                   sentBy,
+                                   create,
                                    pieceDefinitions));
     }
 
@@ -329,29 +329,35 @@ public class ProtocolDefinition{
                  +"    std::ostringstream output;\n"
                  +"\n"
                  +"    output\n"
-                 +"      <<\"Message type: \"<<"
+                 +"      <<\"MSG \"<<"
                  +"messageTypeToString(getMessageType(message))\n"
-                 +"      <<\", number of bytes: \"<<message.size()<<std::endl;\n"
+                 +"      <<\" ("+protocolName+" v"+protocolVersion
+                 +", \"<<message.size()<<\"B):\"<<std::endl;\n"
                  +"\n"
                  +"    const char*const hex = \"0123456789ABCDEF\";\n"
                  +"\n"
-                 +"    int_fast16_t i=0;\n"
-                 +"    for(std::vector<char>::const_iterator it=message.begin();\n"
-                 +"        it!=message.end() && i<1024;\n"
-                 +"        it++)\n"
-                 +"      {\n"
-                 +"        output\n"
-                 +"          <<hex[((*it)>>4) & 0x0F]\n"
-                 +"          <<hex[(*it) & 0x0F]\n"
-                 +"          <<\" (\"<<(std::isprint(*it)?(*it):'_')<<\") \";\n"
-                 +"        i++;\n"
-                 +"        if(i%10==0)\n"
-                 +"          output<<std::endl;\n"
-                 +"      }\n"
-                 +"\n"
+                 +"    for(uint_fast16_t line=0;20*line<message.size();line++)\n"
+                 +"    {\n"
+                 +"      //Print hexadecimal line:\n"
+                 +"      for(uint_fast16_t i=20*line;i<20*(line+1) && i<message.size();i++)\n"
+                 +"        {\n"
+                 +"          const char c = message[i];\n"
+                 +"          output<<hex[(c>>4) & 0x0F]<<hex[c & 0x0F]<<' ';\n"
+                 +"        }\n"
+                 +"      output<<std::endl;\n"
+                 +"      //Print human--readable line:\n"
+                 +"      for(uint_fast16_t i=20*line;i<20*(line+1) && i<message.size();i++)\n"
+                 +"        {\n"
+                 +"          const char c = message[i];\n"
+                 +"          if(std::isprint(c))\n"
+                 +"            output<<c<<\"  \";\n"
+                 +"          else\n"
+                 +"            output<<\"__ \";\n"
+                 +"        }\n"
+                 +"      output<<std::endl;\n"
+                 +"    }\n"
                  +"    return output.str();\n"
                  +"  }\n");
-
     }
 
     private void hppWriteMessageTypeToString()
@@ -425,7 +431,7 @@ public class ProtocolDefinition{
             = this.messageDefinitions.lastElement().name;
 
         this.javaWrite("  public static MessageType lookupMessageType("
-                       +"final Message message){\n"
+                       +"final Vector<Byte> message){\n"
                        +"    try{\n"
                        +"        final Iterator<Byte> iterator\n"
                        +"         = message.iterator();\n"
@@ -462,7 +468,7 @@ public class ProtocolDefinition{
 
         final String s0
             ="  //"+"Message "+messageDefinition.name+":\n\n"
-            +"  //This message is sent by "+messageDefinition.sentBy
+            +"  //This message will create: "+messageDefinition.create
             +".\n\n"
             +"  //In protocol version "+protocolVersion
             +" this message has id "+messageDefinition.identifier
@@ -473,135 +479,124 @@ public class ProtocolDefinition{
         javaWrite(s0);
 
         //Generate serializer:
-        if(messageDefinition.sentBy.equals(Sender.CLIENT)){
-            //hppWrite("  /* Message sent by "+messageDefinition.sentBy
-            //+" only,\n"
-            //+"     no need to serialize on other side (here).\n");
-        }else{
-            javaWrite("  /* Message sent by "+messageDefinition.sentBy
-                      +" only,\n"
-                      +"     no need to serialize on other side (here).\n");
-        }
-
-        hppWrite("  static void serialize_"
-                 +protocolVersion+"_"
-                 +messageDefinition.name+"(");
-        javaWrite("  public static Message serialize_"
-                  +protocolVersion+"_"
-                  +messageDefinition.name+"(");
+        if(messageDefinition.create.contains(Create.CPP_SERIALIZER))
+            hppWrite("  static void serialize_"
+                     +protocolVersion+"_"
+                     +messageDefinition.name+"(");
+        if(messageDefinition.create.contains(Create.JAVA_SERIALIZER))
+            javaWrite("  public static Vector<Byte> serialize_"
+                      +protocolVersion+"_"
+                      +messageDefinition.name+"(");
 
         for(int i=0;i<messageDefinition.pieceDefinitions.length;i++){
 
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
 
-            hppWrite("\n        //"+pieceDefinition.comment+"\n"
-                     +"        ");
-            hppWrite(pieceDefinition.type.toCppConstType(this.flagSetDefinitions)
-                     +" "+pieceDefinition.name+",\n");
+            if(messageDefinition.create.contains(Create.CPP_SERIALIZER)){
+                hppWrite("\n        //"+pieceDefinition.comment+"\n"
+                         +"        ");
+                hppWrite(pieceDefinition.type.toCppConstType(this.flagSetDefinitions)
+                         +" "+pieceDefinition.name+",\n");
+            }
 
-            javaWrite("\n        //"+pieceDefinition.comment+"\n"
-                      +"        ");
-            javaWrite(pieceDefinition.type.toJavaFinalType(this.flagSetDefinitions)
-                      +" "+pieceDefinition.name
-                      +(i<messageDefinition.pieceDefinitions.length-1
-                        ?","
-                        :""));
+            if(messageDefinition.create.contains(Create.JAVA_SERIALIZER)){
+                javaWrite("\n        //"+pieceDefinition.comment+"\n"
+                          +"        ");
+                javaWrite(pieceDefinition.type.toJavaFinalType(this.flagSetDefinitions)
+                          +" "+pieceDefinition.name
+                          +(i<messageDefinition.pieceDefinitions.length-1
+                            ?","
+                            :""));
+            }
         }
 
-        hppWrite("    std::vector<char>&outputMessage)\n"
-                 +"    throw()\n"
-                 +"  {\n"
-                 +"    outputMessage.resize(0);\n");
-        
-        javaWrite("){\n"
-                  +"    final Message outputMessage\n"
-                  +"     = new Message();\n\n");
+        if(messageDefinition.create.contains(Create.CPP_SERIALIZER))
+            hppWrite("    std::vector<char>&outputMessage)\n"
+                     +"    throw()\n"
+                     +"  {\n"
+                     +"    outputMessage.resize(0);\n"
+                     +"    //Let the receiver know which "
+                     +"protocol version this is:\n"
+                     +"    Message::append1Byte("
+                     +protocolVersion+",outputMessage);\n"
+                     +"    //Let the receiver know what kind "
+                     +"of message this is:\n"
+                     +"    Message::append1Byte("+messageDefinition.identifier
+                     +",outputMessage);\n\n");
 
-        hppWrite("    //Let the receiver know which "
-                 +"protocol version this is:\n"
-                 +"    Message::append1Byte("
-                 +protocolVersion+",outputMessage);\n"
-                 +"    //Let the receiver know what kind "
-                 +"of message this is:\n"
-                 +"    Message::append1Byte("+messageDefinition.identifier
-                 +",outputMessage);\n\n");
-
-        javaWrite("    //Let the receiver know which "
-                  +"protocol version this is:\n"
-                  +"    outputMessage.append1Byte("+protocolVersion+");\n"
-                  +"    //Let the receiver know what kind "
-                  +"of message this is:\n"
-                  +"    outputMessage.append1Byte("+messageDefinition.identifier
-                  +");\n\n");
+        if(messageDefinition.create.contains(Create.JAVA_SERIALIZER))
+            javaWrite("){\n"
+                      +"    final Vector<Byte> outputMessage\n"
+                      +"     = new Vector<Byte>();\n\n"
+                      +"    //Let the receiver know which "
+                      +"protocol version this is:\n"
+                      +"    Message.append1Byte("+protocolVersion
+                      +",outputMessage);\n"
+                      +"    //Let the receiver know what kind "
+                      +"of message this is:\n"
+                      +"    Message.append1Byte("+messageDefinition.identifier
+                      +",outputMessage);\n\n");
 
         for(int i=0;i<messageDefinition.pieceDefinitions.length;i++){
 
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
 
-            hppWrite("    //Serialize "+pieceDefinition.name+":\n"
-                     +"    Message::"+pieceDefinition.type.getAppender
-                     (this.flagSetDefinitions)
-                     +"("+pieceDefinition.name+",outputMessage);\n");
+            if(messageDefinition.create.contains(Create.CPP_SERIALIZER))
+                hppWrite("    //Serialize "+pieceDefinition.name+":\n"
+                         +"    Message::"+pieceDefinition.type.getAppender
+                         (this.flagSetDefinitions)
+                         +"("+pieceDefinition.name+",outputMessage);\n");
 
-            javaWrite("    //Serialize "+pieceDefinition.name+":\n"
-                      +"    outputMessage."+pieceDefinition.type.getAppender
-                      (this.flagSetDefinitions)
-                      +"("+pieceDefinition.name+");\n");
+            if(messageDefinition.create.contains(Create.JAVA_SERIALIZER))
+                javaWrite("    //Serialize "+pieceDefinition.name+":\n"
+                          +"    Message."+pieceDefinition.type.getAppender
+                          (this.flagSetDefinitions)
+                          +"("+pieceDefinition.name+",outputMessage);\n");
         }
             
-        javaWrite("    return outputMessage;\n");
-        hppWrite("  }\n\n");
-        javaWrite("  }\n\n");
+        if(messageDefinition.create.contains(Create.JAVA_SERIALIZER))
+            javaWrite("    return outputMessage;\n"
+                      +"  }\n\n");
 
-        if(messageDefinition.sentBy.equals(Sender.CLIENT)){
-            //hppWrite("  */\n\n");
-        }else{
-            javaWrite("  */\n\n");
-        }
+        if(messageDefinition.create.contains(Create.CPP_SERIALIZER))
+            hppWrite("  }\n\n");
         //End of serialization.
 
         //Deserialization.
 
-        if(messageDefinition.sentBy.equals(Sender.CLIENT)){
-            javaWrite("  /* Message sent by "+messageDefinition.sentBy
-                      +" only,\n"
-                      +"     no need to serialize on other side (here).\n");
-        }else{
-            //hppWrite("  /* Message sent by "+messageDefinition.sentBy
-            //+" only,\n"
-            //+"     no need to serialize on other side (here).\n");
-        }
-
         //Generate class for deserialized object:
-        hppWrite("  class Deserialized_"+this.protocolVersion+"_"
-                 +messageDefinition.name+"\n"
-                 +"  {\n"
-                 +"  public:\n");
-        javaWrite("  public static class Deserialized_"+this.protocolVersion+"_"
-                  +messageDefinition.name+"{\n");
+        if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
+            hppWrite("  class Deserialized_"+this.protocolVersion+"_"
+                     +messageDefinition.name+"\n"
+                     +"  {\n"
+                     +"  public:\n");
+        if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER))
+            javaWrite("  public static class Deserialized_"+this.protocolVersion+"_"
+                      +messageDefinition.name+"{\n");
                 
         for(int i=0;i<messageDefinition.pieceDefinitions.length;i++){
                     
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
             
-            hppWrite("    //"+pieceDefinition.comment+"\n");
-            hppWrite("    ");
-            javaWrite("    //"+pieceDefinition.comment+"\n");
-            javaWrite("    ");
-            javaWrite("public final ");
-
-            hppWrite(pieceDefinition.type.toCppType(this.flagSetDefinitions));
-            javaWrite(pieceDefinition.type.toJavaType(this.flagSetDefinitions));
-
-            hppWrite(" "+pieceDefinition.name+";\n");
-            javaWrite(" "+pieceDefinition.name+";\n");
+            if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
+                hppWrite("    //"+pieceDefinition.comment+"\n"
+                         +"    "
+                         +pieceDefinition.type.toCppType(this.flagSetDefinitions)
+                         +" "+pieceDefinition.name+";\n");
+            if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER))
+                javaWrite("    //"+pieceDefinition.comment+"\n"
+                          +"    "
+                          +"public final "
+                          +pieceDefinition.type.toJavaType(this.flagSetDefinitions)
+                          +" "+pieceDefinition.name+";\n");
         }
 
         //C++ class ends here, but Java later.
-        hppWrite("  };\n\n");
+        if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
+            hppWrite("  };\n\n");
 
         //Generate deserializer: C++ deserializer takes form
         //of static method, which writes result into
@@ -610,85 +605,86 @@ public class ProtocolDefinition{
         //Java deserializer takes form of constructor and
         //throws exception if deserialization failed for
         //clarity reasons.
-        hppWrite("  static bool deserialize_"
-                 +this.protocolVersion+"_"
-                 +messageDefinition.name+"(const std::vector<char>&inputMessage"
-                 +(messageDefinition.pieceDefinitions.length>0
-                   ?",\n        Deserialized_"+this.protocolVersion+"_"
-                   +messageDefinition.name
-                   +"&output"
-                   :"")
-                 +")\n"
-                 +"  throw()\n"
-                 +"  {\n"
-                 +"    std::vector<char>::const_iterator it\n"
-                 +"     = inputMessage.begin();\n"
-                 +"    const std::vector<char>::const_iterator messageEnd\n"
-                 +"     = inputMessage.end();\n"
-                 +"    \n"
-                 +"    //Check protocol version:\n"
-                 +"    char protocolVersion=0;\n"
-                 +"    if(!Message::read1Byte(it,messageEnd,protocolVersion))\n"
-                 +"      return false;\n"
-                 +"    if(protocolVersion!="+protocolVersion+")\n"
-                 +"      return false;\n"
-                 +"    \n"
-                 +"    //Check message kind:\n"
-                 +"    char messageKind=0;\n"
-                 +"    if(!Message::read1Byte(it,messageEnd,messageKind))\n"
-                 +"      return false;\n"
-                 +"    if(messageKind!="+messageDefinition.identifier+")\n"
-                 +"      return false;\n\n"
-                 +"    //Deserialize pieces:\n\n"
-                 );
+        if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
+            hppWrite("  static bool deserialize_"
+                     +this.protocolVersion+"_"
+                     +messageDefinition.name+"(const std::vector<char>&inputMessage"
+                     +(messageDefinition.pieceDefinitions.length>0
+                       ?",\n        Deserialized_"+this.protocolVersion+"_"
+                       +messageDefinition.name
+                       +"&output"
+                       :"")
+                     +")\n"
+                     +"  throw()\n"
+                     +"  {\n"
+                     +"    std::vector<char>::const_iterator it\n"
+                     +"     = inputMessage.begin();\n"
+                     +"    const std::vector<char>::const_iterator messageEnd\n"
+                     +"     = inputMessage.end();\n"
+                     +"    \n"
+                     +"    //Check protocol version:\n"
+                     +"    char protocolVersion=0;\n"
+                     +"    if(!Message::read1Byte(it,messageEnd,protocolVersion))\n"
+                     +"      return false;\n"
+                     +"    if(protocolVersion!="+protocolVersion+")\n"
+                     +"      return false;\n"
+                     +"    \n"
+                     +"    //Check message kind:\n"
+                     +"    char messageKind=0;\n"
+                     +"    if(!Message::read1Byte(it,messageEnd,messageKind))\n"
+                     +"      return false;\n"
+                     +"    if(messageKind!="+messageDefinition.identifier+")\n"
+                     +"      return false;\n\n"
+                     +"    //Deserialize pieces:\n\n"
+                     );
 
-        javaWrite("    public Deserialized_"
-                  +this.protocolVersion+"_"
-                  +messageDefinition.name+"(final Message inputMessage)\n"
-                  +"      throws MessageDeserializationException{\n");
-        
-        javaWrite("      try{\n"
-                  +"        final Iterator<Byte> iterator\n"
-                  +"         = inputMessage.iterator();\n\n"
-                  +"        //Check protocol version:\n"
-                  +"        if(iterator.next()!="+this.protocolVersion+")\n"
-                  +"          throw new MessageDeserializationException();\n\n"
-                  +"        //Check kind of message:\n"
-                  +"        if(iterator.next()!="+messageDefinition.identifier+")\n"
-                  +"          throw new MessageDeserializationException();\n\n");
+        if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER))
+            javaWrite("    public Deserialized_"
+                      +this.protocolVersion+"_"
+                      +messageDefinition.name+"(final Vector<Byte> inputMessage)\n"
+                      +"      throws MessageDeserializationException{\n"
+                      +"      try{\n"
+                      +"        final Iterator<Byte> iterator\n"
+                      +"         = inputMessage.iterator();\n\n"
+                      +"        //Check protocol version:\n"
+                      +"        if(iterator.next()!="+this.protocolVersion+")\n"
+                      +"          throw new MessageDeserializationException();\n\n"
+                      +"        //Check kind of message:\n"
+                      +"        if(iterator.next()!="
+                      +messageDefinition.identifier+")\n"
+                      +"          throw new MessageDeserializationException();\n\n");
         
         for(int i=0;i<messageDefinition.pieceDefinitions.length;i++){
             
             final PieceDefinition pieceDefinition
                 = messageDefinition.pieceDefinitions[i];
 
-            hppWrite("    //Deserialize "+pieceDefinition.name+":\n");
-            hppWrite("    if(!Message::"
-                     +pieceDefinition.type.getReader(this.flagSetDefinitions)
-                     +"(it,messageEnd,output."
-                     +pieceDefinition.name+"))\n"
-                     +"      return false;\n");
-            javaWrite("    //Deserialize "+pieceDefinition.name+":\n");
-            javaWrite("      this."+pieceDefinition.name
-                      +" = Message."
-                      +pieceDefinition.type.getReader(this.flagSetDefinitions)
-                      +"(iterator);\n");
+            if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
+                hppWrite("    //Deserialize "+pieceDefinition.name+":\n"
+                         +"    if(!Message::"
+                         +pieceDefinition.type.getReader(this.flagSetDefinitions)
+                         +"(it,messageEnd,output."
+                         +pieceDefinition.name+"))\n"
+                         +"      return false;\n");
+            if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER))
+                javaWrite("    //Deserialize "+pieceDefinition.name+":\n"
+                          +"      this."+pieceDefinition.name
+                          +" = Message."
+                          +pieceDefinition.type.getReader(this.flagSetDefinitions)
+                          +"(iterator);\n");
         }
         
-        hppWrite("    return true;\n"
-                 +"  }\n\n");
+        if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
+            hppWrite("    return true;\n"
+                     +"  }\n\n");
 
-        javaWrite("      }catch(NoSuchElementException e){\n"
-                  +"        throw new MessageDeserializationException(e);\n"
-                  +"      }\n"
-                  +"    }\n"
-                  +"  }\n\n");
+        if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER))
+            javaWrite("      }catch(NoSuchElementException e){\n"
+                      +"        throw new MessageDeserializationException(e);\n"
+                      +"      }\n"
+                      +"    }\n"
+                      +"  }\n\n");
 
-        if(messageDefinition.sentBy.equals(Sender.CLIENT)){
-            javaWrite("  */\n\n");
-        }else{
-            //hppWrite("  */\n\n");
-        }
         //End of deserialization.
     }
 
@@ -759,7 +755,7 @@ public class ProtocolDefinition{
                  +"  //new ones all the time):\n");
 
         for(MessageDefinition md : this.messageDefinitions){
-            if(md.sentBy.equals(Sender.CLIENT)
+            if(md.create.contains(Create.CPP_DESERIALIZER)
                &&md.pieceDefinitions.length>0)
                 hppWrite("  "+protocolName+"Protocol::Deserialized"
                          +"_"+protocolVersion+"_"+md.name
@@ -785,7 +781,7 @@ public class ProtocolDefinition{
                  +"    {\n");
 
         for(MessageDefinition md : this.messageDefinitions){
-            if(md.sentBy.equals(Sender.CLIENT)){
+            if(md.create.contains(Create.CPP_DESERIALIZER)){
                 cppWrite("    case "+protocolName+"Protocol::"
                          +md.name+"_"+protocolVersion+":\n"
                          +"      return "+protocolName+"Protocol::deserialize_"
@@ -812,7 +808,7 @@ public class ProtocolDefinition{
 
         hppWrite("  //Handlers for various message types:\n");
         for(MessageDefinition md : this.messageDefinitions){
-            if(md.sentBy.equals(Sender.CLIENT)){
+            if(md.create.contains(Create.CPP_DESERIALIZER)){
                 hppWrite("  virtual bool handle"+"_"+protocolVersion
                          +"_"+md.name+"(const SessionId sessionID,\n"
                          +"                  "
@@ -837,7 +833,7 @@ public class ProtocolDefinition{
 
     private void javaWriteHandler() throws Exception{
         javaWrite("\n"
-                  +"  public static boolean handle(final Message message,\n"
+                  +"  public static boolean handle(final Vector<Byte> message,\n"
                   +"                               final "+protocolName
                   +"Handler handler){\n"
                   +"\n"
@@ -846,7 +842,7 @@ public class ProtocolDefinition{
                   +"    {\n");
 
         for(MessageDefinition md : this.messageDefinitions){
-            if(md.sentBy.equals(Sender.SERVER)){
+            if(md.create.contains(Create.JAVA_DESERIALIZER)){
                 javaWrite("    case "//+protocolName+"Protocol.MessageType."
                           +md.name+"_"+protocolVersion+":\n"
                           +"      {\n"
@@ -886,7 +882,7 @@ public class ProtocolDefinition{
 
         javaWrite("  //Handlers for various message types:\n");
         for(MessageDefinition md : this.messageDefinitions){
-            if(md.sentBy.equals(Sender.SERVER)){
+            if(md.create.contains(Create.JAVA_DESERIALIZER)){
                 javaWrite("  public abstract boolean handle"+"_"+protocolVersion
                          +"_"+md.name+"(");
                 boolean first = true;

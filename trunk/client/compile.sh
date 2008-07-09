@@ -1,4 +1,4 @@
 #!/bin/bash -x
 rm *.class
-javac -Xlint *.java || exit 1
-jar -cf table.jar *.class || exit 2
+javac -Xlint -Xlint:-serial *.java || exit 1
+jar -cfm table.jar manifest *.class || exit 2

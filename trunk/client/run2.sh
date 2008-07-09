@@ -1,2 +1,3 @@
-#!/bin/bash -x
-java TableJoiner localhost 3000 "$(cat tableId.txt)" Superman -d
+#!/bin/bash
+set -x
+java -jar table.jar $(cat server.txt) "$(cat tableId.txt)" Superman -d

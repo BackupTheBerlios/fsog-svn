@@ -42,6 +42,26 @@
 //First player - 0, second - 1, third - 2, etc...
 typedef int8_t Player;
 
+/** Values representing what effect a move has on the game. This is
+    specified as a bit flag, where the bits look as follows:
+    
+    ...more significant bits... | VALIDITY_BIT | CONTINUITY_BIT
+*/
+typedef uint_fast8_t MoveResult;
+
+
+//Bit mask for specifying whether the game shall continue or finish.
+static const MoveResult CONTINUITY_MASK = 0x01;
+static const MoveResult CONTINUE = 0x00;
+static const MoveResult END = 0x01;
+
+//Bit mask for specifying whether the move sent was valid.
+static const MoveResult VALIDITY_MASK = 0x02;
+static const MoveResult VALID = 0x00;
+static const MoveResult INVALID = 0x02;
+
+
+
 //Secret for joining tables.
 typedef int64_t TableId;
 

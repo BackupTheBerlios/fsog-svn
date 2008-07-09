@@ -33,6 +33,7 @@
         Denmark
 */
 
+import java.util.*;
 
 public class TicTacToeProtocolDefinition{
 
@@ -46,22 +47,17 @@ public class TicTacToeProtocolDefinition{
                                      "../server/TicTacToeProtocol.hpp",
                                      "../server/TicTacToeProtocol.cpp",
                                      "../client/TicTacToeProtocol.java");
+        
+        //TODO: When only 1 message, don't save messageType in serialized vector.
+
 
         protocol.defineMessage
-            ("MAKE_MOVE",
-             "Simple TicTacToe move.",
-             Sender.CLIENT,
-             new PieceDefinition(PieceType.INT8,
-                                 "row",
-                                 "In which row player puts her X or O."),
-             new PieceDefinition(PieceType.INT8,
-                                 "column",
-                                 "In which column player puts her X or O."));
-                
-        protocol.defineMessage
-            ("MOVE_MADE",
+            ("TIC_TAC_TOE_MOVE",
              "Simple TicTacToe move. No need to say who made this move.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,
+                        Create.JAVA_SERIALIZER,
+                        Create.CPP_DESERIALIZER,
+                        Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT8,
                                  "row",
                                  "In which row player puts her X or O."),

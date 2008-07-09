@@ -35,15 +35,19 @@
 
 #include "TicTacToe.hpp"
 #include <set>
+#include <iostream>
+#include "CommandLine.hpp"
 
-bool TicTacToe::initialize(std::list<PlayerAddressedMessage>& messages) throw()
+/** This game always starts in the same way, so it won't send any
+    initial messages. */
+bool TicTacToe::initialize(std::list<PlayerAddressedMessage>& /*messages*/) throw()
 {
   //Initialization fails if table was created not for 2 players:
   if(this->numberOfPlayers!=2)
     return false;
 
   //We expect move only from the first player:
-  this->firstPlayer();
+  setFirstPlayer();
 
   //Initialize board to be 3x3 with all empty fields:
   //TODO: not efficient. Have static empty board.
@@ -57,27 +61,49 @@ bool TicTacToe::initialize(std::list<PlayerAddressedMessage>& messages) throw()
   return true;
 }
 
-TurnGame::MoveResult TicTacToe::move(const std::vector<char>& move,
-                                     std::list<PlayerAddressedMessage>& moveMessages,
-                                     std::list< std::set<Player> >& endResult)
+MoveResult TicTacToe::move(const std::vector<char>& move,
+                           std::list<PlayerAddressedMessage>& moveMessages,
+                           std::list< std::set<Player> >& endResult)
   throw()
 {
+  if(CommandLine::printNetworkPackets())
+    std::cout<<"TTT::MV "
+             <<TicTacToeProtocol::messageToString(move);
+
   //First we deserialize the move. If deserialization fails, current
   //player sent invalid move.
   //TODO: It would be easier: deserialize(move,this->row,this->column)
-  if(!TicTacToeProtocol::deserialize_1_MAKE_MOVE(move,
-                                                 this->deserialized_1_MAKE_MOVE))
+  if(!TicTacToeProtocol::deserialize_1_TIC_TAC_TOE_MOVE
+     (move,
+      this->deserialized_1_TIC_TAC_TOE_MOVE))
     {
+      std::cout<<"deserialize_1_MAKE_MOVE failed."
+               <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
       return INVALID|END;
     }
   
-  int8_t& row = this->deserialized_1_MAKE_MOVE.row;
-  int8_t& column = this->deserialized_1_MAKE_MOVE.column;
+  int8_t& row = this->deserialized_1_TIC_TAC_TOE_MOVE.row;
+  int8_t& column = this->deserialized_1_TIC_TAC_TOE_MOVE.column;
   
   //Let's see whether the move is valid (both coordinates are within
   //<0,2> and the pointed field is still empty):
   if(row<0 || row>2 || column<0 || column>2 || board[row][column]!=EMPTY)
     {
+      std::cout<<"Incorrect move: row=="<<static_cast<int>(row)
+               <<", column=="<<static_cast<int>(column)
+               <<", board[row][column]=="<<static_cast<int>(board[row][column])
+               <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
+      std::cout<<"Board: "<<std::endl;
+      for(std::vector<std::vector<Field> >::const_iterator it = board.begin();
+          it!=board.end();
+          it++)
+        {
+          for(std::vector<Field>::const_iterator jt = it->begin();
+              jt!=it->end();
+              jt++)
+            std::cout<<static_cast<int>(*jt)<<" ";
+          std::cout<<std::endl;
+        }
       return INVALID|END;
     }
 
@@ -88,12 +114,10 @@ TurnGame::MoveResult TicTacToe::move(const std::vector<char>& move,
   board[row][column] = c;
   empty--;
 
-  //Send a message to all players with what move was made:
-  //TODO: maybe only to the player who did not make the move?
-  moveMessages.push_back(PlayerAddressedMessage(0));
-  TicTacToeProtocol::serialize_1_MOVE_MADE(row,column,moveMessages.back().message);
-  moveMessages.push_back(PlayerAddressedMessage(1));
-  TicTacToeProtocol::serialize_1_MOVE_MADE(row,column,moveMessages.back().message);
+  //Send a message to opponent with what move was made:
+  moveMessages.push_back(PlayerAddressedMessage(getOpponent()));
+  TicTacToeProtocol::serialize_1_TIC_TAC_TOE_MOVE(row,column,
+                                                  moveMessages.back().message);
   
   //Let's see whether we have 3--in--a--row after this move:
   if( (board[row][0]==c && board[row][1]==c && board[row][2]==c)
@@ -121,6 +145,6 @@ TurnGame::MoveResult TicTacToe::move(const std::vector<char>& move,
     }
 
   //Game shall continue.
-  this->nextPlayer();
+  setNextPlayer();
   return VALID|CONTINUE;
 }

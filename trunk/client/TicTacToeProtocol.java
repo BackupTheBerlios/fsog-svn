@@ -38,10 +38,8 @@ public class TicTacToeProtocol{
   //which deserializer should be used.
   enum MessageType{
     UNKNOWN_MESSAGE_1,
-    //Simple TicTacToe move.
-    MAKE_MOVE_1,
     //Simple TicTacToe move. No need to say who made this move.
-    MOVE_MADE_1
+    TIC_TAC_TOE_MOVE_1
   }
 
 
@@ -53,7 +51,7 @@ public class TicTacToeProtocol{
   //some known type. It doesn't read the whole
   //message, just the part where message type
   //is present.
-  public static MessageType lookupMessageType(final Message message){
+  public static MessageType lookupMessageType(final Vector<Byte> message){
     try{
         final Iterator<Byte> iterator
          = message.iterator();
@@ -64,8 +62,7 @@ public class TicTacToeProtocol{
          = Message.read1Byte(iterator);
         
         switch(byteMessageType){
-        case 1: return MessageType.MAKE_MOVE_1;
-        case 2: return MessageType.MOVE_MADE_1;
+        case 1: return MessageType.TIC_TAC_TOE_MOVE_1;
         default: return MessageType.UNKNOWN_MESSAGE_1;
         }
     }catch(Exception e){
@@ -73,103 +70,39 @@ public class TicTacToeProtocol{
     }
   }
 
-  //Message MAKE_MOVE:
+  //Message TIC_TAC_TOE_MOVE:
 
-  //This message is sent by CLIENT.
+  //This message will create: [CPP_SERIALIZER, CPP_DESERIALIZER, JAVA_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 1.
-  //Simple TicTacToe move.
-
-  public static Message serialize_1_MAKE_MOVE(
-        //In which row player puts her X or O.
-        final byte row,
-        //In which column player puts her X or O.
-        final byte column){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(1);
-
-    //Serialize row:
-    outputMessage.append1Byte(row);
-    //Serialize column:
-    outputMessage.append1Byte(column);
-    return outputMessage;
-  }
-
-  /* Message sent by CLIENT only,
-     no need to serialize on other side (here).
-  public static class Deserialized_1_MAKE_MOVE{
-    //In which row player puts her X or O.
-    public final byte row;
-    //In which column player puts her X or O.
-    public final byte column;
-    public Deserialized_1_MAKE_MOVE(final Message inputMessage)
-      throws MessageDeserializationException{
-      try{
-        final Iterator<Byte> iterator
-         = inputMessage.iterator();
-
-        //Check protocol version:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-        //Check kind of message:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-    //Deserialize row:
-      this.row = Message.read1Byte(iterator);
-    //Deserialize column:
-      this.column = Message.read1Byte(iterator);
-      }catch(NoSuchElementException e){
-        throw new MessageDeserializationException(e);
-      }
-    }
-  }
-
-  */
-
-  //Message MOVE_MADE:
-
-  //This message is sent by SERVER.
-
-  //In protocol version 1 this message has id 2.
   //Simple TicTacToe move. No need to say who made this move.
 
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_MOVE_MADE(
+  public static Vector<Byte> serialize_1_TIC_TAC_TOE_MOVE(
         //In which row player puts her X or O.
         final byte row,
         //In which column player puts her X or O.
         final byte column){
-    final Message outputMessage
-     = new Message();
+    final Vector<Byte> outputMessage
+     = new Vector<Byte>();
 
     //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
+    Message.append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(2);
+    Message.append1Byte(1,outputMessage);
 
     //Serialize row:
-    outputMessage.append1Byte(row);
+    Message.append1Byte(row,outputMessage);
     //Serialize column:
-    outputMessage.append1Byte(column);
+    Message.append1Byte(column,outputMessage);
     return outputMessage;
   }
 
-  */
-
-  public static class Deserialized_1_MOVE_MADE{
+  public static class Deserialized_1_TIC_TAC_TOE_MOVE{
     //In which row player puts her X or O.
     public final byte row;
     //In which column player puts her X or O.
     public final byte column;
-    public Deserialized_1_MOVE_MADE(final Message inputMessage)
+    public Deserialized_1_TIC_TAC_TOE_MOVE(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -180,7 +113,7 @@ public class TicTacToeProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=2)
+        if(iterator.next()!=1)
           throw new MessageDeserializationException();
 
     //Deserialize row:
@@ -194,17 +127,17 @@ public class TicTacToeProtocol{
   }
 
 
-  public static boolean handle(final Message message,
+  public static boolean handle(final Vector<Byte> message,
                                final TicTacToeHandler handler){
 
     switch(TicTacToeProtocol.lookupMessageType(message))
     {
-    case MOVE_MADE_1:
+    case TIC_TAC_TOE_MOVE_1:
       {
         try{
-          final TicTacToeProtocol.Deserialized_1_MOVE_MADE deserialized = 
-              new TicTacToeProtocol.Deserialized_1_MOVE_MADE(message);
-        return handler.handle_1_MOVE_MADE(deserialized.row,
+          final TicTacToeProtocol.Deserialized_1_TIC_TAC_TOE_MOVE deserialized = 
+              new TicTacToeProtocol.Deserialized_1_TIC_TAC_TOE_MOVE(message);
+        return handler.handle_1_TIC_TAC_TOE_MOVE(deserialized.row,
                       deserialized.column);
         }catch(final MessageDeserializationException e){
           return false;
@@ -219,7 +152,7 @@ public static interface TicTacToeHandler
 {
 
   //Handlers for various message types:
-  public abstract boolean handle_1_MOVE_MADE(final byte row,
+  public abstract boolean handle_1_TIC_TAC_TOE_MOVE(final byte row,
                   final byte column);
 }
 }

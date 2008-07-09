@@ -50,6 +50,7 @@ private:
 public:
   TurnGame* p_game;
   const TableId id;
+  bool gameStarted;
 
   //Is table player id necessary?
   std::map<TablePlayerId,TablePlayer*> tablePlayerIdToTablePlayerPointer;
@@ -79,7 +80,8 @@ public:
 
   Table()
     :p_game(0),
-     id(Table::nextTableId())
+     id(Table::nextTableId()),
+     gameStarted(false)
   {
   }
 

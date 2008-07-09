@@ -33,6 +33,7 @@
         Denmark
 */
 
+import java.util.*;
 
 /** Protocol message.
  */
@@ -43,12 +44,13 @@ public class MessageDefinition{
     public final String name;
     public final int identifier;
     public final String comment;
-    public final Sender sentBy;
+    //Which serializers and deserializers should be created for this message:
+    public final Set<Create> create;
     public final PieceDefinition[] pieceDefinitions;
 
     public MessageDefinition(final String name,
                              final String comment,
-                             final Sender sentBy,
+                             final Set<Create> create,
                              final PieceDefinition[] pieceDefinitions)
         throws Exception
     {
@@ -57,7 +59,7 @@ public class MessageDefinition{
             throw new Exception("Too many message definitions.");
         this.identifier=nextIdentifier++;
         this.comment=comment;
-        this.sentBy=sentBy;
+        this.create=create;
         this.pieceDefinitions=pieceDefinitions;
     }
 }

@@ -34,6 +34,7 @@
 */
 
 import java.net.Socket;
+import java.util.*;
 
 public class Receiver extends Thread{
 
@@ -53,14 +54,14 @@ public class Receiver extends Thread{
                 //Receive message:
                 //TODO: Is Socket's buffer long enough for storing,
                 //say, 100 messages if handling takes a long time?
-                final Message message
+                final Vector<Byte> message
                     = TransportProtocol.receive(this.socket);
-                
+
                 if(!GeneralProtocol.handle(message,this.generalHandler)){
                     System.err.println("Message handling failed. Message type:"
                                        +GeneralProtocol.lookupMessageType(message));
                     System.err.println("Message:");
-                    System.err.println(message.toString());
+                    System.err.println(Message.toString(message));
                 }
             }
         }catch(final Exception e){

@@ -33,6 +33,7 @@
         Denmark
 */
 
+import java.util.*;
 
 public class GeneralProtocolDefinition{
 
@@ -67,35 +68,36 @@ public class GeneralProtocolDefinition{
         protocol.defineMessage
             ("CREATE_TICTACTOE_TABLE",
              "Sent by client when creating a new Tic Tac Toe table.",
-             Sender.CLIENT);
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER));
 
         protocol.defineMessage
             ("TABLE_CREATED",
              "Sent by server after table has been created.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT64,"id",
                                  "ID for newly created table."));
 
         protocol.defineMessage
             ("SAY",
              "Sent by client when saying something (chat message).",
-             Sender.CLIENT,
-             new PieceDefinition(PieceType.CSTRING,"text",
-                                 "Text of the chat message."));
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
+             new PieceDefinition(PieceType.BINARY,"text_UTF8",
+                                 "Text of the chat message in UTF8 encoding."));
 
         protocol.defineMessage
             ("SAID",
              "Sent by server when someone says something (chat message).",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT8,"tablePlayerId",
                                  "Who said it."),
-             new PieceDefinition(PieceType.CSTRING,"text",
-                                 "Text of the chat message."));
+             new PieceDefinition(PieceType.BINARY,"text_UTF8",
+                                 "Text of the chat message in UTF8 encoding."));
+
 
         protocol.defineMessage
             ("JOIN_TABLE_TO_PLAY",
              "Sent by client when joining some table to play.",
-             Sender.CLIENT,
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
              new PieceDefinition(PieceType.INT64,"tableId",
                                  "Table id."),
              new PieceDefinition(PieceType.CSTRING,"screenName",
@@ -104,19 +106,19 @@ public class GeneralProtocolDefinition{
         protocol.defineMessage
             ("YOU_JOINED_TABLE",
              "Sent by server to new player who joined a table.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT8,"tablePlayerId",
                                  "New player's table player id."));
         protocol.defineMessage
             ("JOINING_TABLE_FAILED_INCORRECT_TABLE_ID",
              "Sent by server to new player who joined a table.",
-             Sender.SERVER);
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER));
                 
         protocol.defineMessage
              ("NEW_PLAYER_JOINED_TABLE",
              "Sent by server after new player joined a table"
              +" to already present people.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.CSTRING,"screenName",
                                  "New player's name."),
              new PieceDefinition(PieceType.INT8,"tablePlayerId",
@@ -125,7 +127,7 @@ public class GeneralProtocolDefinition{
         protocol.defineMessage
             ("PLAYER_LEFT_TABLE",
              "Sent by server when a player left.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT8,"tablePlayerId",
                                  "Leaving player's table player id."));
 
@@ -137,7 +139,7 @@ public class GeneralProtocolDefinition{
             ("GAME_STARTED_WITHOUT_INITIAL_MESSAGE",
              "Sent by server when game is started and no initial message is"
              +" designated for the receiver.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.VECTOR(PieceType.INT8),
                                  "turnGamePlayerToTablePlayerId",
                                  "Specifies how many players will play the"
@@ -148,7 +150,7 @@ public class GeneralProtocolDefinition{
             ("GAME_STARTED_WITH_INITIAL_MESSAGE",
              "Sent by server when game is started and an initial message is"
              +" designated for the receiver.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.VECTOR(PieceType.INT8),
                                  "turnGamePlayerToTablePlayerId",
                                  "Specifies how many players will play the"
@@ -161,15 +163,15 @@ public class GeneralProtocolDefinition{
         protocol.defineMessage
             ("MAKE_MOVE",
              "Sent by client when making a move.",
-             Sender.CLIENT,
-             new PieceDefinition(PieceType.BINARY,"move",
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
+             new PieceDefinition(PieceType.BINARY,"gameMove",
                                  "Game-specific move information."));
 
         protocol.defineMessage
             ("MOVE_MADE",
              "Sent by server after client made a move.",
-             Sender.SERVER,
-             new PieceDefinition(PieceType.BINARY,"move",
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
+             new PieceDefinition(PieceType.BINARY,"gameMove",
                                  "Game-specific move information."));
 
 

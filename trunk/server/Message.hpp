@@ -78,7 +78,7 @@ private:
     if(it+n>messageEnd)
       return false;
 
-    result=0;
+    result=static_cast<T>(0);
     T tempByte;
     const T mask = static_cast<T>(0x00FF);
 
@@ -249,6 +249,7 @@ public:
     if(it+length>messageEnd)
       return false;
 
+    result.resize(0);
     result.insert(result.end(),
                   it,
                   it+length);

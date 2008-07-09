@@ -40,12 +40,12 @@
 
     switch(TicTacToeProtocol::getMessageType(message))
     {
-    case TicTacToeProtocol::MAKE_MOVE_1:
-      return TicTacToeProtocol::deserialize_1_MAKE_MOVE(message,
-                              this->deserialized_MAKE_MOVE)
-             && this->handle_1_MAKE_MOVE(sessionID,toBeSent,timeout,
-                      this->deserialized_MAKE_MOVE.row,
-                      this->deserialized_MAKE_MOVE.column);
+    case TicTacToeProtocol::TIC_TAC_TOE_MOVE_1:
+      return TicTacToeProtocol::deserialize_1_TIC_TAC_TOE_MOVE(message,
+                              this->deserialized_TIC_TAC_TOE_MOVE)
+             && this->handle_1_TIC_TAC_TOE_MOVE(sessionID,toBeSent,timeout,
+                      this->deserialized_TIC_TAC_TOE_MOVE.row,
+                      this->deserialized_TIC_TAC_TOE_MOVE.column);
     default:
       return false;
     }

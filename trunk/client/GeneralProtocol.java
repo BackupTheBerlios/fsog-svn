@@ -75,7 +75,7 @@ public class GeneralProtocol{
   //some known type. It doesn't read the whole
   //message, just the part where message type
   //is present.
-  public static MessageType lookupMessageType(final Message message){
+  public static MessageType lookupMessageType(final Vector<Byte> message){
     try{
         final Iterator<Byte> iterator
          = message.iterator();
@@ -108,79 +108,34 @@ public class GeneralProtocol{
 
   //Message CREATE_TICTACTOE_TABLE:
 
-  //This message is sent by CLIENT.
+  //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
   //In protocol version 1 this message has id 1.
   //Sent by client when creating a new Tic Tac Toe table.
 
-  public static Message serialize_1_CREATE_TICTACTOE_TABLE(){
-    final Message outputMessage
-     = new Message();
+  public static Vector<Byte> serialize_1_CREATE_TICTACTOE_TABLE(){
+    final Vector<Byte> outputMessage
+     = new Vector<Byte>();
 
     //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
+    Message.append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(1);
+    Message.append1Byte(1,outputMessage);
 
     return outputMessage;
   }
 
-  /* Message sent by CLIENT only,
-     no need to serialize on other side (here).
-  public static class Deserialized_1_CREATE_TICTACTOE_TABLE{
-    public Deserialized_1_CREATE_TICTACTOE_TABLE(final Message inputMessage)
-      throws MessageDeserializationException{
-      try{
-        final Iterator<Byte> iterator
-         = inputMessage.iterator();
-
-        //Check protocol version:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-        //Check kind of message:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-      }catch(NoSuchElementException e){
-        throw new MessageDeserializationException(e);
-      }
-    }
-  }
-
-  */
-
   //Message TABLE_CREATED:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 2.
   //Sent by server after table has been created.
 
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_TABLE_CREATED(
-        //ID for newly created table.
-        final long id){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(2);
-
-    //Serialize id:
-    outputMessage.append8Bytes(id);
-    return outputMessage;
-  }
-
-  */
-
   public static class Deserialized_1_TABLE_CREATED{
     //ID for newly created table.
     public final long id;
-    public Deserialized_1_TABLE_CREATED(final Message inputMessage)
+    public Deserialized_1_TABLE_CREATED(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -204,93 +159,40 @@ public class GeneralProtocol{
 
   //Message SAY:
 
-  //This message is sent by CLIENT.
+  //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
   //In protocol version 1 this message has id 3.
   //Sent by client when saying something (chat message).
 
-  public static Message serialize_1_SAY(
-        //Text of the chat message.
-        final String text){
-    final Message outputMessage
-     = new Message();
+  public static Vector<Byte> serialize_1_SAY(
+        //Text of the chat message in UTF8 encoding.
+        final java.util.Vector<Byte> text_UTF8){
+    final Vector<Byte> outputMessage
+     = new Vector<Byte>();
 
     //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
+    Message.append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(3);
+    Message.append1Byte(3,outputMessage);
 
-    //Serialize text:
-    outputMessage.appendCString(text);
+    //Serialize text_UTF8:
+    Message.appendBinary(text_UTF8,outputMessage);
     return outputMessage;
   }
 
-  /* Message sent by CLIENT only,
-     no need to serialize on other side (here).
-  public static class Deserialized_1_SAY{
-    //Text of the chat message.
-    public final String text;
-    public Deserialized_1_SAY(final Message inputMessage)
-      throws MessageDeserializationException{
-      try{
-        final Iterator<Byte> iterator
-         = inputMessage.iterator();
-
-        //Check protocol version:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-        //Check kind of message:
-        if(iterator.next()!=3)
-          throw new MessageDeserializationException();
-
-    //Deserialize text:
-      this.text = Message.readCString(iterator);
-      }catch(NoSuchElementException e){
-        throw new MessageDeserializationException(e);
-      }
-    }
-  }
-
-  */
-
   //Message SAID:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 4.
   //Sent by server when someone says something (chat message).
 
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_SAID(
-        //Who said it.
-        final byte tablePlayerId,
-        //Text of the chat message.
-        final String text){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(4);
-
-    //Serialize tablePlayerId:
-    outputMessage.append1Byte(tablePlayerId);
-    //Serialize text:
-    outputMessage.appendCString(text);
-    return outputMessage;
-  }
-
-  */
-
   public static class Deserialized_1_SAID{
     //Who said it.
     public final byte tablePlayerId;
-    //Text of the chat message.
-    public final String text;
-    public Deserialized_1_SAID(final Message inputMessage)
+    //Text of the chat message in UTF8 encoding.
+    public final java.util.Vector<Byte> text_UTF8;
+    public Deserialized_1_SAID(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -306,8 +208,8 @@ public class GeneralProtocol{
 
     //Deserialize tablePlayerId:
       this.tablePlayerId = Message.read1Byte(iterator);
-    //Deserialize text:
-      this.text = Message.readCString(iterator);
+    //Deserialize text_UTF8:
+      this.text_UTF8 = Message.readBinary(iterator);
       }catch(NoSuchElementException e){
         throw new MessageDeserializationException(e);
       }
@@ -316,95 +218,42 @@ public class GeneralProtocol{
 
   //Message JOIN_TABLE_TO_PLAY:
 
-  //This message is sent by CLIENT.
+  //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
   //In protocol version 1 this message has id 5.
   //Sent by client when joining some table to play.
 
-  public static Message serialize_1_JOIN_TABLE_TO_PLAY(
+  public static Vector<Byte> serialize_1_JOIN_TABLE_TO_PLAY(
         //Table id.
         final long tableId,
         //Name of the player (not unique).
         final String screenName){
-    final Message outputMessage
-     = new Message();
+    final Vector<Byte> outputMessage
+     = new Vector<Byte>();
 
     //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
+    Message.append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(5);
+    Message.append1Byte(5,outputMessage);
 
     //Serialize tableId:
-    outputMessage.append8Bytes(tableId);
+    Message.append8Bytes(tableId,outputMessage);
     //Serialize screenName:
-    outputMessage.appendCString(screenName);
+    Message.appendCString(screenName,outputMessage);
     return outputMessage;
   }
 
-  /* Message sent by CLIENT only,
-     no need to serialize on other side (here).
-  public static class Deserialized_1_JOIN_TABLE_TO_PLAY{
-    //Table id.
-    public final long tableId;
-    //Name of the player (not unique).
-    public final String screenName;
-    public Deserialized_1_JOIN_TABLE_TO_PLAY(final Message inputMessage)
-      throws MessageDeserializationException{
-      try{
-        final Iterator<Byte> iterator
-         = inputMessage.iterator();
-
-        //Check protocol version:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-        //Check kind of message:
-        if(iterator.next()!=5)
-          throw new MessageDeserializationException();
-
-    //Deserialize tableId:
-      this.tableId = Message.read8Bytes(iterator);
-    //Deserialize screenName:
-      this.screenName = Message.readCString(iterator);
-      }catch(NoSuchElementException e){
-        throw new MessageDeserializationException(e);
-      }
-    }
-  }
-
-  */
-
   //Message YOU_JOINED_TABLE:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 6.
   //Sent by server to new player who joined a table.
 
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_YOU_JOINED_TABLE(
-        //New player's table player id.
-        final byte tablePlayerId){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(6);
-
-    //Serialize tablePlayerId:
-    outputMessage.append1Byte(tablePlayerId);
-    return outputMessage;
-  }
-
-  */
-
   public static class Deserialized_1_YOU_JOINED_TABLE{
     //New player's table player id.
     public final byte tablePlayerId;
-    public Deserialized_1_YOU_JOINED_TABLE(final Message inputMessage)
+    public Deserialized_1_YOU_JOINED_TABLE(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -428,29 +277,13 @@ public class GeneralProtocol{
 
   //Message JOINING_TABLE_FAILED_INCORRECT_TABLE_ID:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 7.
   //Sent by server to new player who joined a table.
 
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(7);
-
-    return outputMessage;
-  }
-
-  */
-
   public static class Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID{
-    public Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(final Message inputMessage)
+    public Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -472,41 +305,17 @@ public class GeneralProtocol{
 
   //Message NEW_PLAYER_JOINED_TABLE:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 8.
   //Sent by server after new player joined a table to already present people.
-
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_NEW_PLAYER_JOINED_TABLE(
-        //New player's name.
-        final String screenName,
-        //New player's table player id.
-        final byte tablePlayerId){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(8);
-
-    //Serialize screenName:
-    outputMessage.appendCString(screenName);
-    //Serialize tablePlayerId:
-    outputMessage.append1Byte(tablePlayerId);
-    return outputMessage;
-  }
-
-  */
 
   public static class Deserialized_1_NEW_PLAYER_JOINED_TABLE{
     //New player's name.
     public final String screenName;
     //New player's table player id.
     public final byte tablePlayerId;
-    public Deserialized_1_NEW_PLAYER_JOINED_TABLE(final Message inputMessage)
+    public Deserialized_1_NEW_PLAYER_JOINED_TABLE(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -532,35 +341,15 @@ public class GeneralProtocol{
 
   //Message PLAYER_LEFT_TABLE:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 9.
   //Sent by server when a player left.
 
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_PLAYER_LEFT_TABLE(
-        //Leaving player's table player id.
-        final byte tablePlayerId){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(9);
-
-    //Serialize tablePlayerId:
-    outputMessage.append1Byte(tablePlayerId);
-    return outputMessage;
-  }
-
-  */
-
   public static class Deserialized_1_PLAYER_LEFT_TABLE{
     //Leaving player's table player id.
     public final byte tablePlayerId;
-    public Deserialized_1_PLAYER_LEFT_TABLE(final Message inputMessage)
+    public Deserialized_1_PLAYER_LEFT_TABLE(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -584,35 +373,15 @@ public class GeneralProtocol{
 
   //Message GAME_STARTED_WITHOUT_INITIAL_MESSAGE:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 10.
   //Sent by server when game is started and no initial message is designated for the receiver.
 
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(
-        //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
-        final java.util.Vector<Byte> turnGamePlayerToTablePlayerId){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(10);
-
-    //Serialize turnGamePlayerToTablePlayerId:
-    outputMessage.appendVector(turnGamePlayerToTablePlayerId);
-    return outputMessage;
-  }
-
-  */
-
   public static class Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE{
     //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
     public final java.util.Vector<Byte> turnGamePlayerToTablePlayerId;
-    public Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(final Message inputMessage)
+    public Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -636,41 +405,17 @@ public class GeneralProtocol{
 
   //Message GAME_STARTED_WITH_INITIAL_MESSAGE:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 11.
   //Sent by server when game is started and an initial message is designated for the receiver.
-
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_GAME_STARTED_WITH_INITIAL_MESSAGE(
-        //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
-        final java.util.Vector<Byte> turnGamePlayerToTablePlayerId,
-        //Game-specific initial information.
-        final java.util.Vector<Byte> initialMessage){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(11);
-
-    //Serialize turnGamePlayerToTablePlayerId:
-    outputMessage.appendVector(turnGamePlayerToTablePlayerId);
-    //Serialize initialMessage:
-    outputMessage.appendBinary(initialMessage);
-    return outputMessage;
-  }
-
-  */
 
   public static class Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE{
     //Specifies how many players will play the just-started game, which tablePlayerIdeach of them has, and what's their order.
     public final java.util.Vector<Byte> turnGamePlayerToTablePlayerId;
     //Game-specific initial information.
     public final java.util.Vector<Byte> initialMessage;
-    public Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE(final Message inputMessage)
+    public Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -696,87 +441,38 @@ public class GeneralProtocol{
 
   //Message MAKE_MOVE:
 
-  //This message is sent by CLIENT.
+  //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
   //In protocol version 1 this message has id 12.
   //Sent by client when making a move.
 
-  public static Message serialize_1_MAKE_MOVE(
+  public static Vector<Byte> serialize_1_MAKE_MOVE(
         //Game-specific move information.
-        final java.util.Vector<Byte> move){
-    final Message outputMessage
-     = new Message();
+        final java.util.Vector<Byte> gameMove){
+    final Vector<Byte> outputMessage
+     = new Vector<Byte>();
 
     //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
+    Message.append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(12);
+    Message.append1Byte(12,outputMessage);
 
-    //Serialize move:
-    outputMessage.appendBinary(move);
+    //Serialize gameMove:
+    Message.appendBinary(gameMove,outputMessage);
     return outputMessage;
   }
 
-  /* Message sent by CLIENT only,
-     no need to serialize on other side (here).
-  public static class Deserialized_1_MAKE_MOVE{
-    //Game-specific move information.
-    public final java.util.Vector<Byte> move;
-    public Deserialized_1_MAKE_MOVE(final Message inputMessage)
-      throws MessageDeserializationException{
-      try{
-        final Iterator<Byte> iterator
-         = inputMessage.iterator();
-
-        //Check protocol version:
-        if(iterator.next()!=1)
-          throw new MessageDeserializationException();
-
-        //Check kind of message:
-        if(iterator.next()!=12)
-          throw new MessageDeserializationException();
-
-    //Deserialize move:
-      this.move = Message.readBinary(iterator);
-      }catch(NoSuchElementException e){
-        throw new MessageDeserializationException(e);
-      }
-    }
-  }
-
-  */
-
   //Message MOVE_MADE:
 
-  //This message is sent by SERVER.
+  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 13.
   //Sent by server after client made a move.
 
-  /* Message sent by SERVER only,
-     no need to serialize on other side (here).
-  public static Message serialize_1_MOVE_MADE(
-        //Game-specific move information.
-        final java.util.Vector<Byte> move){
-    final Message outputMessage
-     = new Message();
-
-    //Let the receiver know which protocol version this is:
-    outputMessage.append1Byte(1);
-    //Let the receiver know what kind of message this is:
-    outputMessage.append1Byte(13);
-
-    //Serialize move:
-    outputMessage.appendBinary(move);
-    return outputMessage;
-  }
-
-  */
-
   public static class Deserialized_1_MOVE_MADE{
     //Game-specific move information.
-    public final java.util.Vector<Byte> move;
-    public Deserialized_1_MOVE_MADE(final Message inputMessage)
+    public final java.util.Vector<Byte> gameMove;
+    public Deserialized_1_MOVE_MADE(final Vector<Byte> inputMessage)
       throws MessageDeserializationException{
       try{
         final Iterator<Byte> iterator
@@ -790,8 +486,8 @@ public class GeneralProtocol{
         if(iterator.next()!=13)
           throw new MessageDeserializationException();
 
-    //Deserialize move:
-      this.move = Message.readBinary(iterator);
+    //Deserialize gameMove:
+      this.gameMove = Message.readBinary(iterator);
       }catch(NoSuchElementException e){
         throw new MessageDeserializationException(e);
       }
@@ -799,7 +495,7 @@ public class GeneralProtocol{
   }
 
 
-  public static boolean handle(final Message message,
+  public static boolean handle(final Vector<Byte> message,
                                final GeneralHandler handler){
 
     switch(GeneralProtocol.lookupMessageType(message))
@@ -820,7 +516,7 @@ public class GeneralProtocol{
           final GeneralProtocol.Deserialized_1_SAID deserialized = 
               new GeneralProtocol.Deserialized_1_SAID(message);
         return handler.handle_1_SAID(deserialized.tablePlayerId,
-                      deserialized.text);
+                      deserialized.text_UTF8);
         }catch(final MessageDeserializationException e){
           return false;
         }
@@ -892,7 +588,7 @@ public class GeneralProtocol{
         try{
           final GeneralProtocol.Deserialized_1_MOVE_MADE deserialized = 
               new GeneralProtocol.Deserialized_1_MOVE_MADE(message);
-        return handler.handle_1_MOVE_MADE(deserialized.move);
+        return handler.handle_1_MOVE_MADE(deserialized.gameMove);
         }catch(final MessageDeserializationException e){
           return false;
         }
@@ -908,7 +604,7 @@ public static interface GeneralHandler
   //Handlers for various message types:
   public abstract boolean handle_1_TABLE_CREATED(final long id);
   public abstract boolean handle_1_SAID(final byte tablePlayerId,
-                  final String text);
+                  final java.util.Vector<Byte> text_UTF8);
   public abstract boolean handle_1_YOU_JOINED_TABLE(final byte tablePlayerId);
   public abstract boolean handle_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID();
   public abstract boolean handle_1_NEW_PLAYER_JOINED_TABLE(final String screenName,
@@ -917,6 +613,6 @@ public static interface GeneralHandler
   public abstract boolean handle_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(final java.util.Vector<Byte> turnGamePlayerToTablePlayerId);
   public abstract boolean handle_1_GAME_STARTED_WITH_INITIAL_MESSAGE(final java.util.Vector<Byte> turnGamePlayerToTablePlayerId,
                   final java.util.Vector<Byte> initialMessage);
-  public abstract boolean handle_1_MOVE_MADE(final java.util.Vector<Byte> move);
+  public abstract boolean handle_1_MOVE_MADE(final java.util.Vector<Byte> gameMove);
 }
 }

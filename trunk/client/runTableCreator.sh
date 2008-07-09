@@ -1,1 +1,3 @@
-java TableCreator localhost 3000 > tableId.txt
+#!/bin/bash
+set -x
+java TableCreator $(cat server.txt) > tableId.txt

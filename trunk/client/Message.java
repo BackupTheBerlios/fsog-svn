@@ -38,18 +38,21 @@ import java.util.*;
 
 class Message{
 
-    private final Vector<Byte> data;
-
-    public Message(){
-        this.data=new Vector<Byte>();
+    public static Vector<Byte> toVector(final byte[] rawData){
+        final Vector<Byte> result=new Vector<Byte>();
+        for(int i=0;i<rawData.length;i++)
+            result.add(rawData[i]);
+        return result;
     }
 
-    public Message(final byte[] rawData, final int length){
-        this.data=new Vector<Byte>();
-        for(int i=0;i<length;i++)
-            this.data.add(rawData[i]);
+    public static byte[] toArray(final Vector<Byte> rawData){
+        final byte[] result=new byte[rawData.size()];
+        for(int i=0;i<result.length;i++)
+            result[i]=rawData.get(i);
+        return result;
     }
 
+    /*
     public Iterator<Byte> iterator(){
         return this.data.iterator();
     }
@@ -57,50 +60,52 @@ class Message{
     public Vector<Byte> getRawData(){
         return this.data;
     }
+    */
 
     //Appends value to message
-    public void appendInteger(final long value,
-                              final int numberOfBytes){
+    public static void appendInteger(final long value,
+                              final int numberOfBytes,
+                              final Vector<Byte> message){
         for(int i=0;i<numberOfBytes;i++){
-            this.data.add((byte)(0xFF & (value>>(8*(numberOfBytes-1-i)))));
+            message.add((byte)(0xFF & (value>>(8*(numberOfBytes-1-i)))));
         }
     }
 
-    public void append1Byte(final long value){
-        this.appendInteger(value,1);
+    public static void append1Byte(final long value,final Vector<Byte> message){
+        appendInteger(value,1,message);
     }
 
-    public void append2Bytes(final long value){
-        this.appendInteger(value,2);
+    public static void append2Bytes(final long value,final Vector<Byte> message){
+        appendInteger(value,2,message);
     }
 
-    public void append3Bytes(final long value){
-        this.appendInteger(value,3);
+    public static void append3Bytes(final long value,final Vector<Byte> message){
+        appendInteger(value,3,message);
     }
 
-    public void append4Bytes(final long value){
-        this.appendInteger(value,4);
+    public static void append4Bytes(final long value,final Vector<Byte> message){
+        appendInteger(value,4,message);
     }
 
-    public void append8Bytes(final long value){
-        this.appendInteger(value,8);
+    public static void append8Bytes(final long value,final Vector<Byte> message){
+        appendInteger(value,8,message);
     }
 
-    public void appendCString(final String string){
+    public static void appendCString(final String string,final Vector<Byte> message){
         for(int i=0;i<string.length();i++)
-            this.data.add((byte)string.charAt(i));
-        this.data.add((byte)0);
+            message.add((byte)string.charAt(i));
+        message.add((byte)0);
     }
 
-    public void appendBinary(final java.util.Vector<Byte> value){
+    public static void appendBinary(final Vector<Byte> value,
+                             final Vector<Byte> message){
         final int length = value.size();
-        if(length>0x7FFF){
+        if(value.size()>0x7FFF){
             //TODO: Better handling here.
             System.exit(3);
         }
-        this.data.add((byte)(0xFF&(length>>8)));
-        this.data.add((byte)(0xFF&length));
-        this.data.addAll(value);
+        append2Bytes(value.size(),message);
+        message.addAll(value);
     }
 
     //Read value from this message
@@ -268,7 +273,7 @@ class Message{
     }
 
     //Represent this message as string
-    public String toString(){
+    public static String toString(final Vector<Byte> message){
 
         final char[] hex =
             {'0','1','2','3','4','5','6','7',
@@ -277,12 +282,12 @@ class Message{
         final StringBuffer output
             = new StringBuffer();
 
-        output.append("Number of bytes: "+this.data.size()+"\n");
+        output.append("Number of bytes: "+message.size()+"\n");
 
         output.append("Plain view:\n");
 
-        for(int i=0; i<this.data.size()&&i<1024;i++){
-            final byte b = this.data.get(i);
+        for(int i=0; i<message.size()&&i<1024;i++){
+            final byte b = message.get(i);
             if(b==' '||Character.isLetterOrDigit(b))
                 output.append((char)b);
             else
@@ -294,9 +299,9 @@ class Message{
 
         output.append("\nHex view:\n");
 
-        for(int i=0; i<this.data.size()&&i<1024;i++){
+        for(int i=0; i<message.size()&&i<1024;i++){
             
-            final byte b = this.data.get(i);
+            final byte b = message.get(i);
 
             output.append(""+hex[(b>>4) & 0x0F]+hex[b & 0x0F]+" ");
 

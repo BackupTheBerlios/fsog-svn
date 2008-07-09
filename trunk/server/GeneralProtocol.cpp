@@ -47,7 +47,7 @@
       return GeneralProtocol::deserialize_1_SAY(message,
                               this->deserialized_SAY)
              && this->handle_1_SAY(sessionID,toBeSent,timeout,
-                      this->deserialized_SAY.text);
+                      this->deserialized_SAY.text_UTF8);
     case GeneralProtocol::JOIN_TABLE_TO_PLAY_1:
       return GeneralProtocol::deserialize_1_JOIN_TABLE_TO_PLAY(message,
                               this->deserialized_JOIN_TABLE_TO_PLAY)
@@ -58,7 +58,7 @@
       return GeneralProtocol::deserialize_1_MAKE_MOVE(message,
                               this->deserialized_MAKE_MOVE)
              && this->handle_1_MAKE_MOVE(sessionID,toBeSent,timeout,
-                      this->deserialized_MAKE_MOVE.move);
+                      this->deserialized_MAKE_MOVE.gameMove);
     default:
       return false;
     }

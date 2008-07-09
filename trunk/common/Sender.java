@@ -33,5 +33,3 @@
         Denmark
 */
 
-
-public enum Sender{ CLIENT, SERVER }

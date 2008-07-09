@@ -11,3 +11,4 @@ Read wiki for more game options.
 Split 2 and >=3 into two different games.
 Check erase() inside for
 
+Kara za ucieczke - blokada konta na pare minut.

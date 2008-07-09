@@ -38,11 +38,6 @@ import javax.swing.*;
 
 public class TableJoiner{
 
-    private static boolean printDebug = false;
-    private static void d(final String s){
-        if(printDebug) System.out.println(s);
-    }
-
     public static void main(final String[] arguments){
         try{
             final String serverHost = arguments[0];
@@ -50,15 +45,15 @@ public class TableJoiner{
             final long tableId = Long.parseLong(arguments[2]);
             final String screenName = arguments[3];
             if(arguments.length>=5 && arguments[4].equals("-d"))
-                printDebug = true;
+                Output.enableDebug();
 
-            d("Debug mode enabled.");
+            Output.d("Debug mode enabled.");
 
-            d("Creating socket...");
+            Output.d("Creating socket...");
             final Socket socket
                 = new Socket(serverHost,
                              serverPort);
-            d("Socket created: "+socket);
+            Output.d("Socket created: "+socket);
 
             Sender.setSocket(socket);
 

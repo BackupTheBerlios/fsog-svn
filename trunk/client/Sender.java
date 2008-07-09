@@ -34,17 +34,18 @@
 */
 
 import java.net.Socket;
+import java.util.*;
 
 public class Sender extends Thread{
 
     private Socket socket;
-    private final java.util.LinkedList<Message> messages;
+    private final LinkedList< Vector<Byte> > messages;
 
     private static Sender instance = new Sender();
 
     private Sender(){
         this.socket = null;
-        this.messages = new java.util.LinkedList<Message>();
+        this.messages = new LinkedList< Vector<Byte> >();
         this.start();
     }
 
@@ -52,7 +53,7 @@ public class Sender extends Thread{
         Sender.instance.socket(socket);
     }        
 
-    public static void send(final Message message){
+    public static void send(final Vector<Byte> message){
         Sender.instance.queue(message);
     }
 
@@ -61,12 +62,12 @@ public class Sender extends Thread{
         this.notify();
     }
 
-    public synchronized void queue(final Message message){
+    public synchronized void queue(final Vector<Byte> message){
         this.messages.addLast(message);
         this.notify();
     }
 
-    private synchronized Message get() throws InterruptedException{
+    private synchronized Vector<Byte> get() throws InterruptedException{
         while(this.messages.size()==0 || this.socket==null)
             this.wait();
         return messages.removeFirst();
@@ -76,7 +77,7 @@ public class Sender extends Thread{
 
         try{
             while(true){
-                final Message message
+                final Vector<Byte> message
                     = this.get();
                 
                 TransportProtocol.send(message,

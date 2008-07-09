@@ -76,7 +76,7 @@ private:
   bool handle_1_SAY(const SessionId sessionID,
                     std::list<SessionAddressedMessage>& toBeSent,
                     TimeMicro& timeout,
-                    const std::string& text) throw();
+                    const std::vector<char>& text_UTF8) throw();
 
   bool handle_1_JOIN_TABLE_TO_PLAY(const SessionId sessionID,
                                    std::list<SessionAddressedMessage>& toBeSent,

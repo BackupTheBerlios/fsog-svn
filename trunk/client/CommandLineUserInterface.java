@@ -33,6 +33,8 @@
         Denmark
 */
 
+/*
+//Very old, probably won't be used again.
 public class CommandLineUserInterface{
     private final Table table;
 
@@ -59,3 +61,4 @@ public class CommandLineUserInterface{
         this.printTable();
     }
 }
+*/

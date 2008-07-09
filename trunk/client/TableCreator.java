@@ -34,6 +34,7 @@
 */
 
 import java.net.Socket;
+import java.util.*;
 
 public class TableCreator{
 
@@ -56,7 +57,7 @@ public class TableCreator{
 
             d("Socket created: "+socket);
             d("Serializing message...");
-            final Message query
+            final Vector<Byte> query
                 = GeneralProtocol.serialize_1_CREATE_TICTACTOE_TABLE();
 
             d("Message serialized: "+query);
@@ -68,7 +69,7 @@ public class TableCreator{
 
             d("Awaiting response...");
             //Receive response:
-            final Message response
+            final Vector<Byte> response
                 = TransportProtocol.receive(socket);
             
             d("Response: "+response);

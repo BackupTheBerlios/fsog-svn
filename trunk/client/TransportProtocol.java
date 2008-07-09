@@ -34,15 +34,19 @@
 */
 
 import java.net.Socket;
+import java.util.*;
 
 public class TransportProtocol{
 
-    public static void send(final Message message,
+    public static void send(final Vector<Byte> message,
                             final Socket socket)
     throws java.io.IOException
     {
-        final java.util.Vector<Byte> bytes
-            = message.getRawData();
+        Output.d("TP.snd "+GeneralProtocol.lookupMessageType(message)
+                 +" "+Message.toString(message));
+
+        final Vector<Byte> bytes
+            = message;
         
         final java.io.OutputStream stream
             = socket.getOutputStream();
@@ -53,10 +57,11 @@ public class TransportProtocol{
         stream.write(0xFF&length);
         for(int i=0;i<length;i++)
             stream.write(bytes.get(i));
+        //TODO: Is it OK to do it?
         stream.flush();
     }
 
-    public static Message receive(Socket socket)
+    public static Vector<Byte> receive(Socket socket)
         throws Exception
     {
         final java.io.InputStream stream
@@ -75,16 +80,17 @@ public class TransportProtocol{
 
         //System.err.println("Detected length "+incomingMessageLength);
 
-        final Message message = new Message();
-        final java.util.Vector<Byte> data = message.getRawData();
+        final Vector<Byte> message = new Vector<Byte>();
 
         for(int i=0;i<incomingMessageLength;i++){
             final int b = stream.read();
             if(b==-1)
                 throw new Exception("TransportProtocol.receive(...) EOF problem.");
-            data.add((byte)b);
+            message.add((byte)b);
         }
 
+        Output.d("TP.rcv "+GeneralProtocol.lookupMessageType(message)
+                 +" "+Message.toString(message));
         return message;
     }
 }

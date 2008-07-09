@@ -33,6 +33,7 @@
         Denmark
 */
 
+import java.util.*;
 
 public class ThousandProtocolDefinition{
 
@@ -57,7 +58,7 @@ public class ThousandProtocolDefinition{
              +" between 5 and 20 letters, consisting of any printable"
              +" non-whitespace ASCII characters. Password should be at"
              +" least 6 characters. Easy passwords won't be admitted.",
-             Sender.CLIENT,
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
              new PieceDefinition(PieceType.CSTRING,"nick",
                                  "Unique nick."),
              new PieceDefinition(PieceType.CSTRING,"password",
@@ -66,12 +67,12 @@ public class ThousandProtocolDefinition{
         protocol.defineMessage
             ("LOG_IN_CORRECT",
              "Sent by server to let the user know that log in was OK.",
-             Sender.SERVER);
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER));
 
         protocol.defineMessage
             ("LOG_IN_INCORRECT",
              "Sent by server to let the user know that log in wasn't OK.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.CSTRING,"reason",
                                  "Why login failed.")
              );
@@ -79,12 +80,12 @@ public class ThousandProtocolDefinition{
         protocol.defineMessage
             ("GET_STATISTICS",
              "Message sent by client to request 'room' statistics.",
-             Sender.CLIENT);
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER));
 
         protocol.defineMessage
             ("RETURN_STATISTICS",
              "Sent by server when returning info about 'room' stats.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT32,"numberOfUsers",
                                  "Number of people logged in."),
              new PieceDefinition(PieceType.INT32,"numberOfGames",
@@ -127,7 +128,7 @@ public class ThousandProtocolDefinition{
         protocol.defineMessage
             ("SEARCH_GAME",
              "Sent by client when searching for some game.",
-             Sender.CLIENT,
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
              new PieceDefinition(PieceType.INT8,"minimumOponentRanking50",
                "Minimum ranking of the oponent, measured in 50 points."
                                  +" E.g. 60 means 60*50=3000 points."),
@@ -140,7 +141,7 @@ public class ThousandProtocolDefinition{
             ("AWAIT_GAME",
              "Sent by server when no game with given search"
              +" cryteria is currently available.",
-             Sender.SERVER);
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER));
 
         protocol.defineMessage
             ("PROPOSED_GAME",
@@ -150,7 +151,7 @@ public class ThousandProtocolDefinition{
              +" play the game, otherwise it's observing. Must be"
              +" acknowledged by the client program immediately,"
              +" using the secret provided here.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              //new PieceDefinition(PieceType.INT16,"gameIdentifier",
              //  "Identifier of the game created by server."),
              new PieceDefinition(PieceType.CSTRING,"player0Username",
@@ -184,7 +185,7 @@ public class ThousandProtocolDefinition{
              +" GAME_START. If server doesn't get this ack for some"
              +" reason, will send again PROPOSED_GAME and ack must"
              +" be repeated.",
-             Sender.CLIENT,
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
              new PieceDefinition(PieceType.INT8,
                                  "secret",
                                  "Protection against very old"
@@ -201,13 +202,13 @@ public class ThousandProtocolDefinition{
              +" are not dealt after, say, 5s, client can re-send"
              +" GAME_START. But they might not be dealt because"
              +" the opponent didn't click GAME_START.",
-             Sender.CLIENT);
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER));
 
         protocol.defineMessage
             ("GAME_DEAL_7_CARDS",
              "Everybody pressed start, so let's deal the cards."
              +" The cards sent are not sorted in any way.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT8,"card0","First card."),
              new PieceDefinition(PieceType.INT8,"card1","Second card."),
              new PieceDefinition(PieceType.INT8,"card2","Third card."),
@@ -219,7 +220,7 @@ public class ThousandProtocolDefinition{
         protocol.defineMessage
             ("GAME_BID",
              "The message sent by client when placing a bid.",
-             Sender.CLIENT,
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
              new PieceDefinition(PieceType.INT16,"gameIdentifier",
                "Which game this is about."),
              new PieceDefinition(PieceType.INT8,"bid",
@@ -230,7 +231,7 @@ public class ThousandProtocolDefinition{
             ("GAME_BID_MADE",
              "Message sent by the server to let other"
              +" players know what bid was placed.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT16,"gameId","Which game this is about."),
              new PieceDefinition(PieceType.INT8,"bid",
                "This is actually 10% of the bid."
@@ -240,14 +241,14 @@ public class ThousandProtocolDefinition{
             ("GAME_BID_END_HIDDEN_MUST",
              "Message sent by the server to let players know that"
              +" bidding is over. 'Must' is not shown.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT16,"gameIdenitfier","Which game this is about."));
 
         protocol.defineMessage
             ("GAME_BID_END_SHOW_MUST",
              "Message sent by the server to let players know that"
              +" bidding is over. 'Must' is shown.",
-             Sender.SERVER,
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT16,"gameIdenitfier","Which game this is about."),
              new PieceDefinition(PieceType.INT8,"mustCard0","First must card."),
              new PieceDefinition(PieceType.INT8,"mustCard1","Second must card."),

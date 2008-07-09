@@ -55,11 +55,11 @@ private:
   uint8_t empty;
 
   //Temporary object for deserializing move message:
-  TicTacToeProtocol::Deserialized_1_MAKE_MOVE deserialized_1_MAKE_MOVE;
+  TicTacToeProtocol::Deserialized_1_TIC_TAC_TOE_MOVE deserialized_1_TIC_TAC_TOE_MOVE;
 
   Field currentPlayersField() const throw()
   {
-    return (this->turn==0 ? X : O);
+    return (turn==0 ? X : O);
   }
 
 public:
