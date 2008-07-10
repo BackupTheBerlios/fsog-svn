@@ -30,7 +30,7 @@
 */
 
 
-#include "../server/GeneralProtocol.hpp"
+#include "GeneralProtocol.hpp"
 
   bool GeneralHandler::handle(const std::vector<char>& message,
                   const SessionId sessionID,

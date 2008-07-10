@@ -30,7 +30,7 @@
 */
 
 
-#include "../server/TicTacToeProtocol.hpp"
+#include "TicTacToeProtocol.hpp"
 
   bool TicTacToeHandler::handle(const std::vector<char>& message,
                   const SessionId sessionID,

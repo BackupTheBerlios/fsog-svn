@@ -222,7 +222,7 @@ public class ProtocolDefinition{
 
         cppWrite(license);
         cppWrite("\n"
-                 +"#include \""+hppFileName+"\"\n");
+                 +"#include \""+protocolName+"Protocol.hpp\"\n");
 
         javaWrite(license);
         javaWrite("\n");
@@ -695,10 +695,9 @@ public class ProtocolDefinition{
         final String s0
             ="  //Used in card games. You can encode a card on \n"
             +"  //one byte by bitwise disjunction of value and\n"
-            +"  //color. Use VALUE_MASK and COLOR_MASK to decode.\n";
+            +"  //color. Use VALUE_MASK and SUIT_MASK to decode.\n";
 
         hppWrite(s0);
-        javaWrite(s0);
 
         hppWrite("  enum Card\n"
                  +"  {\n"
@@ -717,33 +716,13 @@ public class ProtocolDefinition{
                  +"    KING = 0x0D,\n"
                  +"    JOKER = 0x0E,\n"
                  +"    VALUE_MASK = 0x0F,\n"
-                 +"    HEARTS = 0x10,\n"
-                 +"    DIAMONDS = 0x20,\n"
-                 +"    CLUBS = 0x30,\n"
-                 +"    SPADES = 0x40,\n"
-                 +"    COLOR_MASK = 0xF0\n"
+                 +"    HEART = 0x10,\n"
+                 +"    DIAMOND = 0x20,\n"
+                 +"    CLUB = 0x30,\n"
+                 +"    SPADE = 0x40,\n"
+                 +"    SUIT_MASK = 0xF0\n"
                  +"  };\n\n");
 
-        javaWrite("  final static byte ACE = (byte) 0x01;\n"
-                  +"  final static byte TWO = (byte) 0x02;\n"
-                  +"  final static byte THREE = (byte) 0x03;\n"
-                  +"  final static byte FOUR = (byte) 0x04;\n"
-                  +"  final static byte FIVE = (byte) 0x05;\n"
-                  +"  final static byte SIX = (byte) 0x06;\n"
-                  +"  final static byte SEVEN = (byte) 0x07;\n"
-                  +"  final static byte EIGHT = (byte) 0x08;\n"
-                  +"  final static byte NINE = (byte) 0x09;\n"
-                  +"  final static byte TEN = (byte) 0x0A;\n"
-                  +"  final static byte JACK = (byte) 0x0B;\n"
-                  +"  final static byte QUEEN = (byte) 0x0C;\n"
-                  +"  final static byte KING = (byte) 0x0D;\n"
-                  +"  final static byte JOKER = (byte) 0x0E;\n"
-                  +"  final static byte VALUE_MASK = (byte) 0x0F;\n"
-                  +"  final static byte HEARTS = (byte) 0x10;\n"
-                  +"  final static byte DIAMONDS = (byte) 0x20;\n"
-                  +"  final static byte CLUBS = (byte) 0x30;\n"
-                  +"  final static byte SPADES = (byte) 0x40;\n"
-                  +"  final static byte COLOR_MASK = (byte) 0xF0;\n\n");
     }
 
     private void hppWriteHandler() throws Exception{
