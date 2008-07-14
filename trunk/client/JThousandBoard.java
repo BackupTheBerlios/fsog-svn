@@ -63,29 +63,16 @@ public class JThousandBoard
     //Cards the player has at hand to play with.
     private Vector<Byte> cardsAtHand;
 
+    //Cards put at the center of the table.
+    private Vector<CardAtTable> cardsAtTable;
+
     //Which card is selected (mouse over it).
     private int selected;
     //If card is selected, we only have to redraw cards (no
     //background, etc.).
-    private boolean repaintOnlyCards;
+    private boolean repaintOnlyCardsAtHand;
 
     private static final int NO_CARD = 127;
-
-    //Objects for painting:
-    private final BasicStroke basicStroke;
-    //Everything will be scaled according to size.
-    private int size;
-    private float bigCardWidth;
-    private float bigCardHeight;
-    private RoundRectangle2D.Float bigCard;
-    private float cardsStartX;
-    private float cardsStartY;
-    private float rotationRadius;
-    private Font font;
-    private double singleRotation;
-    private float bigCardMarginLeft;
-    private float bigCardMarginTopFirst;
-    private float bigCardMarginTopSecond;
 
     public JThousandBoard(){
 
@@ -94,12 +81,15 @@ public class JThousandBoard
         this.virtualImage = null;
 
         this.cardsAtHand = new Vector<Byte>();
+        this.cardsAtTable = new Vector<CardAtTable>();
         this.selected = NO_CARD;
-        this.repaintOnlyCards = false;
-        this.basicStroke = new BasicStroke(1);
+        this.repaintOnlyCardsAtHand = false;
 
         final Byte[] cards
             = {Card.ACE|Card.SPADE,
+               Card.ACE|Card.CLUB,
+               Card.ACE|Card.HEART,
+               Card.ACE|Card.DIAMOND,
                Card.JOKER|Card.BLUE,               
                Card.KING|Card.DIAMOND,
                Card.QUEEN|Card.CLUB,
@@ -125,23 +115,50 @@ public class JThousandBoard
         this.addMouseListener(this);
     }
 
+    public static class CardAtTable{
+
+        //What card it is:
+        public final byte card;
+        //Where's its center:
+        public final float x;
+        public final float y;
+        //What's its rotation:
+        public final double theta;
+        //Is it clickable?
+        public final int virtualColor;
+    
+        public CardAtTable(final byte card,
+                           final float x,
+                           final float y,
+                           final double theta,
+                           final int virtualColor){
+            this.card = card;
+            this.x = x;
+            this.y = y;
+            this.theta = theta;
+            this.virtualColor = virtualColor;
+        }
+    }
+
     public void mouseDragged(final MouseEvent e){
     }
 
     public void mouseMoved(final MouseEvent e){
+        final int x = e.getX();
+        final int y = e.getY();
+        final BufferedImage v = this.virtualImage;
+
+        if(v==null || x>=v.getWidth() || y>=v.getHeight())
+            return;
+
         //Get the blue component of the pixel:
-        final int virtualColor
-            = 0x00FF & this.virtualImage.getRGB(e.getX(),e.getY());
+        final int virtualColor = 0x00FF & v.getRGB(x,y);
 
         if(virtualColor != this.selected){
             this.selected = virtualColor;
-            this.repaintOnlyCards = true;
-            final JThousandBoard me = this;
-            javax.swing.SwingUtilities.invokeLater(new Runnable(){
-                    public void run() {
-                        me.repaint();
-                    }
-                });
+            //TODO: more fine-grained "repaint only" mechanism.
+            this.repaintOnlyCardsAtHand = true;
+            this.repaint();
             //System.out.println("("+e.getX()+","+e.getY()+"): "+virtualColor);
         }
     }
@@ -150,22 +167,32 @@ public class JThousandBoard
     }
 
     public void mousePressed(final MouseEvent e){
-        //Get the blue component of the pixel:
-        final int virtualColor
-            = 0x00FF & this.virtualImage.getRGB(e.getX(),e.getY());
+        final int x = e.getX();
+        final int y = e.getY();
+        final BufferedImage v = this.virtualImage;
 
-        if(virtualColor != NO_CARD){
-            this.selected = NO_CARD;
-            this.cardsAtHand.remove(virtualColor);
-            this.virtualImage = null;
-            final JThousandBoard me = this;
-            javax.swing.SwingUtilities.invokeLater(new Runnable(){
-                    public void run() {
-                        me.repaint();
-                    }
-                });
-            //System.out.println("("+e.getX()+","+e.getY()+"): "+virtualColor);
-        }
+        if(v==null || x>=v.getWidth() || y>=v.getHeight())
+            return;
+
+        //Get the blue component of the pixel:
+        final int virtualColor = 0x00FF & v.getRGB(x,y);
+
+        if(virtualColor == NO_CARD)
+            return;
+
+        this.selected = NO_CARD;
+        final Byte card = this.cardsAtHand.remove(virtualColor);
+
+        this.cardsAtTable.add
+            (new CardAtTable(card,
+                             0f,//(float)Math.random()-0.5f,
+                             0f,//(float)Math.random()-0.5f,
+                             0.0,//Math.PI*Math.random(),
+                             NO_CARD));
+        
+        this.virtualImage = null;
+        this.repaint();
+        //System.out.println("("+e.getX()+","+e.getY()+"): "+virtualColor);
     }
 
     public void mouseReleased(final MouseEvent e){
@@ -212,6 +239,12 @@ public class JThousandBoard
         for(;startx<=w+dx;startx+=(dx/2)){
             drawCurve(g,w,startx,starty,dx,dy,r);
         }
+
+        //Eliminate Alpha component, so the image is completely opaque:
+        for(int i=0; i<w;i++)
+            for(int j=0; j<h; j++)
+                backgroundImage.setRGB
+                    (i,j, backgroundImage.getRGB(i,j) | 0xFF000000);
     }
 
     public void initializeVirtualImage(){
@@ -278,84 +311,304 @@ public class JThousandBoard
         return new Dimension(50,50);
     }
 
-    private void initializeSizes(){
-
-        final int width = this.getWidth();
-        final int height = this.getHeight();
-
-        size = Math.min(width,height);
-        bigCardWidth = 0.5f*size;
-        bigCardHeight = 1.5f*bigCardWidth;
-        bigCard
-            = new RoundRectangle2D.Float(0,0,
-                                         bigCardWidth,bigCardHeight,
-                                         0.1f*bigCardWidth,0.1f*bigCardWidth);
-
-        cardsStartX = 0.5f*width;
-        cardsStartY = 0.75f*height;
-        rotationRadius = 2*bigCardHeight;
-        font = new Font("Lucida Sans",Font.BOLD,10)
-            .deriveFont(0.1f*bigCardHeight);
-        singleRotation=Math.PI/60.0;
-        bigCardMarginLeft = 0.01f*bigCardWidth;
-        bigCardMarginTopFirst = 0.11f*bigCardWidth;
-        bigCardMarginTopSecond = 0.21f*bigCardWidth;
-    }
-
     protected void paintComponent(final Graphics g) {
 
         //System.out.println("paintComponent");
-        
+        final long before = System.nanoTime();
         final Graphics2D g2d = (Graphics2D)g.create();
 
         this.paintMe(g2d);
 
         g2d.dispose();
+        final long duration = System.nanoTime()-before;
+        Output.d("Painting took "
+                 +(duration/1000000)+"ms.");
     }
 
-    private void drawBigCard(final byte card,
-                             final Graphics2D g,
-                             final boolean highlight){
+    /** @param everything When a card is fully visible, set everything
+        to true. If it's hidden by another card at hand, set it to
+        false.
+    */
+    private void drawCard(final byte card,
+                          final Graphics2D g,
+                          final RoundRectangle2D.Float shape,
+                          final boolean highlight,
+                          final boolean everything){
+
+        final byte value = (byte)(card&Card.VALUE_MASK);
+
+        final AffineTransform originalTransform = g.getTransform();
+
+        final float shapeWidth = (float)shape.getWidth();
+        final float shapeHeight = (float)shape.getHeight();
+
+        final float shapeCenterX = (float)shape.getCenterX();
+        final float shapeCenterY = (float)shape.getCenterY();
+
+        final Font font = new Font("Lucida Sans",Font.BOLD,10)
+            .deriveFont(0.1f*shapeHeight);
+
+        final Font bigFont = font.deriveFont(0.2f*shapeHeight);
+        final Font hugeFont = font.deriveFont(0.5f*shapeHeight);
+
         if(highlight)
             g.setColor(Color.YELLOW);
         else
             g.setColor(Color.WHITE);
+        g.fill(shape);
 
-        g.fill(bigCard);
         g.setColor(Color.GRAY);
-        g.draw(bigCard);
+        g.setStroke(new BasicStroke(1));
+        g.draw(shape);
 
         final String valueString = Card.valueStrings[card];
+        final String suitString = Card.suitStrings[card];
 
-        LineMetrics metrics = font.getLineMetrics(valueString,
-                                                  g.getFontRenderContext());
+        final FontRenderContext fontRenderContext
+            = g.getFontRenderContext();
+
+        final LineMetrics metrics = font.getLineMetrics(valueString,
+                                                        fontRenderContext);
 
         // Try omitting the descent from the height variable.
         final float ascent = metrics.getAscent();
         final float descent = metrics.getDescent();
 
 
-        //         double width = font.getStringBounds(s, frc).getWidth();
-        //         int w = getWidth();
-        //         int h = getHeight();
-        //         double xScale = w/width;
-        //         double yScale = (double)h/height;
-        //         double x = (w - xScale*width)/2;
-        //         double y = (h + yScale*height)/2 - yScale*metrics.getDescent();
-        //         AffineTransform at = AffineTransform.getTranslateInstance(x, y);
-        //         at.scale(xScale, yScale);
-        //         g2.setFont(font.deriveFont(at));
-        //g2.drawString(s, 0, 0);
+        final float valueStringWidth
+            = (float)font.getStringBounds(valueString,
+                                          fontRenderContext).getWidth();
 
+        final float suitStringWidth
+            = (float)font.getStringBounds(suitString,
+                                          fontRenderContext).getWidth();
+
+        final float horizontalMargin = 0.02f*shapeWidth;
 
         g.setColor(Card.colors4[card]);
+        g.setFont(font);
+
+        //Top--left corner:
         g.drawString(valueString,
-                     bigCardMarginLeft,1.1f*ascent);
-        //bigCardMarginLeft,bigCardMarginTopFirst);
-        g.drawString(Card.suitStrings[card],
-                     bigCardMarginLeft,2.1f*ascent+descent);
+                     horizontalMargin,1.1f*ascent);
+        g.drawString(suitString,
+                     horizontalMargin,2.1f*ascent+descent);
+
+        //Top--right corner value:
+        g.drawString(valueString,
+                     shapeWidth-horizontalMargin-valueStringWidth,
+                     1.1f*ascent);
+        if(everything){
+            //Top--right corner suit:
+            g.drawString(suitString,
+                         shapeWidth-horizontalMargin-suitStringWidth,
+                         2.1f*ascent+descent);
+
+            //Center graphics:
+            //Print huge suit in the center on 1.
+            if(value==Card.ACE)
+                paintString(g,
+                            suitString,
+                            hugeFont,
+                            shapeCenterX,
+                            shapeCenterY);
+
+            //Print "Joker" in the center on *.
+            if(value==Card.JOKER)
+                paintString(g,
+                            "Joker",
+                            bigFont,
+                            shapeCenterX,
+                            shapeCenterY);
+            //Print value in the center on J,Q,K.
+            if(value==Card.JACK || value==Card.QUEEN || value==Card.KING)
+                paintString(g,
+                            valueString,
+                            hugeFont,
+                            shapeCenterX,
+                            shapeCenterY);
+            
+            //Print suit in the center on 3,5,9.
+            if(value==Card.THREE || value==Card.FIVE || value==Card.NINE)
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeCenterX,
+                            shapeCenterY);
+            //Print the rest of 2,3.
+            if(value==Card.TWO || value==Card.THREE)
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeCenterX,
+                            shapeHeight/6f);
+
+            //Print two corner suits on 4,5,6,7,8,9,10.
+            if(value==Card.FOUR || value==Card.FIVE || value==Card.SIX
+               || value==Card.SEVEN || value==Card.EIGHT || value==Card.NINE
+               || value==Card.TEN){
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth/4f,
+                            shapeHeight/6f);
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth*3f/4f,
+                            shapeHeight/6f);
+            }
+
+            //Print two suits on center line on 6,7,8:
+            if(value==Card.SIX || value==Card.SEVEN || value==Card.EIGHT){
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth/4f,
+                            shapeCenterY);
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth*3f/4f,
+                            shapeCenterY);
+            }
+
+            //Print suit in the upper--half center on 7,8.
+            if(value==Card.SEVEN || value==Card.EIGHT)
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeCenterX,
+                            shapeHeight/3f);
+
+            //Print two above--center line suits on 9,10.
+            if(value==Card.NINE || value==Card.TEN){
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth/4f,
+                            shapeHeight*(1f/6f+2f/9f));
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth*3f/4f,
+                            shapeHeight*(1f/6f+2f/9f));
+            }
+
+            //Print suit in the upper--half center on 10.
+            if(value==Card.TEN)
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeCenterX,
+                            shapeHeight*(1f/6f+1f/9f));
+
+            //And we rotate to draw bottom part of the card:
+            g.rotate(Math.PI,shapeCenterX,shapeCenterY);
+
+            g.setFont(font);
+            //Bottom--right corner:
+            g.drawString(valueString,
+                         horizontalMargin,1.1f*ascent);
+            g.drawString(suitString,
+                         horizontalMargin,2.1f*ascent+descent);
+            //Bottom--left corner:
+            g.drawString(valueString,
+                         shapeWidth-horizontalMargin-valueStringWidth,
+                         1.1f*ascent);
+            g.drawString(suitString,
+                         shapeWidth-horizontalMargin-suitStringWidth,
+                         2.1f*ascent+descent);
+
+            //Center graphics:
+            //Print the rest of 2,3.
+            if(value==Card.TWO || value==Card.THREE)
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeCenterX,
+                            shapeHeight/6f);
+
+            //Print two corner suits on 4,5,6,7,8,9,10.
+            if(value==Card.FOUR || value==Card.FIVE || value==Card.SIX
+               || value==Card.SEVEN || value==Card.EIGHT || value==Card.NINE
+               || value==Card.TEN){
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth/4f,
+                            shapeHeight/6f);
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth*3f/4f,
+                            shapeHeight/6f);
+            }
+
+            //Print suit in the upper--half center on 8.
+            if(value==Card.EIGHT)
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeCenterX,
+                            shapeHeight/3f);
+
+            //Print two above--center line suits on 9,10.
+            if(value==Card.NINE || value==Card.TEN){
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth/4f,
+                            shapeHeight*(1f/6f+2f/9f));
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeWidth*3f/4f,
+                            shapeHeight*(1f/6f+2f/9f));
+            }
+
+            //Print suit in the upper--half center on 10.
+            if(value==Card.TEN)
+                paintString(g,
+                            suitString,
+                            bigFont,
+                            shapeCenterX,
+                            shapeHeight*(1f/6f+1f/9f));
+
+        }
 
         //g.fill(heart);
+        g.setTransform(originalTransform);
+    }
+
+    /** Paints string using font and g in such a way that (x,y) is in
+        the center of the drawn string.
+     */
+    private void paintString(final Graphics2D g,
+                             final String string,
+                             final Font font,
+                             final float x,
+                             final float y){
+        
+        final FontRenderContext fontRenderContext
+            = g.getFontRenderContext();
+
+        //For some reason these two different ways give good results
+        //for calculating symbol's width and height.
+        //TODO: perform those calculations not so often.
+        final float stringWidth
+            = (float)font.getStringBounds(string,
+                                          fontRenderContext).getWidth();
+
+        final float stringHeight
+            = (float)new TextLayout(string,
+                                    font,
+                                    fontRenderContext).getBounds().getHeight();
+
+        g.setFont(font);
+        g.drawString(string,
+                     x-0.5f*stringWidth,
+                     y+0.5f*stringHeight);
     }
 
     /*
@@ -366,30 +619,35 @@ public class JThousandBoard
         final int width = this.getWidth();
         final int height = this.getHeight();
 
+        final int size = Math.min(width,height);
+
+        final float cardAtHandWidth = 0.5f*size;
+        final float cardAtHandHeight = 1.5f*cardAtHandWidth;
+
+        final RoundRectangle2D.Float cardAtHandShape
+            = new RoundRectangle2D.Float
+            (0,0,
+             cardAtHandWidth,cardAtHandHeight,
+             0.1f*cardAtHandWidth,0.1f*cardAtHandWidth);
+
+        final float cardAtTableWidth = 0.25f*size;
+        final float cardAtTableHeight = 1.5f*cardAtTableWidth;
+
+        final RoundRectangle2D.Float cardAtTableShape
+            = new RoundRectangle2D.Float
+            (0,0,
+             cardAtTableWidth,cardAtTableHeight,
+             0.1f*cardAtTableWidth,0.1f*cardAtTableWidth);
+
         //Is virtualImage the wrong size?
         if(this.virtualImage==null
-           ||this.virtualImage.getWidth()!=width
-           ||this.virtualImage.getHeight()!=height){
+           ||this.virtualImage.getWidth()<width
+           ||this.virtualImage.getHeight()<height){
 
-            this.repaintOnlyCards = false;
+            this.repaintOnlyCardsAtHand = false;
 
-            //Is backgroundImage not big enough?
-            final Boolean shouldInitializeBackgroundImage
-                = new Boolean(this.backgroundImage==null
-                              ||this.backgroundImage.getWidth()<width
-                              ||this.backgroundImage.getHeight()<height);
-            
-            final JThousandBoard me = this;
-            javax.swing.SwingUtilities.invokeLater(new Runnable(){
-                    public void run() {
-                        me.initializeSizes();
-                        me.initializeVirtualImage();
-                        if(shouldInitializeBackgroundImage)
-                            me.initializeBackgroundImage();
-                        me.repaint();
-                    }
-                });
-            return;
+            this.initializeVirtualImage();
+            this.initializeBackgroundImage();
         }
 
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
@@ -401,7 +659,7 @@ public class JThousandBoard
 
         final Graphics2D vg = this.virtualImage.createGraphics();
 
-        if(!repaintOnlyCards){
+        if(!repaintOnlyCardsAtHand){
 
             vg.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                                 RenderingHints.VALUE_ANTIALIAS_OFF);
@@ -422,50 +680,125 @@ public class JThousandBoard
                         clipRectangle.x,
                         clipRectangle.y,
                         null);
-        }
-        //g.setRenderingHint(RenderingHints.KEY_RENDERING,
-        //		   RenderingHints.VALUE_RENDER_QUALITY);
 
-        g.setStroke(this.basicStroke);
-        if(!repaintOnlyCards){
-            vg.setStroke(this.basicStroke);
-        }
+            //g.setRenderingHint(RenderingHints.KEY_RENDERING,
+            //		   RenderingHints.VALUE_RENDER_QUALITY);
 
-        //TODO: Don't multiply so often.
-        //final RoundRectangle2D.Float picture
-        //    = new RoundRectangle2D.Float(30,30,240,390,20,20);
+            // Get the current transform
+            final AffineTransform originalTransform = g.getTransform();
+            final AffineTransform originalVirtualTransform = vg.getTransform();
 
-        g.translate(cardsStartX,cardsStartY);
-        if(!repaintOnlyCards){
-            vg.translate(cardsStartX,cardsStartY);
-        }
+            final float cardsAtTableStartX
+                = 0.5f*width - 0.5f*cardAtTableWidth;
+            final float cardsAtTableStartY
+                = 0.5f*height - 0.5f*cardAtTableHeight;
 
-        g.setFont(font);
+            g.translate(cardsAtTableStartX,cardsAtTableStartY);
+            vg.translate(cardsAtTableStartX,cardsAtTableStartY);
 
-        final int cardsAtHandSize = cardsAtHand.size();
+            paintCardsAtTable(g,vg,cardAtTableShape);
 
-        g.rotate(-singleRotation*0.5f*(cardsAtHandSize-1),0,rotationRadius);
-        if(!repaintOnlyCards){
-            vg.rotate(-singleRotation*0.5f*(cardsAtHandSize-1),0,rotationRadius);
+            // Restore original transform
+            g.setTransform(originalTransform);
+            vg.setTransform(originalVirtualTransform);
         }
 
-        for(int i=0;i<cardsAtHandSize;i++){
+        final float cardsAtHandStartX = 0.5f*width;
+        final float cardsAtHandStartY = 0.75f*height;
+        g.translate(cardsAtHandStartX,cardsAtHandStartY);
+        if(!repaintOnlyCardsAtHand){
+            vg.translate(cardsAtHandStartX,cardsAtHandStartY);
+        }
+        paintCardsAtHand(g,vg,cardAtHandShape);
+
+        this.repaintOnlyCardsAtHand = false;
+    }
+
+    private void paintCardsAtHand(final Graphics2D g,
+                                  final Graphics2D vg,
+                                  final RoundRectangle2D.Float shape){
+
+        final float rotationRadius = (float)(2*shape.getHeight());
+        final double singleRotation=Math.PI/60.0;
+
+        final int numberOfCardsAtHand = cardsAtHand.size();
+
+        g.rotate(-singleRotation*0.5f*(numberOfCardsAtHand-1),0,
+                 rotationRadius);
+        if(!repaintOnlyCardsAtHand){
+            vg.rotate(-singleRotation*0.5f*(numberOfCardsAtHand-1),0,
+                      rotationRadius);
+        }
+
+        for(int i=0;i<numberOfCardsAtHand;i++){
 
             final Byte card = cardsAtHand.get(i);
 
-            drawBigCard(card,g,selected == i);
+            drawCard(card,g,shape,selected == i,false);
 
-            if(!repaintOnlyCards){
+            if(!repaintOnlyCardsAtHand){
                 vg.setColor(new Color(0,0,i));
-                vg.fill(bigCard);
+                vg.fill(shape);
             }
 
-            g.rotate(singleRotation,0,rotationRadius);
-            if(!repaintOnlyCards){
-                vg.rotate(singleRotation,0,rotationRadius);
+            //We need more rotation for 10:
+            if((card & Card.VALUE_MASK)==Card.TEN){
+                g.rotate(1.5f*singleRotation,0,rotationRadius);
+                if(!repaintOnlyCardsAtHand){
+                    vg.rotate(1.5f*singleRotation,0,rotationRadius);
+                }
+            }else{
+                g.rotate(singleRotation,0,rotationRadius);
+                if(!repaintOnlyCardsAtHand){
+                    vg.rotate(singleRotation,0,rotationRadius);
+                }
             }
         }
-        this.repaintOnlyCards = false;
+    }
+
+    
+
+    /** In most card games cards at table are not clickable, so vg
+     * argument will be unused.
+     */
+    private void paintCardsAtTable(final Graphics2D g,
+                                   final Graphics2D vg,
+                                   final RoundRectangle2D.Float shape){
+
+        final float shapeW = (float)shape.getWidth();
+        final float shapeH = (float)shape.getHeight();
+        final float shapeCenterX = (float)shape.getCenterX();
+        final float shapeCenterY = (float)shape.getCenterY();
+        
+        final int numberOfCardsAtTable = cardsAtTable.size();
+
+        for(int i=0;i<numberOfCardsAtTable;i++){
+
+            final CardAtTable cardAtTable = cardsAtTable.get(i);
+
+            // Get the current transform
+            final AffineTransform originalTransform = g.getTransform();
+            final AffineTransform originalVirtualTransform = vg.getTransform();
+
+            g.translate(cardAtTable.x*shapeW,cardAtTable.y*shapeH);
+            vg.translate(cardAtTable.x*shapeW,cardAtTable.y*shapeH);
+
+
+            g.rotate(cardAtTable.theta,shapeCenterX,shapeCenterY);
+            vg.rotate(cardAtTable.theta,shapeCenterX,shapeCenterY);
+
+            drawCard(cardAtTable.card,g,shape,
+                     (cardAtTable.virtualColor!=NO_CARD)
+                     && (selected == cardAtTable.virtualColor),
+                     true);
+
+            vg.setColor(new Color(0,0,cardAtTable.virtualColor));
+            vg.fill(shape);
+
+            // Restore original transform
+            g.setTransform(originalTransform);
+            vg.setTransform(originalVirtualTransform);
+        }
     }
 
     //Look at S class to see how we represent svg.

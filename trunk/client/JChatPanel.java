@@ -76,11 +76,8 @@ public class JChatPanel extends JPanel implements ActionListener {
     }
 
     public void appendLine(final String text){
-        SwingUtilities.invokeLater(new Runnable(){
-                public void run() {
-                    jTextArea.append(text + "\n");
-                    jTextArea.setCaretPosition(jTextArea.getDocument().getLength());
-                }
-            });
+        //TODO: repaint necessary?
+        jTextArea.append(text + "\n");
+        jTextArea.setCaretPosition(jTextArea.getDocument().getLength());
     }
 }

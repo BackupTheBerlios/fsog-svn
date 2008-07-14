@@ -35,18 +35,16 @@
 
 import java.util.*;
 
-/** Thread--safe. */
-
 public class Table {
 
     //Data valid always after joining a table:
-    private final TreeMap<Byte,TablePlayer> tablePlayerIdToTablePlayer;
-    private byte myTablePlayerId;
-    private boolean gameOn;
+    public final TreeMap<Byte,TablePlayer> tablePlayerIdToTablePlayer;
+    public byte myTablePlayerId;
+    public boolean gameOn;
 
     //Data valid only when game is started:
-    private final Vector<Byte> turnGamePlayerToTablePlayerId;
-    private byte myTurnGamePlayer;
+    public Vector<Byte> turnGamePlayerToTablePlayerId;
+    public byte myTurnGamePlayer;
 
     //Constructor:
     public Table(){
@@ -57,6 +55,7 @@ public class Table {
         this.myTurnGamePlayer = -100;
     }
 
+    /*
     public synchronized TreeMap<Byte,TablePlayer> getTablePlayerIdToTablePlayerDeepCopy(){
         TreeMap<Byte,TablePlayer> deepCopy
             = new TreeMap<Byte,TablePlayer>();
@@ -66,7 +65,9 @@ public class Table {
         }
         return deepCopy;
     }
+    */
 
+    /*
     public synchronized TablePlayer getTablePlayerCopy(final byte tablePlayerId){
         final TablePlayer tablePlayer
             = this.tablePlayerIdToTablePlayer.get(tablePlayerId);
@@ -74,31 +75,20 @@ public class Table {
             return null;
         return tablePlayer.clone();
     }
+    */
 
-    /** After this method is called, no thread can use me. */
-    public synchronized void addMe(final Byte tablePlayerId,
-                                   final TablePlayer me){
+    public void addMe(final Byte tablePlayerId,
+                      final TablePlayer me){
         this.tablePlayerIdToTablePlayer.put(tablePlayerId,me);
         this.myTablePlayerId = tablePlayerId;
     }
 
-    public synchronized void addPlayer(final Byte tablePlayerId,
-                                       final TablePlayer player){
+    public void addPlayer(final Byte tablePlayerId,
+                          final TablePlayer player){
         this.tablePlayerIdToTablePlayer.put(tablePlayerId,player);
     }
 
-    public synchronized void removePlayer(final Byte tablePlayerId){
-        this.tablePlayerIdToTablePlayer.remove(tablePlayerId);
-    }
-
-    public synchronized void setGameOn(final boolean gameOn){
-        this.gameOn = gameOn;
-    }
-
-    public synchronized boolean isGameOn(){
-        return this.gameOn;
-    }
-
+    /*
     public synchronized void setTurnGamePlayerToTablePlayerId
         (final Vector<Byte> original){
         this.turnGamePlayerToTablePlayerId.setSize(0);
@@ -109,16 +99,20 @@ public class Table {
                 this.myTurnGamePlayer = (byte)i;
         }
     }
+    */
 
+    /*
     public synchronized Vector<Byte> getTurnGamePlayerToTablePlayerIdDeepCopy(){
         final Vector<Byte> result = new Vector<Byte>();
         for(Byte b : this.turnGamePlayerToTablePlayerId)
             result.add(new Byte(b));
         return result;
     }
+    */
 
+    /*
     public synchronized Byte getMyTurnGamePlayer(){
         return new Byte(this.myTurnGamePlayer);
     }
-
+    */
 }

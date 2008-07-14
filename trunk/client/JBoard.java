@@ -71,7 +71,7 @@ public abstract class JBoard extends JPanel{
     }
 
     public boolean myTurn(){
-        return this.turn == this.table.getMyTurnGamePlayer();
+        return this.turn == this.table.myTurnGamePlayer;
     }
 
     protected byte getOpponent(){

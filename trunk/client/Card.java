@@ -33,30 +33,32 @@
         Denmark
 */
 
+//For Color:
 import java.awt.*;
 
 //Used in card games. You can encode a card on one byte by bitwise
 //disjunction of value and color. Use VALUE_MASK and SUIT_MASK to
 //decode. The guarantee is that 0<(value|suit)<=127, so it can be used
 //for lookup in an array.
-
+//Those values are also used in Set55
 public class Card{
     public static final byte VALUE_MASK = (byte) 0x0F;
 
-    public static final byte ACE = (byte) 0x01;
-    public static final byte TWO = (byte) 0x02;
-    public static final byte THREE = (byte) 0x03;
-    public static final byte FOUR = (byte) 0x04;
-    public static final byte FIVE = (byte) 0x05;
-    public static final byte SIX = (byte) 0x06;
+    public static final byte ACE = (byte) 0x00;
+    public static final byte KING = (byte) 0x01;
+    public static final byte QUEEN = (byte) 0x02;
+    public static final byte JACK = (byte) 0x03;
+    public static final byte TEN = (byte) 0x04;
+    public static final byte NINE = (byte) 0x05;
+    public static final byte EIGHT = (byte) 0x06;
     public static final byte SEVEN = (byte) 0x07;
-    public static final byte EIGHT = (byte) 0x08;
-    public static final byte NINE = (byte) 0x09;
-    public static final byte TEN = (byte) 0x0A;
-    public static final byte JACK = (byte) 0x0B;
-    public static final byte QUEEN = (byte) 0x0C;
-    public static final byte KING = (byte) 0x0D;
-    public static final byte JOKER = (byte) 0x0E;
+    public static final byte SIX = (byte) 0x08;
+    public static final byte FIVE = (byte) 0x09;
+    public static final byte FOUR = (byte) 0x0A;
+    public static final byte THREE = (byte) 0x0B;
+    public static final byte TWO = (byte) 0x0C;
+    public static final byte JOKER = (byte) 0x0D;
+    public static final byte UNKNOWN_VALUE = (byte) 0x0E;
 
     public static final byte SUIT_MASK = (byte) 0xF0;
 
@@ -66,9 +68,14 @@ public class Card{
     public static final byte CLUB = (byte) 0x30;
     public static final byte SPADE = (byte) 0x40;
     //Suits used for Joker:
-    public static final byte BLACK = (byte) 0x50;
-    public static final byte RED = (byte) 0x60;
+    public static final byte RED = (byte) 0x50;
+    public static final byte BLACK = (byte) 0x60;
     public static final byte BLUE = (byte) 0x70;
+    //Unknown suit:
+    public static final byte UNKNOWN_SUIT = (byte) 0xE0;
+
+    //Unknown card (both suit and value):
+    public static final byte UNKNOWN = (byte) 0xEE;
 
     public static final String[] valueStrings = getValueStrings();
 
@@ -78,8 +85,37 @@ public class Card{
 
     public static final Color[] colors2 = getColors2();
 
-    public static final String[] getValueStrings(){
-        final String[] result = new String[127];
+    /** Space-efficient representation of card set for 55-card deck. Each
+     * card's presence is specified by one bit in a 64-bit long value.
+     */
+    public static class CardSet55{
+        private long value;
+
+        public CardSet55(){
+            this.value = 0L;
+        }
+
+        //For each card assigns which bit represents presence of that
+        //card.
+        private int cardBit(final byte card){
+            final int value = card & Card.VALUE_MASK;
+            final int suit = card & Card.SUIT_MASK;
+            switch(suit){
+            case Card.HEART: return value;
+            case Card.DIAMOND: return 13+value;
+            case Card.CLUB: return 26+value;
+            case Card.SPADE: return 39+value;
+            case Card.RED: return 52;
+            case Card.BLACK: return 53;
+            case Card.BLUE: return 54;
+            }
+            return 55;
+        }
+    }
+    
+
+    private static final String[] getValueStrings(){
+        final String[] result = new String[128];
         final byte[] someSuits = {HEART,DIAMOND,CLUB,SPADE};
         for(byte suit : someSuits){
             result[ACE|suit] = "A";
@@ -102,8 +138,8 @@ public class Card{
         return result;
     }
 
-    public static final String[] getSuitStrings(){
-        final String[] result = new String[127];
+    private static final String[] getSuitStrings(){
+        final String[] result = new String[128];
 
         final byte[] someValues
             = {ACE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,
@@ -123,8 +159,8 @@ public class Card{
         return result;
     }
 
-    public static final Color[] getColors4(){
-        final Color[] result = new Color[127];
+    private static final Color[] getColors4(){
+        final Color[] result = new Color[128];
 
         final byte[] someValues
             = {ACE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,
@@ -132,7 +168,7 @@ public class Card{
         for(byte value : someValues){
             result[value|HEART] = Color.RED;
             result[value|DIAMOND] = Color.BLUE.darker();
-            result[value|CLUB] = Color.GREEN.darker();
+            result[value|CLUB] = Color.GREEN.darker().darker();
             result[value|SPADE] = Color.BLACK;
         }
 
@@ -144,8 +180,8 @@ public class Card{
         return result;
     }
 
-    public static final Color[] getColors2(){
-        final Color[] result = new Color[127];
+    private static final Color[] getColors2(){
+        final Color[] result = new Color[128];
 
         final byte[] someValues
             = {ACE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,

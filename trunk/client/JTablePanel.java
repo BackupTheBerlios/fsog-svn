@@ -111,19 +111,11 @@ public class JTablePanel
     }
 
     private void redrawTablePlayerList(){
-        final JTablePanel me = this;
-        //TODO: What if called twice before runnable invoked? What's
-        //the order?
-        SwingUtilities.invokeLater(new Runnable(){
-                public void run() {
-                    final JScrollPane tablePlayerListScrollPane
-                        = new JScrollPane(makeTablePlayerListPanel(me.table));
+        final JScrollPane tablePlayerListScrollPane
+            = new JScrollPane(makeTablePlayerListPanel(this.table));
                     
-                    me.splitPane0.setTopComponent(tablePlayerListScrollPane);
-                    //TODO: Is repaint necessary?
-                    me.repaint();
-                }
-            });
+        this.splitPane0.setTopComponent(tablePlayerListScrollPane);
+        this.splitPane0.repaint();
     }
 
     private JPanel makeTablePlayerListPanel(final Table table){
@@ -143,23 +135,23 @@ public class JTablePanel
         tablePlayerListPanel.setPreferredSize(new Dimension(200, 300));
 
 
-        if(table.isGameOn()){
+        if(table.gameOn){
             //If the game is on, display players in the order they play:
             final Vector<Byte> turnGamePlayerToTablePlayerId
-                = table.getTurnGamePlayerToTablePlayerIdDeepCopy();
+                = table.turnGamePlayerToTablePlayerId;
             for(byte turnGamePlayer = 0;
                 turnGamePlayer<turnGamePlayerToTablePlayerId.size();
                 turnGamePlayer++){
                 tablePlayerListPanel.add
                     (makeTablePlayerPanel
-                     (this.table.getTablePlayerCopy
+                     (this.table.tablePlayerIdToTablePlayer.get
                       (turnGamePlayerToTablePlayerId.get(turnGamePlayer)),
                       turnGamePlayer == this.jBoard.getTurn()));
             }
         }else{
             //If game is not going on, display players in arbitrary order:
             for(Map.Entry<Byte,TablePlayer> e
-                    : table.getTablePlayerIdToTablePlayerDeepCopy().entrySet()){
+                    : table.tablePlayerIdToTablePlayer.entrySet()){
                 tablePlayerListPanel.add(makeTablePlayerPanel(e.getValue(),
                                                               false));
             }
@@ -178,8 +170,8 @@ public class JTablePanel
             = (tablePlayer==null
                ?"!!!NOT HERE!!!"
                :(herTurn
-                 ?"--> "+tablePlayer.getScreenNameCopy()+" <--"
-                 :tablePlayer.getScreenNameCopy()));
+                 ?"--> "+tablePlayer.getScreenName()+" <--"
+                 :tablePlayer.getScreenName()));
         tablePlayerPanel.add(new JLabel(s));
         return tablePlayerPanel;
     }
@@ -218,9 +210,9 @@ public class JTablePanel
 
     public boolean handle_1_PLAYER_LEFT_TABLE(final byte tablePlayerId){
         final TablePlayer leaver
-            = this.table.getTablePlayerCopy(tablePlayerId);
-        this.table.removePlayer(tablePlayerId);
-        this.table.setGameOn(false);
+            = //this.table.tablePlayerIdToTablePlayer.get(tablePlayerId);
+        this.table.tablePlayerIdToTablePlayer.remove(tablePlayerId);
+        this.table.gameOn=false;
         redrawTablePlayerList();
         this.jChatPanel.appendLine(""+leaver+" left table.");
         return true;
@@ -228,14 +220,14 @@ public class JTablePanel
 
     public boolean handle_1_SAID(final byte tablePlayerId,
                                  final Vector<Byte> text_UTF8){
-        final TablePlayer copy
-            = this.table.getTablePlayerCopy(tablePlayerId);
-        if(copy==null){
+        final TablePlayer tablePlayer
+            = this.table.tablePlayerIdToTablePlayer.get(tablePlayerId);
+        if(tablePlayer==null){
             System.err.println("No table player with id "+tablePlayerId);
             return false;
         }
         try{
-            this.jChatPanel.appendLine(""+copy.getScreenNameCopy()+": "
+            this.jChatPanel.appendLine(""+tablePlayer.getScreenName()+": "
                                        +new String(Message.toArray(text_UTF8),
                                                    "UTF8"));
         }catch(final java.io.UnsupportedEncodingException e){
@@ -249,12 +241,13 @@ public class JTablePanel
     public boolean handle_1_GAME_STARTED_WITH_INITIAL_MESSAGE
         (final Vector<Byte> turnGamePlayerToTablePlayerId,
          final Vector<Byte> initialMessage){
-        this.table.setTurnGamePlayerToTablePlayerId(turnGamePlayerToTablePlayerId);
+        this.table.turnGamePlayerToTablePlayerId
+            =turnGamePlayerToTablePlayerId;
         boolean initializationResult
             = this.jBoard.initialize(initialMessage);
         if(initializationResult){
             this.jChatPanel.appendLine("Game has started!");
-            this.table.setGameOn(true);
+            this.table.gameOn=true;
             this.redrawTablePlayerList();
             return true;
         }else{
@@ -278,7 +271,7 @@ public class JTablePanel
         //Move was invalid:
         if((moveResult&JBoard.VALIDITY_MASK)!=JBoard.VALID){
             Output.d("(moveResult&JBoard.VALIDITY_MASK)!=JBoard.VALID");
-            this.table.setGameOn(false);
+            this.table.gameOn=false;
             this.redrawTablePlayerList();
             return false;
         }
@@ -290,7 +283,7 @@ public class JTablePanel
         }
 
         //End the game.
-        this.table.setGameOn(false);
+        this.table.gameOn=false;
         this.redrawTablePlayerList();
         
         this.jChatPanel.appendLine("Game over.");
@@ -298,8 +291,8 @@ public class JTablePanel
         if(jBoard.getNumberOfPlayers()==2){
             if(endResult[0]==endResult[1])
                 this.jChatPanel.appendLine("Draw.");
-            else if(endResult[this.table.getMyTurnGamePlayer()]
-                    >endResult[1-this.table.getMyTurnGamePlayer()])
+            else if(endResult[this.table.myTurnGamePlayer]
+                    >endResult[1-this.table.myTurnGamePlayer])
                 this.jChatPanel.appendLine("You won!");
             else
                 this.jChatPanel.appendLine("You lost.");
