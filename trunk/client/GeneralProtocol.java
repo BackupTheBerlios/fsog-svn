@@ -67,6 +67,9 @@ public class GeneralProtocol{
   }
 
 
+  //Constants:
+
+
   //This method can be used for rapid message
   //type lookup, so you don't need to try
   //deserializing using all deserializers.

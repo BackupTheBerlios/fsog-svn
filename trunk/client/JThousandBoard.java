@@ -361,8 +361,8 @@ public class JThousandBoard
         g.setStroke(new BasicStroke(1));
         g.draw(shape);
 
-        final String valueString = Card.valueStrings[card];
-        final String suitString = Card.suitStrings[card];
+        final String valueString = CardUtilities.valueStrings[card];
+        final String suitString = CardUtilities.suitStrings[card];
 
         final FontRenderContext fontRenderContext
             = g.getFontRenderContext();
@@ -385,7 +385,7 @@ public class JThousandBoard
 
         final float horizontalMargin = 0.02f*shapeWidth;
 
-        g.setColor(Card.colors4[card]);
+        g.setColor(CardUtilities.colors4[card]);
         g.setFont(font);
 
         //Top--left corner:
