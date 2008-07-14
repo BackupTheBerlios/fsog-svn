@@ -44,6 +44,7 @@ public class TicTacToeProtocolDefinition{
         final ProtocolDefinition protocol
             = new ProtocolDefinition("TicTacToe",
                                      protocolVersion,
+                                     "TicTacToeProtocol",
                                      "../server/TicTacToeProtocol.hpp",
                                      "../server/TicTacToeProtocol.cpp",
                                      "../client/TicTacToeProtocol.java");

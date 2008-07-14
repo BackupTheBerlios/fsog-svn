@@ -44,11 +44,10 @@ public class ThousandProtocolDefinition{
         final ProtocolDefinition protocol
             = new ProtocolDefinition("Thousand",
                                      protocolVersion,
+                                     "ThousandProtocol",
                                      "../server/Protocol.hpp",
                                      "../server/Protocol.cpp",
                                      "../client/Protocol.java");
-
-        protocol.addCardsDefinition();
 
         protocol.defineMessage
             ("LOG_IN",

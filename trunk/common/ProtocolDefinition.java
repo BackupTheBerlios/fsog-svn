@@ -73,6 +73,7 @@ public class ProtocolDefinition{
     //Members:
     private final FileWriter javaWriter;
     private final FileWriter hppWriter;
+    private final String className;
     private final String hppFileName;
     private final FileWriter cppWriter;
     private final int protocolVersion;
@@ -80,12 +81,12 @@ public class ProtocolDefinition{
 
     private final Vector<MessageDefinition> messageDefinitions;
     private final Vector<FlagSetDefinition> flagSetDefinitions;
+    private final Vector<ConstantDefinition> constantDefinitions;
     
-    private boolean addCardsDefinition;
-
     //ctor:
     public ProtocolDefinition(final String protocolName,
                               final int protocolVersion,
+                              final String className,
                               final String hppFileName,
                               final String cppFileName,
                               final String javaFileName)
@@ -98,13 +99,17 @@ public class ProtocolDefinition{
 
         this.protocolVersion = protocolVersion;
 
+        this.className = className;
+
         this.hppFileName = hppFileName;
 
         this.hppWriter
             = new FileWriter(hppFileName);
 
         this.cppWriter
-            = new FileWriter(cppFileName);
+            = (cppFileName==null
+               ?null
+               :new FileWriter(cppFileName));
 
         this.javaWriter
             = new FileWriter(javaFileName);
@@ -115,7 +120,7 @@ public class ProtocolDefinition{
         this.flagSetDefinitions
             = new Vector<FlagSetDefinition>();
 
-        this.addCardsDefinition = false;
+        this.constantDefinitions = new Vector<ConstantDefinition>();
     }
 
     public void defineMessage(final String name,
@@ -140,8 +145,8 @@ public class ProtocolDefinition{
                                    flagDefinitions));
     }
 
-    public void addCardsDefinition(){
-        this.addCardsDefinition = true;
+    public void defineConstants(final ConstantDefinition... definitions){
+        this.constantDefinitions.addAll(Arrays.asList(definitions));
     }
 
     private void hppWrite(final String s)
@@ -153,7 +158,8 @@ public class ProtocolDefinition{
     private void cppWrite(final String s)
     throws IOException
     {
-        this.cppWriter.write(s);
+        if(this.cppWriter!=null)
+            this.cppWriter.write(s);
     }
 
     private void javaWrite(final String s)
@@ -213,7 +219,7 @@ public class ProtocolDefinition{
         //Class Message is now in fixed file, not generated one.
         //hppWriteMessageClass();
         
-        hppWrite("class "+protocolName+"Protocol\n");
+        hppWrite("class "+className+"\n");
         hppWrite("{\n");
         hppWrite("public:\n");
         hppWrite("\n");
@@ -222,13 +228,13 @@ public class ProtocolDefinition{
 
         cppWrite(license);
         cppWrite("\n"
-                 +"#include \""+protocolName+"Protocol.hpp\"\n");
+                 +"#include \""+className+".hpp\"\n");
 
         javaWrite(license);
         javaWrite("\n");
         javaWrite("import java.util.*;\n");
         javaWrite("\n");
-        javaWrite("public class "+protocolName+"Protocol{\n");
+        javaWrite("public class "+className+"{\n");
         javaWrite("\n");
         javaWriteMessageEnum();
         javaWrite("\n");
@@ -269,9 +275,33 @@ public class ProtocolDefinition{
         javaWrite("\n\n");
     }
 
+    private void writeConstantDefinitions()
+    throws Exception
+    {
+        hppWrite("  //Constants:\n");
+        javaWrite("  //Constants:\n");
+        for(ConstantDefinition constantDefinition : this.constantDefinitions){
+            
+            hppWrite("  //"+constantDefinition.comment+"\n");
+            javaWrite("  //"+constantDefinition.comment+"\n");
+            hppWrite("  static "+constantDefinition.type.toCppConstType(this.flagSetDefinitions)
+                     +" "+constantDefinition.name+" = "
+                     +constantDefinition.value+";\n");
+            javaWrite("  public static "
+                      +constantDefinition.type.toJavaFinalType(this.flagSetDefinitions)
+                      +" "+constantDefinition.name+" = "
+                      +constantDefinition.value+";\n");
+        }
+
+        hppWrite("\n\n");
+        javaWrite("\n\n");
+    }
+
     private void hppWriteMessageTypes()
         throws IOException
     {
+        if(this.messageDefinitions.isEmpty())
+            return;
 
         //TODO: When only one message, don't waste one byte in
         //serialized message for message type.
@@ -299,6 +329,9 @@ public class ProtocolDefinition{
     private void hppWriteGetMessageType()
         throws IOException
     {
+        if(this.messageDefinitions.isEmpty())
+            return;
+
         hppWrite("  //This method can be used for rapid message\n"
                  +"  //type lookup, so you don't need to try\n"
                  +"  //deserializing using all deserializers.\n"
@@ -322,6 +355,9 @@ public class ProtocolDefinition{
     private void hppWriteMessageToString()
         throws IOException
     {
+        if(this.messageDefinitions.isEmpty())
+            return;
+
         hppWrite("  //Represent message as string\n"
                  +"  static std::string messageToString(const std::vector<char>& message)\n"
                  +"    throw()\n"
@@ -363,6 +399,9 @@ public class ProtocolDefinition{
     private void hppWriteMessageTypeToString()
         throws IOException
     {
+        if(this.messageDefinitions.isEmpty())
+            return;
+
         //Enum to string conversion:
 
         this.hppWrite("  //Can be used for printing message type\n"
@@ -395,6 +434,9 @@ public class ProtocolDefinition{
     private void javaWriteMessageEnum()
         throws IOException
     {
+        if(this.messageDefinitions.isEmpty())
+            return;
+
         this.javaWrite("  //Can be used for switching to detect\n"
                        +"  //which deserializer should be used.\n"
                        +"  enum MessageType");
@@ -418,6 +460,9 @@ public class ProtocolDefinition{
     private void javaWriteLookupMessageType()
         throws IOException
     {
+        if(this.messageDefinitions.isEmpty())
+            return;
+
         this.javaWrite("  //This method can be used for rapid message\n"
                        +"  //type lookup, so you don't need to try\n"
                        +"  //deserializing using all deserializers.\n"
@@ -688,44 +733,10 @@ public class ProtocolDefinition{
         //End of deserialization.
     }
 
-    /** Writes necessary enums, etc. for use in card games. */
-    private void writeCards()
-        throws IOException
-    {
-        final String s0
-            ="  //Used in card games. You can encode a card on \n"
-            +"  //one byte by bitwise disjunction of value and\n"
-            +"  //color. Use VALUE_MASK and SUIT_MASK to decode.\n";
-
-        hppWrite(s0);
-
-        hppWrite("  enum Card\n"
-                 +"  {\n"
-                 +"    ACE = 0x01,\n"
-                 +"    TWO = 0x02,\n"
-                 +"    THREE = 0x03,\n"
-                 +"    FOUR = 0x04,\n"
-                 +"    FIVE = 0x05,\n"
-                 +"    SIX = 0x06,\n"
-                 +"    SEVEN = 0x07,\n"
-                 +"    EIGHT = 0x08,\n"
-                 +"    NINE = 0x09,\n"
-                 +"    TEN = 0x0A,\n"
-                 +"    JACK = 0x0B,\n"
-                 +"    QUEEN = 0x0C,\n"
-                 +"    KING = 0x0D,\n"
-                 +"    JOKER = 0x0E,\n"
-                 +"    VALUE_MASK = 0x0F,\n"
-                 +"    HEART = 0x10,\n"
-                 +"    DIAMOND = 0x20,\n"
-                 +"    CLUB = 0x30,\n"
-                 +"    SPADE = 0x40,\n"
-                 +"    SUIT_MASK = 0xF0\n"
-                 +"  };\n\n");
-
-    }
-
     private void hppWriteHandler() throws Exception{
+        if(this.messageDefinitions.isEmpty())
+            return;
+        
         hppWrite("\n"
                  +"class "+protocolName+"Handler\n"
                  +"{\n"
@@ -736,7 +747,7 @@ public class ProtocolDefinition{
         for(MessageDefinition md : this.messageDefinitions){
             if(md.create.contains(Create.CPP_DESERIALIZER)
                &&md.pieceDefinitions.length>0)
-                hppWrite("  "+protocolName+"Protocol::Deserialized"
+                hppWrite("  "+className+"::Deserialized"
                          +"_"+protocolVersion+"_"+md.name
                          +" deserialized_"+md.name+";\n");
         }
@@ -756,14 +767,14 @@ public class ProtocolDefinition{
                  +"                  TimeMicro& timeout) throw()\n"
                  +"  {\n"
                  +"\n"
-                 +"    switch("+protocolName+"Protocol::getMessageType(message))\n"
+                 +"    switch("+className+"::getMessageType(message))\n"
                  +"    {\n");
 
         for(MessageDefinition md : this.messageDefinitions){
             if(md.create.contains(Create.CPP_DESERIALIZER)){
-                cppWrite("    case "+protocolName+"Protocol::"
+                cppWrite("    case "+className+"::"
                          +md.name+"_"+protocolVersion+":\n"
-                         +"      return "+protocolName+"Protocol::deserialize_"
+                         +"      return "+className+"::deserialize_"
                          +protocolVersion+"_"+md.name+"(message");
                 if(md.pieceDefinitions.length>0)
                     cppWrite(",\n"
@@ -811,25 +822,28 @@ public class ProtocolDefinition{
     }
 
     private void javaWriteHandler() throws Exception{
+        if(this.messageDefinitions.isEmpty())
+            return;
+
         javaWrite("\n"
                   +"  public static boolean handle(final Vector<Byte> message,\n"
                   +"                               final "+protocolName
                   +"Handler handler){\n"
                   +"\n"
-                  +"    switch("+protocolName
-                  +"Protocol.lookupMessageType(message))\n"
+                  +"    switch("+className
+                  +".lookupMessageType(message))\n"
                   +"    {\n");
 
         for(MessageDefinition md : this.messageDefinitions){
             if(md.create.contains(Create.JAVA_DESERIALIZER)){
-                javaWrite("    case "//+protocolName+"Protocol.MessageType."
+                javaWrite("    case "
                           +md.name+"_"+protocolVersion+":\n"
                           +"      {\n"
                           +"        try{\n"
-                          +"          final "+protocolName+"Protocol.Deserialized_"
+                          +"          final "+className+".Deserialized_"
                           +protocolVersion+"_"
                           +md.name+" deserialized = \n"
-                          +"              new "+protocolName+"Protocol.Deserialized_"
+                          +"              new "+className+".Deserialized_"
                           +protocolVersion+"_"+md.name+"(message);\n");
                 javaWrite("        return handler.handle_"+protocolVersion
                           +"_"+md.name+"(");
@@ -886,9 +900,7 @@ public class ProtocolDefinition{
     {
         this.writeHeader();
 
-        if(this.addCardsDefinition){
-            this.writeCards();
-        }
+        this.writeConstantDefinitions();
 
         for(FlagSetDefinition flagSetDefinition
                 : this.flagSetDefinitions){
@@ -914,7 +926,9 @@ public class ProtocolDefinition{
         this.javaWriter.close();
         this.hppWriter.flush();
         this.hppWriter.close();
-        this.cppWriter.flush();
-        this.cppWriter.close();
+        if(this.cppWriter!=null){
+            this.cppWriter.flush();
+            this.cppWriter.close();
+        }
     }
 }

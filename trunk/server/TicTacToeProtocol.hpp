@@ -52,6 +52,9 @@ public:
 
 
 
+  //Constants:
+
+
   //Can be used for printing message type
   //in human-readable form.
   static std::string messageTypeToString(int8_t messageType) throw()

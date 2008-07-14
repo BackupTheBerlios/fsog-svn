@@ -44,6 +44,7 @@ public class GeneralProtocolDefinition{
         final ProtocolDefinition protocol
             = new ProtocolDefinition("General",
                                      protocolVersion,
+                                     "GeneralProtocol",
                                      "../server/GeneralProtocol.hpp",
                                      "../server/GeneralProtocol.cpp",
                                      "../client/GeneralProtocol.java");
