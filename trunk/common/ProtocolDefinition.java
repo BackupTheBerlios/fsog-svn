@@ -281,9 +281,11 @@ public class ProtocolDefinition{
         hppWrite("  //Constants:\n");
         javaWrite("  //Constants:\n");
         for(ConstantDefinition constantDefinition : this.constantDefinitions){
-            
-            hppWrite("  //"+constantDefinition.comment+"\n");
-            javaWrite("  //"+constantDefinition.comment+"\n");
+
+            if(constantDefinition.comment!=null){
+                hppWrite("  //"+constantDefinition.comment+"\n");
+                javaWrite("  //"+constantDefinition.comment+"\n");
+            }
             hppWrite("  static "+constantDefinition.type.toCppConstType(this.flagSetDefinitions)
                      +" "+constantDefinition.name+" = "
                      +constantDefinition.value+";\n");

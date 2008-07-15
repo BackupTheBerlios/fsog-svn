@@ -47,13 +47,16 @@ public abstract class JBoard extends JPanel{
 
     protected final Table table;
     protected final MoveListener moveListener;
+    protected final JTabbedPane jTabbedPane;
 
     JBoard(final byte numberOfPlayers,
            final Table table,
-           final MoveListener moveListener){
+           final MoveListener moveListener,
+           final JTabbedPane jTabbedPane){
         this.numberOfPlayers = numberOfPlayers;
         this.table = table;
         this.moveListener = moveListener;
+        this.jTabbedPane = jTabbedPane;
     }
 
     /** 
@@ -72,6 +75,12 @@ public abstract class JBoard extends JPanel{
 
     public boolean myTurn(){
         return this.turn == this.table.myTurnGamePlayer;
+    }
+
+    //@param which 0--my turn, 1--the one after me moves now, etc...
+    protected boolean opponentsTurn(final int which){
+        return this.turn == ((this.table.myTurnGamePlayer+which)
+                             %this.table.turnGamePlayerToTablePlayerId.size());
     }
 
     protected byte getOpponent(){

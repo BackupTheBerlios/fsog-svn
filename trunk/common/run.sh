@@ -2,3 +2,4 @@
 java GeneralProtocolDefinition
 java TicTacToeProtocolDefinition
 java CardProtocolDefinition
+java ThousandProtocolDefinition

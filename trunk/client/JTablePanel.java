@@ -43,9 +43,10 @@ public class JTablePanel
     implements GeneralProtocol.GeneralHandler, MoveListener
 {
     private final Table table;
+    private JTabbedPane tabbedPane;
     private final JChatPanel jChatPanel;
     private final JSplitPane splitPane0;
-    private final JTicTacToeBoard jBoard;
+    private final JBoard jBoard;
 
     public JTablePanel(){
         super(JSplitPane.HORIZONTAL_SPLIT);
@@ -57,37 +58,28 @@ public class JTablePanel
             = new JScrollPane(makeTablePlayerListPanel(this.table));
 
         //Tabbed pane:
-        JTabbedPane tabbedPane = new JTabbedPane();
-        ImageIcon icon = null;
+        this.tabbedPane = new JTabbedPane();
+
+        final ImageIcon icon = null;
 
         this.jChatPanel = new JChatPanel();
         tabbedPane.addTab("Chat",icon,this.jChatPanel,"Chat window");
         tabbedPane.setMnemonicAt(0, KeyEvent.VK_C);
 
-        JComponent panel2 = new JPanel();
-        tabbedPane.addTab("Points", icon, panel2,
-                          "Current game points");
-        tabbedPane.setMnemonicAt(1, KeyEvent.VK_P);
-
-        JComponent panel3 = new JPanel();
-        tabbedPane.addTab("History", icon, panel3,
-                          "Current game history");
-        tabbedPane.setMnemonicAt(2, KeyEvent.VK_H);
-
         JComponent panel4 = new JPanel();
-        panel4.setPreferredSize(new Dimension(410, 50));
+        //panel4.setPreferredSize(new Dimension(410, 50));
         tabbedPane.addTab("Players", icon, panel4,
                           "List of players");
-        tabbedPane.setMnemonicAt(3, KeyEvent.VK_L);
+        tabbedPane.setMnemonicAt(1, KeyEvent.VK_L);
 
         JComponent panel5 = new JPanel();
-        panel4.setPreferredSize(new Dimension(410, 50));
+        //panel4.setPreferredSize(new Dimension(410, 50));
         tabbedPane.addTab("Settings", icon, panel5,
                           "Current game settings");
-        tabbedPane.setMnemonicAt(4, KeyEvent.VK_S);
+        tabbedPane.setMnemonicAt(2, KeyEvent.VK_S);
 
         tabbedPane.setBorder(BorderFactory.createMatteBorder(1,1,1,1,Color.black));
-        tabbedPane.setPreferredSize(new Dimension(200, 300));
+        //tabbedPane.setPreferredSize(new Dimension(200, 300));
         JScrollPane tableInfoScrollPane = new JScrollPane(tabbedPane);
 
         this.splitPane0 = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
@@ -96,7 +88,11 @@ public class JTablePanel
         splitPane0.setOneTouchExpandable(true);
         splitPane0.setDividerLocation(150);
 
-        this.jBoard = new JTicTacToeBoard(this.table,this);
+        this.jBoard
+            = new JThousandBoard((byte)3,this.table,
+                                 this,
+                                 this.tabbedPane);
+        //= new JTicTacToeBoard(this.table,this);
 
         //JLabel label2 = new JLabel("TWO");
         //label2.setHorizontalAlignment(JLabel.CENTER);
@@ -107,15 +103,23 @@ public class JTablePanel
         this.setLeftComponent(splitPane0);
         this.setRightComponent(playAreaScrollPane);
         this.setOneTouchExpandable(true);
-        this.setDividerLocation(200);
+        this.setDividerLocation(220);
     }
 
     private void redrawTablePlayerList(){
-        final JScrollPane tablePlayerListScrollPane
-            = new JScrollPane(makeTablePlayerListPanel(this.table));
+
+        final JPanel panel = makeTablePlayerListPanel(this.table);
+        final JScrollPane scrollPane
+            = new JScrollPane(panel);
+
+        this.splitPane0.setTopComponent(scrollPane);
+        //scrollPane.setPreferredSize(panel.getPreferredSize());
                     
-        this.splitPane0.setTopComponent(tablePlayerListScrollPane);
-        this.splitPane0.repaint();
+        //this.splitPane0.resetToPreferredSizes();
+        //this.splitPane0.setDividerLocation(panel.getPreferredSize().getHeight());
+        //this.splitPane0.setDividerLocation(Math.min(panel.getPreferredSize().getHeight(),
+        //this.getDividerLocation()));
+        //this.splitPane0.repaint();
     }
 
     private JPanel makeTablePlayerListPanel(final Table table){
@@ -132,30 +136,38 @@ public class JTablePanel
             = new JPanel();
         tablePlayerListPanel.setBorder(BorderFactory.createMatteBorder
                                        (1,1,1,1,Color.black));
-        tablePlayerListPanel.setPreferredSize(new Dimension(200, 300));
-
+        
+        int preferredHeight = 3;
 
         if(table.gameOn){
             //If the game is on, display players in the order they play:
-            final Vector<Byte> turnGamePlayerToTablePlayerId
-                = table.turnGamePlayerToTablePlayerId;
+            //final Vector<Byte> turnGamePlayerToTablePlayerId
+            //    = table.turnGamePlayerToTablePlayerId;
             for(byte turnGamePlayer = 0;
-                turnGamePlayer<turnGamePlayerToTablePlayerId.size();
+                turnGamePlayer<table.turnGamePlayerToTablePlayerId.size();
                 turnGamePlayer++){
-                tablePlayerListPanel.add
-                    (makeTablePlayerPanel
-                     (this.table.tablePlayerIdToTablePlayer.get
-                      (turnGamePlayerToTablePlayerId.get(turnGamePlayer)),
-                      turnGamePlayer == this.jBoard.getTurn()));
+                final JPanel panel
+                    = makeTablePlayerPanel
+                    (table.tablePlayerIdToTablePlayer.get
+                     (table.turnGamePlayerToTablePlayerId.get(turnGamePlayer)),
+                     turnGamePlayer == jBoard.getTurn());
+                tablePlayerListPanel.add(panel);
+                preferredHeight+=panel.getPreferredSize().getHeight()+6;
             }
         }else{
             //If game is not going on, display players in arbitrary order:
             for(Map.Entry<Byte,TablePlayer> e
                     : table.tablePlayerIdToTablePlayer.entrySet()){
-                tablePlayerListPanel.add(makeTablePlayerPanel(e.getValue(),
-                                                              false));
+                final JPanel panel
+                    = makeTablePlayerPanel(e.getValue(),
+                                           false);
+                tablePlayerListPanel.add(panel);
+                preferredHeight+=panel.getPreferredSize().getHeight()+6;
             }
         }
+
+        Output.d("Preferred height: "+ preferredHeight);
+        tablePlayerListPanel.setPreferredSize(new Dimension(206,preferredHeight));
         return tablePlayerListPanel;
     }
 
@@ -241,16 +253,25 @@ public class JTablePanel
     public boolean handle_1_GAME_STARTED_WITH_INITIAL_MESSAGE
         (final Vector<Byte> turnGamePlayerToTablePlayerId,
          final Vector<Byte> initialMessage){
+
+        //Set table information:
         this.table.turnGamePlayerToTablePlayerId
             =turnGamePlayerToTablePlayerId;
-        boolean initializationResult
+        for(int i=0;i<turnGamePlayerToTablePlayerId.size();i++){
+            final Byte b = turnGamePlayerToTablePlayerId.get(i);
+            if(b.equals(this.table.myTablePlayerId))
+                this.table.myTurnGamePlayer = (byte)i;
+        }
+        this.table.gameOn=true;
+
+        final boolean initializationResult
             = this.jBoard.initialize(initialMessage);
         if(initializationResult){
             this.jChatPanel.appendLine("Game has started!");
-            this.table.gameOn=true;
             this.redrawTablePlayerList();
             return true;
         }else{
+            this.table.gameOn=false;
             return false;
         }
     }

@@ -40,6 +40,8 @@ public class GeneralProtocol{
     UNKNOWN_MESSAGE_1,
     //Sent by client when creating a new Tic Tac Toe table.
     CREATE_TICTACTOE_TABLE_1,
+    //Sent by client when creating a new Thousand table.
+    CREATE_THOUSAND_TABLE_1,
     //Sent by server after table has been created.
     TABLE_CREATED_1,
     //Sent by client when saying something (chat message).
@@ -90,18 +92,19 @@ public class GeneralProtocol{
         
         switch(byteMessageType){
         case 1: return MessageType.CREATE_TICTACTOE_TABLE_1;
-        case 2: return MessageType.TABLE_CREATED_1;
-        case 3: return MessageType.SAY_1;
-        case 4: return MessageType.SAID_1;
-        case 5: return MessageType.JOIN_TABLE_TO_PLAY_1;
-        case 6: return MessageType.YOU_JOINED_TABLE_1;
-        case 7: return MessageType.JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1;
-        case 8: return MessageType.NEW_PLAYER_JOINED_TABLE_1;
-        case 9: return MessageType.PLAYER_LEFT_TABLE_1;
-        case 10: return MessageType.GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1;
-        case 11: return MessageType.GAME_STARTED_WITH_INITIAL_MESSAGE_1;
-        case 12: return MessageType.MAKE_MOVE_1;
-        case 13: return MessageType.MOVE_MADE_1;
+        case 2: return MessageType.CREATE_THOUSAND_TABLE_1;
+        case 3: return MessageType.TABLE_CREATED_1;
+        case 4: return MessageType.SAY_1;
+        case 5: return MessageType.SAID_1;
+        case 6: return MessageType.JOIN_TABLE_TO_PLAY_1;
+        case 7: return MessageType.YOU_JOINED_TABLE_1;
+        case 8: return MessageType.JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1;
+        case 9: return MessageType.NEW_PLAYER_JOINED_TABLE_1;
+        case 10: return MessageType.PLAYER_LEFT_TABLE_1;
+        case 11: return MessageType.GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1;
+        case 12: return MessageType.GAME_STARTED_WITH_INITIAL_MESSAGE_1;
+        case 13: return MessageType.MAKE_MOVE_1;
+        case 14: return MessageType.MOVE_MADE_1;
         default: return MessageType.UNKNOWN_MESSAGE_1;
         }
     }catch(Exception e){
@@ -128,11 +131,30 @@ public class GeneralProtocol{
     return outputMessage;
   }
 
+  //Message CREATE_THOUSAND_TABLE:
+
+  //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
+
+  //In protocol version 1 this message has id 2.
+  //Sent by client when creating a new Thousand table.
+
+  public static Vector<Byte> serialize_1_CREATE_THOUSAND_TABLE(){
+    final Vector<Byte> outputMessage
+     = new Vector<Byte>();
+
+    //Let the receiver know which protocol version this is:
+    Message.append1Byte(1,outputMessage);
+    //Let the receiver know what kind of message this is:
+    Message.append1Byte(2,outputMessage);
+
+    return outputMessage;
+  }
+
   //Message TABLE_CREATED:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 2.
+  //In protocol version 1 this message has id 3.
   //Sent by server after table has been created.
 
   public static class Deserialized_1_TABLE_CREATED{
@@ -149,7 +171,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=2)
+        if(iterator.next()!=3)
           throw new MessageDeserializationException();
 
     //Deserialize id:
@@ -164,7 +186,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
-  //In protocol version 1 this message has id 3.
+  //In protocol version 1 this message has id 4.
   //Sent by client when saying something (chat message).
 
   public static Vector<Byte> serialize_1_SAY(
@@ -176,7 +198,7 @@ public class GeneralProtocol{
     //Let the receiver know which protocol version this is:
     Message.append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message.append1Byte(3,outputMessage);
+    Message.append1Byte(4,outputMessage);
 
     //Serialize text_UTF8:
     Message.appendBinary(text_UTF8,outputMessage);
@@ -187,7 +209,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 4.
+  //In protocol version 1 this message has id 5.
   //Sent by server when someone says something (chat message).
 
   public static class Deserialized_1_SAID{
@@ -206,7 +228,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=4)
+        if(iterator.next()!=5)
           throw new MessageDeserializationException();
 
     //Deserialize tablePlayerId:
@@ -223,7 +245,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
-  //In protocol version 1 this message has id 5.
+  //In protocol version 1 this message has id 6.
   //Sent by client when joining some table to play.
 
   public static Vector<Byte> serialize_1_JOIN_TABLE_TO_PLAY(
@@ -237,7 +259,7 @@ public class GeneralProtocol{
     //Let the receiver know which protocol version this is:
     Message.append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message.append1Byte(5,outputMessage);
+    Message.append1Byte(6,outputMessage);
 
     //Serialize tableId:
     Message.append8Bytes(tableId,outputMessage);
@@ -250,7 +272,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 6.
+  //In protocol version 1 this message has id 7.
   //Sent by server to new player who joined a table.
 
   public static class Deserialized_1_YOU_JOINED_TABLE{
@@ -267,7 +289,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=6)
+        if(iterator.next()!=7)
           throw new MessageDeserializationException();
 
     //Deserialize tablePlayerId:
@@ -282,7 +304,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 7.
+  //In protocol version 1 this message has id 8.
   //Sent by server to new player who joined a table.
 
   public static class Deserialized_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID{
@@ -297,7 +319,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=7)
+        if(iterator.next()!=8)
           throw new MessageDeserializationException();
 
       }catch(NoSuchElementException e){
@@ -310,7 +332,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 8.
+  //In protocol version 1 this message has id 9.
   //Sent by server after new player joined a table to already present people.
 
   public static class Deserialized_1_NEW_PLAYER_JOINED_TABLE{
@@ -329,7 +351,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=8)
+        if(iterator.next()!=9)
           throw new MessageDeserializationException();
 
     //Deserialize screenName:
@@ -346,7 +368,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 9.
+  //In protocol version 1 this message has id 10.
   //Sent by server when a player left.
 
   public static class Deserialized_1_PLAYER_LEFT_TABLE{
@@ -363,7 +385,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=9)
+        if(iterator.next()!=10)
           throw new MessageDeserializationException();
 
     //Deserialize tablePlayerId:
@@ -378,7 +400,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 10.
+  //In protocol version 1 this message has id 11.
   //Sent by server when game is started and no initial message is designated for the receiver.
 
   public static class Deserialized_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE{
@@ -395,7 +417,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=10)
+        if(iterator.next()!=11)
           throw new MessageDeserializationException();
 
     //Deserialize turnGamePlayerToTablePlayerId:
@@ -410,7 +432,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 11.
+  //In protocol version 1 this message has id 12.
   //Sent by server when game is started and an initial message is designated for the receiver.
 
   public static class Deserialized_1_GAME_STARTED_WITH_INITIAL_MESSAGE{
@@ -429,7 +451,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=11)
+        if(iterator.next()!=12)
           throw new MessageDeserializationException();
 
     //Deserialize turnGamePlayerToTablePlayerId:
@@ -446,7 +468,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
-  //In protocol version 1 this message has id 12.
+  //In protocol version 1 this message has id 13.
   //Sent by client when making a move.
 
   public static Vector<Byte> serialize_1_MAKE_MOVE(
@@ -458,7 +480,7 @@ public class GeneralProtocol{
     //Let the receiver know which protocol version this is:
     Message.append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message.append1Byte(12,outputMessage);
+    Message.append1Byte(13,outputMessage);
 
     //Serialize gameMove:
     Message.appendBinary(gameMove,outputMessage);
@@ -469,7 +491,7 @@ public class GeneralProtocol{
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 13.
+  //In protocol version 1 this message has id 14.
   //Sent by server after client made a move.
 
   public static class Deserialized_1_MOVE_MADE{
@@ -486,7 +508,7 @@ public class GeneralProtocol{
           throw new MessageDeserializationException();
 
         //Check kind of message:
-        if(iterator.next()!=13)
+        if(iterator.next()!=14)
           throw new MessageDeserializationException();
 
     //Deserialize gameMove:

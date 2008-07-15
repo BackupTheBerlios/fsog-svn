@@ -36,6 +36,7 @@
 #include "GameServer.hpp"
 #include "CommandLine.hpp"
 #include "TicTacToe.hpp"
+#include "Thousand.hpp"
 
 void GameServer::received(const std::vector<char>& message,
                           const SessionId sessionID,
@@ -65,6 +66,38 @@ bool GameServer::handle_1_CREATE_TICTACTOE_TABLE(const SessionId sessionID,
 
   table.p_game = 0;
   table.p_game = new TicTacToe(2);
+  if(!table.p_game)
+    {
+      std::cout<<"Game allocation failed."<<std::endl
+               <<"In "<<__func__<<", file "<<__FILE__
+               <<", line"<<__LINE__<<std::endl;
+      tables.pop_front();
+      return false;
+    }
+
+  std::cout<<"New table's id: "<<table.id<<std::endl;
+
+  //Prepare response:
+  //Demand sending response to the sender (same sessionID):
+  toBeSent.push_back(SessionAddressedMessage(sessionID));
+  GeneralProtocol::serialize_1_TABLE_CREATED(table.id,toBeSent.back().message);
+
+  return true;
+}
+
+bool GameServer::handle_1_CREATE_THOUSAND_TABLE(const SessionId sessionID,
+                                                std::list<SessionAddressedMessage>& toBeSent,
+                                                TimeMicro& /*timeout*/) throw()
+{
+  //Create new table:
+  //TODO: remove this table at some point!
+  this->tables.push_front(Table());
+
+  Table& table = tables.front();
+  tableIdToTableIterator[table.id]=tables.begin();
+
+  table.p_game = 0;
+  table.p_game = new Thousand(3);
   if(!table.p_game)
     {
       std::cout<<"Game allocation failed."<<std::endl

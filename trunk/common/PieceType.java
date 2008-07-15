@@ -98,6 +98,21 @@ public abstract class PieceType{
                 }
             };
     
+    public static PieceType INT24
+        = new PieceType(){
+                public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "int32_t";}
+                public String toJavaType(final List<FlagSetDefinition> flagSetDefinitions){return "int";}
+                public String toJavaReferenceType(final List<FlagSetDefinition> flagSetDefinitions){return "Integer";}
+                public String toCppConstType(final List<FlagSetDefinition> flagSetDefinitions){return "const int32_t";}
+                public String toJavaFinalType(final List<FlagSetDefinition> flagSetDefinitions){return "final int";}
+                public String getAppender(final List<FlagSetDefinition> flagSetDefinitions){
+                    return "append3Bytes";
+                }
+                public String getReader(final List<FlagSetDefinition> flagSetDefinitions){
+                    return "read3Bytes";
+                }
+            };
+
     public static PieceType INT32
         = new PieceType(){
                 public String toCppType(final List<FlagSetDefinition> flagSetDefinitions){return "int32_t";}

@@ -45,53 +45,11 @@ public class ThousandProtocolDefinition{
             = new ProtocolDefinition("Thousand",
                                      protocolVersion,
                                      "ThousandProtocol",
-                                     "../server/Protocol.hpp",
-                                     "../server/Protocol.cpp",
-                                     "../client/Protocol.java");
+                                     "../server/ThousandProtocol.hpp",
+                                     "../server/ThousandProtocol.cpp",
+                                     "../client/ThousandProtocol.java");
 
-        protocol.defineMessage
-            ("LOG_IN",
-             "Sent by client to log in. Loginng in associates the sending"
-             +" IP+port as belonging to the particular user until logged"
-             +" out. Can be used to create an account. Valid nick is"
-             +" between 5 and 20 letters, consisting of any printable"
-             +" non-whitespace ASCII characters. Password should be at"
-             +" least 6 characters. Easy passwords won't be admitted.",
-             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
-             new PieceDefinition(PieceType.CSTRING,"nick",
-                                 "Unique nick."),
-             new PieceDefinition(PieceType.CSTRING,"password",
-                                 "User's password."));
-
-        protocol.defineMessage
-            ("LOG_IN_CORRECT",
-             "Sent by server to let the user know that log in was OK.",
-             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER));
-
-        protocol.defineMessage
-            ("LOG_IN_INCORRECT",
-             "Sent by server to let the user know that log in wasn't OK.",
-             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(PieceType.CSTRING,"reason",
-                                 "Why login failed.")
-             );
-
-        protocol.defineMessage
-            ("GET_STATISTICS",
-             "Message sent by client to request 'room' statistics.",
-             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER));
-
-        protocol.defineMessage
-            ("RETURN_STATISTICS",
-             "Sent by server when returning info about 'room' stats.",
-             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(PieceType.INT32,"numberOfUsers",
-                                 "Number of people logged in."),
-             new PieceDefinition(PieceType.INT32,"numberOfGames",
-                                 "Number of games being played in the 'room'."),
-             new PieceDefinition(PieceType.INT32,"numberOfSearchers",
-                                 "Number of people searching in the 'room'."));
-
+        /*
         protocol.defineFlagSet
             ("ThousandFlags",
              "Various booleans used in search for saying"
@@ -123,136 +81,46 @@ public class ThousandProtocolDefinition{
              new FlagDefinition("TIME_20","20 minutes game."),
              new FlagDefinition("TIME_30","30 minutes game.")
              );
-        
-        protocol.defineMessage
-            ("SEARCH_GAME",
-             "Sent by client when searching for some game.",
-             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
-             new PieceDefinition(PieceType.INT8,"minimumOponentRanking50",
-               "Minimum ranking of the oponent, measured in 50 points."
-                                 +" E.g. 60 means 60*50=3000 points."),
-             new PieceDefinition(PieceType.FLAGSET("ThousandFlags"),
-                                 "searchFlags",
-                                 "Have a look at ThousandFlags.")
-             );
+        */
+
+        //One card is encoded as 8-bit integer:
+        final PieceType CARD = PieceType.INT8;
+
+        //We'll send card sets in 24-card deck using 3 bytes:
+        final PieceType CARD_SET_24 = PieceType.INT24;
 
         protocol.defineMessage
-            ("AWAIT_GAME",
-             "Sent by server when no game with given search"
-             +" cryteria is currently available.",
-             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER));
-
-        protocol.defineMessage
-            ("PROPOSED_GAME",
-             "Sent by server when game is matched."
-             +" Includes game settings. One of four usernames"
-             +" will be equal to the requesting player's if she should"
-             +" play the game, otherwise it's observing. Must be"
-             +" acknowledged by the client program immediately,"
-             +" using the secret provided here.",
-             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             //new PieceDefinition(PieceType.INT16,"gameIdentifier",
-             //  "Identifier of the game created by server."),
-             new PieceDefinition(PieceType.CSTRING,"player0Username",
-               "The username (nick) of player #0."
-               +" Empty string means no player at"
-               +" this side of the table."),
-             new PieceDefinition(PieceType.CSTRING,"player1Username",
-               "The username (nick) of player #1."
-               +" Empty string means no player at"
-               +" this side of the table."),
-             new PieceDefinition(PieceType.CSTRING,"player2Username",
-               "The username (nick) of player #2."
-               +" Empty string means no player at"
-               +" this side of the table."),
-             new PieceDefinition(PieceType.CSTRING,"player3Username",
-               "The username (nick) of player #3."
-               +" Empty string means no player at"
-               +" this side of the table."),
-             new PieceDefinition(PieceType.FLAGSET("ThousandFlags"),
-                                 "gameSettings",
-                                 "Look at ThousandFlags."),
-             new PieceDefinition(PieceType.INT8,
-                                 "acknowledgeSecret",
-                                 "The same value must be sent by client"
-                                 +" when acknowledging.")
-             );
-        
-        protocol.defineMessage
-            ("ACKNOWLEDGE",
-             "Sent by client. After this, server just waits for"
-             +" GAME_START. If server doesn't get this ack for some"
-             +" reason, will send again PROPOSED_GAME and ack must"
-             +" be repeated.",
-             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
-             new PieceDefinition(PieceType.INT8,
-                                 "secret",
-                                 "Protection against very old"
-                                 +" duplicate packets.")
-             );
-
-        //TODO: time limit for pressing START for the client.
-        protocol.defineMessage
-            ("GAME_START",
-             "Client clicks the 'start button' to accept a game."
-             +" Immediately after all clients do this, server will"
-             +" deal cards and start counting time for some player."
-             +" Server sends no acknowledgement for it. If cards"
-             +" are not dealt after, say, 5s, client can re-send"
-             +" GAME_START. But they might not be dealt because"
-             +" the opponent didn't click GAME_START.",
-             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER));
-
-        protocol.defineMessage
-            ("GAME_DEAL_7_CARDS",
+            ("DEAL_7_CARDS",
              "Everybody pressed start, so let's deal the cards."
              +" The cards sent are not sorted in any way.",
              EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(PieceType.INT8,"card0","First card."),
-             new PieceDefinition(PieceType.INT8,"card1","Second card."),
-             new PieceDefinition(PieceType.INT8,"card2","Third card."),
-             new PieceDefinition(PieceType.INT8,"card3","Fourth card."),
-             new PieceDefinition(PieceType.INT8,"card4","Fifth card."),
-             new PieceDefinition(PieceType.INT8,"card5","Sixth card."),
-             new PieceDefinition(PieceType.INT8,"card6","Seventh card."));
+             new PieceDefinition(CARD_SET_24,"cardSet24","Set of cards."));
 
         protocol.defineMessage
-            ("GAME_BID",
+            ("BID",
              "The message sent by client when placing a bid.",
              EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
-             new PieceDefinition(PieceType.INT16,"gameIdentifier",
-               "Which game this is about."),
-             new PieceDefinition(PieceType.INT8,"bid",
-               "This is actually 10% of the bid."
-               +" Multiply by 10 to get the real value."));
+             new PieceDefinition(PieceType.INT8,"bid10",
+                                 "This is actually 10% of the bid."
+                                 +" Multiply by 10 to get the real value."
+                                 +" A bid of 0 is 'pass'."
+                                 +" On the last 'pass', this message is not sent."
+                                 +" Instead, BID_END_... is sent."));
 
         protocol.defineMessage
-            ("GAME_BID_MADE",
-             "Message sent by the server to let other"
-             +" players know what bid was placed.",
-             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(PieceType.INT16,"gameId","Which game this is about."),
-             new PieceDefinition(PieceType.INT8,"bid",
-               "This is actually 10% of the bid."
-               +" Multiply by 10 to get the real value."));
-
-        protocol.defineMessage
-            ("GAME_BID_END_HIDDEN_MUST",
+            ("BID_END_HIDDEN_MUST",
              "Message sent by the server to let players know that"
              +" bidding is over. 'Must' is not shown.",
-             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(PieceType.INT16,"gameIdenitfier","Which game this is about."));
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER));
 
         protocol.defineMessage
-            ("GAME_BID_END_SHOW_MUST",
+            ("BID_END_SHOW_MUST",
              "Message sent by the server to let players know that"
              +" bidding is over. 'Must' is shown.",
              EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(PieceType.INT16,"gameIdenitfier","Which game this is about."),
-             new PieceDefinition(PieceType.INT8,"mustCard0","First must card."),
-             new PieceDefinition(PieceType.INT8,"mustCard1","Second must card."),
-             new PieceDefinition(PieceType.INT8,"mustCard2","Third must card."));
-
+             new PieceDefinition(CARD,"mustCard0","First must card."),
+             new PieceDefinition(CARD,"mustCard1","Second must card."),
+             new PieceDefinition(CARD,"mustCard2","Third must card."));
                 
         protocol.write();
     }

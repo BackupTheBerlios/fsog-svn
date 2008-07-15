@@ -58,7 +58,7 @@ public class TableCreator{
             d("Socket created: "+socket);
             d("Serializing message...");
             final Vector<Byte> query
-                = GeneralProtocol.serialize_1_CREATE_TICTACTOE_TABLE();
+                = GeneralProtocol.serialize_1_CREATE_THOUSAND_TABLE();
 
             d("Message serialized: "+query);
 

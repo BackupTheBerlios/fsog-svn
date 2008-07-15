@@ -49,30 +49,32 @@ public:
     static const int8_t UNKNOWN_MESSAGE_1 = 0;
     //Sent by client when creating a new Tic Tac Toe table.
     static const int8_t CREATE_TICTACTOE_TABLE_1 = 1;
+    //Sent by client when creating a new Thousand table.
+    static const int8_t CREATE_THOUSAND_TABLE_1 = 2;
     //Sent by server after table has been created.
-    static const int8_t TABLE_CREATED_1 = 2;
+    static const int8_t TABLE_CREATED_1 = 3;
     //Sent by client when saying something (chat message).
-    static const int8_t SAY_1 = 3;
+    static const int8_t SAY_1 = 4;
     //Sent by server when someone says something (chat message).
-    static const int8_t SAID_1 = 4;
+    static const int8_t SAID_1 = 5;
     //Sent by client when joining some table to play.
-    static const int8_t JOIN_TABLE_TO_PLAY_1 = 5;
+    static const int8_t JOIN_TABLE_TO_PLAY_1 = 6;
     //Sent by server to new player who joined a table.
-    static const int8_t YOU_JOINED_TABLE_1 = 6;
+    static const int8_t YOU_JOINED_TABLE_1 = 7;
     //Sent by server to new player who joined a table.
-    static const int8_t JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1 = 7;
+    static const int8_t JOINING_TABLE_FAILED_INCORRECT_TABLE_ID_1 = 8;
     //Sent by server after new player joined a table to already present people.
-    static const int8_t NEW_PLAYER_JOINED_TABLE_1 = 8;
+    static const int8_t NEW_PLAYER_JOINED_TABLE_1 = 9;
     //Sent by server when a player left.
-    static const int8_t PLAYER_LEFT_TABLE_1 = 9;
+    static const int8_t PLAYER_LEFT_TABLE_1 = 10;
     //Sent by server when game is started and no initial message is designated for the receiver.
-    static const int8_t GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1 = 10;
+    static const int8_t GAME_STARTED_WITHOUT_INITIAL_MESSAGE_1 = 11;
     //Sent by server when game is started and an initial message is designated for the receiver.
-    static const int8_t GAME_STARTED_WITH_INITIAL_MESSAGE_1 = 11;
+    static const int8_t GAME_STARTED_WITH_INITIAL_MESSAGE_1 = 12;
     //Sent by client when making a move.
-    static const int8_t MAKE_MOVE_1 = 12;
+    static const int8_t MAKE_MOVE_1 = 13;
     //Sent by server after client made a move.
-    static const int8_t MOVE_MADE_1 = 13;
+    static const int8_t MOVE_MADE_1 = 14;
 
 
 
@@ -87,6 +89,7 @@ public:
     {
       case UNKNOWN_MESSAGE_1: return "UNKNOWN_MESSAGE";
       case CREATE_TICTACTOE_TABLE_1: return "CREATE_TICTACTOE_TABLE";
+      case CREATE_THOUSAND_TABLE_1: return "CREATE_THOUSAND_TABLE";
       case TABLE_CREATED_1: return "TABLE_CREATED";
       case SAY_1: return "SAY";
       case SAID_1: return "SAID";
@@ -196,11 +199,50 @@ public:
     return true;
   }
 
+  //Message CREATE_THOUSAND_TABLE:
+
+  //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
+
+  //In protocol version 1 this message has id 2.
+  //Sent by client when creating a new Thousand table.
+
+  class Deserialized_1_CREATE_THOUSAND_TABLE
+  {
+  public:
+  };
+
+  static bool deserialize_1_CREATE_THOUSAND_TABLE(const std::vector<char>&inputMessage)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=2)
+      return false;
+
+    //Deserialize pieces:
+
+    return true;
+  }
+
   //Message TABLE_CREATED:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 2.
+  //In protocol version 1 this message has id 3.
   //Sent by server after table has been created.
 
   static void serialize_1_TABLE_CREATED(
@@ -213,7 +255,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(2,outputMessage);
+    Message::append1Byte(3,outputMessage);
 
     //Serialize id:
     Message::append8Bytes(id,outputMessage);
@@ -223,7 +265,7 @@ public:
 
   //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
-  //In protocol version 1 this message has id 3.
+  //In protocol version 1 this message has id 4.
   //Sent by client when saying something (chat message).
 
   class Deserialized_1_SAY
@@ -253,7 +295,7 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=3)
+    if(messageKind!=4)
       return false;
 
     //Deserialize pieces:
@@ -268,7 +310,7 @@ public:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 4.
+  //In protocol version 1 this message has id 5.
   //Sent by server when someone says something (chat message).
 
   static void serialize_1_SAID(
@@ -284,7 +326,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(4,outputMessage);
+    Message::append1Byte(5,outputMessage);
 
     //Serialize tablePlayerId:
     Message::append1Byte(tablePlayerId,outputMessage);
@@ -296,7 +338,7 @@ public:
 
   //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
-  //In protocol version 1 this message has id 5.
+  //In protocol version 1 this message has id 6.
   //Sent by client when joining some table to play.
 
   class Deserialized_1_JOIN_TABLE_TO_PLAY
@@ -328,7 +370,7 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=5)
+    if(messageKind!=6)
       return false;
 
     //Deserialize pieces:
@@ -346,7 +388,7 @@ public:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 6.
+  //In protocol version 1 this message has id 7.
   //Sent by server to new player who joined a table.
 
   static void serialize_1_YOU_JOINED_TABLE(
@@ -359,7 +401,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(6,outputMessage);
+    Message::append1Byte(7,outputMessage);
 
     //Serialize tablePlayerId:
     Message::append1Byte(tablePlayerId,outputMessage);
@@ -369,7 +411,7 @@ public:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 7.
+  //In protocol version 1 this message has id 8.
   //Sent by server to new player who joined a table.
 
   static void serialize_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(    std::vector<char>&outputMessage)
@@ -379,7 +421,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(7,outputMessage);
+    Message::append1Byte(8,outputMessage);
 
   }
 
@@ -387,7 +429,7 @@ public:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 8.
+  //In protocol version 1 this message has id 9.
   //Sent by server after new player joined a table to already present people.
 
   static void serialize_1_NEW_PLAYER_JOINED_TABLE(
@@ -403,7 +445,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(8,outputMessage);
+    Message::append1Byte(9,outputMessage);
 
     //Serialize screenName:
     Message::appendCString(screenName,outputMessage);
@@ -415,7 +457,7 @@ public:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 9.
+  //In protocol version 1 this message has id 10.
   //Sent by server when a player left.
 
   static void serialize_1_PLAYER_LEFT_TABLE(
@@ -428,7 +470,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(9,outputMessage);
+    Message::append1Byte(10,outputMessage);
 
     //Serialize tablePlayerId:
     Message::append1Byte(tablePlayerId,outputMessage);
@@ -438,7 +480,7 @@ public:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 10.
+  //In protocol version 1 this message has id 11.
   //Sent by server when game is started and no initial message is designated for the receiver.
 
   static void serialize_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(
@@ -451,7 +493,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(10,outputMessage);
+    Message::append1Byte(11,outputMessage);
 
     //Serialize turnGamePlayerToTablePlayerId:
     Message::appendVector(turnGamePlayerToTablePlayerId,outputMessage);
@@ -461,7 +503,7 @@ public:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 11.
+  //In protocol version 1 this message has id 12.
   //Sent by server when game is started and an initial message is designated for the receiver.
 
   static void serialize_1_GAME_STARTED_WITH_INITIAL_MESSAGE(
@@ -477,7 +519,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(11,outputMessage);
+    Message::append1Byte(12,outputMessage);
 
     //Serialize turnGamePlayerToTablePlayerId:
     Message::appendVector(turnGamePlayerToTablePlayerId,outputMessage);
@@ -489,7 +531,7 @@ public:
 
   //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
 
-  //In protocol version 1 this message has id 12.
+  //In protocol version 1 this message has id 13.
   //Sent by client when making a move.
 
   class Deserialized_1_MAKE_MOVE
@@ -519,7 +561,7 @@ public:
     char messageKind=0;
     if(!Message::read1Byte(it,messageEnd,messageKind))
       return false;
-    if(messageKind!=12)
+    if(messageKind!=13)
       return false;
 
     //Deserialize pieces:
@@ -534,7 +576,7 @@ public:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
 
-  //In protocol version 1 this message has id 13.
+  //In protocol version 1 this message has id 14.
   //Sent by server after client made a move.
 
   static void serialize_1_MOVE_MADE(
@@ -547,7 +589,7 @@ public:
     //Let the receiver know which protocol version this is:
     Message::append1Byte(1,outputMessage);
     //Let the receiver know what kind of message this is:
-    Message::append1Byte(13,outputMessage);
+    Message::append1Byte(14,outputMessage);
 
     //Serialize gameMove:
     Message::appendBinary(gameMove,outputMessage);
@@ -572,6 +614,9 @@ public:
 
   //Handlers for various message types:
   virtual bool handle_1_CREATE_TICTACTOE_TABLE(const SessionId sessionID,
+                  std::list<SessionAddressedMessage>& toBeSent,
+                  TimeMicro& timeout) throw() =0;
+  virtual bool handle_1_CREATE_THOUSAND_TABLE(const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout) throw() =0;
   virtual bool handle_1_SAY(const SessionId sessionID,

@@ -48,8 +48,9 @@ public class JTicTacToeBoard extends JBoard{
     private final JMoveButton[][] buttons;
 
     public JTicTacToeBoard(final Table table,
-                           final MoveListener moveListener){
-        super((byte)2,table,moveListener);
+                           final MoveListener moveListener,
+                           final JTabbedPane jTabbedPane){
+        super((byte)2,table,moveListener,jTabbedPane);
 
         this.setLayout(new BorderLayout());
         

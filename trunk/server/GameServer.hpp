@@ -73,6 +73,10 @@ private:
                                        std::list<SessionAddressedMessage>& toBeSent,
                                        TimeMicro& timeout) throw();
 
+  bool handle_1_CREATE_THOUSAND_TABLE(const SessionId sessionID,
+                                      std::list<SessionAddressedMessage>& toBeSent,
+                                      TimeMicro& timeout) throw();
+
   bool handle_1_SAY(const SessionId sessionID,
                     std::list<SessionAddressedMessage>& toBeSent,
                     TimeMicro& timeout,

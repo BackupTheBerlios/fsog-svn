@@ -67,15 +67,25 @@ public class Table {
     }
     */
 
-    /*
-    public synchronized TablePlayer getTablePlayerCopy(final byte tablePlayerId){
-        final TablePlayer tablePlayer
-            = this.tablePlayerIdToTablePlayer.get(tablePlayerId);
-        if(tablePlayer == null)
-            return null;
-        return tablePlayer.clone();
-    }
+    /**
+       @param which 0 -- myself, 1 -- first opponent, etc...
     */
+    public TablePlayer getOpponent(final int which){
+        final byte opponentTurnGamePlayer
+            = (byte)((myTurnGamePlayer+which)
+                     %turnGamePlayerToTablePlayerId.size());
+        
+        return this.tablePlayerIdToTablePlayer.get
+            (turnGamePlayerToTablePlayerId.get(opponentTurnGamePlayer));
+    }
+
+    public TablePlayer getFirstOpponent(){
+        return this.getOpponent(1);
+    }
+
+    public TablePlayer getSecondOpponent(){
+        return this.getOpponent(2);
+    }
 
     public void addMe(final Byte tablePlayerId,
                       final TablePlayer me){

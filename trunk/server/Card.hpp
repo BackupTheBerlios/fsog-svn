@@ -48,55 +48,30 @@ public:
   //Constants:
   //Used in card games. You can encode a card on one byte by bitwise disjunction of value and color. Use VALUE_MASK and SUIT_MASK to decode. The guarantee is that 0<(value|suit)<=127, so it can be used for lookup in an array. Those values are also used in Set55.
   static const int8_t VALUE_MASK = 0x0F;
-  //
   static const int8_t ACE = 0x00;
-  //
   static const int8_t KING = 0x01;
-  //
   static const int8_t QUEEN = 0x02;
-  //
   static const int8_t JACK = 0x03;
-  //
   static const int8_t TEN = 0x04;
-  //
   static const int8_t NINE = 0x05;
-  //
   static const int8_t EIGHT = 0x06;
-  //
   static const int8_t SEVEN = 0x07;
-  //
   static const int8_t SIX = 0x08;
-  //
   static const int8_t FIVE = 0x09;
-  //
   static const int8_t FOUR = 0x0A;
-  //
   static const int8_t THREE = 0x0B;
-  //
   static const int8_t TWO = 0x0C;
-  //
   static const int8_t JOKER = 0x0D;
-  //
   static const int8_t UNKNOWN_VALUE = 0x0E;
-  //
   static const int8_t SUIT_MASK = 0x70;
-  //
   static const int8_t HEART = 0x00;
-  //
   static const int8_t DIAMOND = 0x10;
-  //
   static const int8_t CLUB = 0x20;
-  //
   static const int8_t SPADE = 0x30;
-  //
   static const int8_t RED = 0x40;
-  //
   static const int8_t BLACK = 0x50;
-  //
   static const int8_t BLUE = 0x60;
-  //
   static const int8_t UNKNOWN_SUIT = 0x70;
-  //
   static const int8_t UNKNOWN = 0x7E;
 
 
