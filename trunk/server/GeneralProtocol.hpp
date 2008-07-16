@@ -306,6 +306,37 @@ public:
     return true;
   }
 
+  static bool deserialize_1_SAY(const std::vector<char>&inputMessage,
+        std::vector<char>& text_UTF8)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=4)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize text_UTF8:
+    if(!Message::readBinary(it,messageEnd,text_UTF8))
+      return false;
+    return true;
+  }
+
   //Message SAID:
 
   //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
@@ -380,6 +411,41 @@ public:
       return false;
     //Deserialize screenName:
     if(!Message::readCString(it,messageEnd,output.screenName))
+      return false;
+    return true;
+  }
+
+  static bool deserialize_1_JOIN_TABLE_TO_PLAY(const std::vector<char>&inputMessage,
+        int64_t& tableId,
+        std::string& screenName)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=6)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize tableId:
+    if(!Message::read8Bytes(it,messageEnd,tableId))
+      return false;
+    //Deserialize screenName:
+    if(!Message::readCString(it,messageEnd,screenName))
       return false;
     return true;
   }
@@ -568,6 +634,37 @@ public:
 
     //Deserialize gameMove:
     if(!Message::readBinary(it,messageEnd,output.gameMove))
+      return false;
+    return true;
+  }
+
+  static bool deserialize_1_MAKE_MOVE(const std::vector<char>&inputMessage,
+        std::vector<char>& gameMove)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=13)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize gameMove:
+    if(!Message::readBinary(it,messageEnd,gameMove))
       return false;
     return true;
   }

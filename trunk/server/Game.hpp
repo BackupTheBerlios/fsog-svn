@@ -62,7 +62,14 @@ public:
 
   void setFirstPlayer() throw() {turn = 0;}
 
-  void setNextPlayer() throw() {turn=(turn+1)%numberOfPlayers;}
+  Player getNextPlayer() throw() {return (turn+1)%numberOfPlayers;}
+  void setNextPlayer(const Player increment = 1) throw()
+  {turn=(turn+increment)%numberOfPlayers;}
+
+  //Sends message to all people except current player.
+  void toOthers(const std::vector<char>& message,
+                std::list<PlayerAddressedMessage>& moveMessages) const throw();
+
 
   TurnGame(const Player numberOfPlayers) throw()
     :numberOfPlayers(numberOfPlayers)

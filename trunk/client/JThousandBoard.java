@@ -113,9 +113,50 @@ public class JThousandBoard
         }
     }
 
+    private void bid(final byte bid10){
+        Output.d("I bid "+(int)bid10);
+    }
+
+    private static class JRunnableButton extends JButton implements ActionListener{
+        private final Runnable runnable;
+
+        public JRunnableButton(final String label,
+                               final Runnable runnable){
+            super(label);
+            this.runnable = runnable;
+            this.addActionListener(this);
+        }
+
+        public void actionPerformed(ActionEvent e){
+            this.runnable.run();
+        }
+    }
+
     private void showBidding(){
-        final JPanel panel = new JPanel();
-        this.jTabbedPane.addTab("Bidding", null, panel,
+        final byte minBid10 = 11;
+        final byte maxBid10 = 40;
+        final JPanel biddingPanel = new JPanel();
+        final JThousandBoard me = this;
+        biddingPanel.add(new JRunnableButton
+                         ("Pass",
+                          new Runnable(){
+                              public void run(){
+                                  me.bid((byte)0);
+                                  me.jTabbedPane.remove(biddingPanel);
+                              }
+                          }));
+        for(byte i=minBid10; i<=maxBid10; i++){
+            final byte bid10 = i;
+            biddingPanel.add(new JRunnableButton
+                             (""+10*((int)i),
+                              new Runnable(){
+                                  public void run(){
+                                      me.bid(bid10);
+                                      me.jTabbedPane.remove(biddingPanel);
+                                  }
+                              }));
+        }
+        this.jTabbedPane.addTab("Bidding", null, biddingPanel,
                                 "Bidding in the game of Thousand");
         final int index = this.jTabbedPane.getTabCount()-1;
         this.jTabbedPane.setMnemonicAt(index, KeyEvent.VK_B);

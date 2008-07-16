@@ -44,7 +44,7 @@ public class CardProtocolDefinition{
         final ProtocolDefinition protocol
             = new ProtocolDefinition("Card",
                                      protocolVersion,
-                                     "Card",
+                                     "Card123",
                                      "../server/Card.hpp",
                                      null,
                                      "../client/Card.java");

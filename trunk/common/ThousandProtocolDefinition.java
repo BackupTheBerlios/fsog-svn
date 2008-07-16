@@ -49,6 +49,20 @@ public class ThousandProtocolDefinition{
                                      "../server/ThousandProtocol.cpp",
                                      "../client/ThousandProtocol.java");
 
+        protocol.defineConstants
+            (new ConstantDefinition(null,PieceType.INT8,"ACE_SHIFT","5"),
+             new ConstantDefinition(null,PieceType.INT8,"TEN_SHIFT","4"),
+             new ConstantDefinition(null,PieceType.INT8,"KING_SHIFT","3"),
+             new ConstantDefinition(null,PieceType.INT8,"QUEEN_SHIFT","2"),
+             new ConstantDefinition(null,PieceType.INT8,"JACK_SHIFT","1"),
+             new ConstantDefinition(null,PieceType.INT8,"NINE_SHIFT","0"),
+             new ConstantDefinition(null,PieceType.INT8,"HEART_SHIFT","18"),
+             new ConstantDefinition(null,PieceType.INT8,"DIAMOND_SHIFT","12"),
+             new ConstantDefinition(null,PieceType.INT8,"CLUB_SHIFT","6"),
+             new ConstantDefinition(null,PieceType.INT8,"SPADE_SHIFT","0"),
+             new ConstantDefinition(null,PieceType.INT8,"NO_TRUMP_SHIFT","24")
+             );
+
         /*
         protocol.defineFlagSet
             ("ThousandFlags",
@@ -98,12 +112,14 @@ public class ThousandProtocolDefinition{
 
         protocol.defineMessage
             ("BID",
-             "The message sent by client when placing a bid.",
-             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER),
+             "The message sent by client when placing a bid."
+             +" Also sent by server when bid was made.",
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER,
+                        Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT8,"bid10",
                                  "This is actually 10% of the bid."
                                  +" Multiply by 10 to get the real value."
-                                 +" A bid of 0 is 'pass'."
+                                 +" A bid10 of 0 is 'pass'."
                                  +" On the last 'pass', this message is not sent."
                                  +" Instead, BID_END_... is sent."));
 
@@ -118,9 +134,7 @@ public class ThousandProtocolDefinition{
              "Message sent by the server to let players know that"
              +" bidding is over. 'Must' is shown.",
              EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(CARD,"mustCard0","First must card."),
-             new PieceDefinition(CARD,"mustCard1","Second must card."),
-             new PieceDefinition(CARD,"mustCard2","Third must card."));
+             new PieceDefinition(CARD_SET_24,"must","Set of cards."));
                 
         protocol.write();
     }

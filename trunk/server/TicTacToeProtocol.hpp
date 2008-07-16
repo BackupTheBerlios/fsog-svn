@@ -192,6 +192,41 @@ public:
     return true;
   }
 
+  static bool deserialize_1_TIC_TAC_TOE_MOVE(const std::vector<char>&inputMessage,
+        int8_t& row,
+        int8_t& column)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=1)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize row:
+    if(!Message::read1Byte(it,messageEnd,row))
+      return false;
+    //Deserialize column:
+    if(!Message::read1Byte(it,messageEnd,column))
+      return false;
+    return true;
+  }
+
 };
 
 class TicTacToeHandler

@@ -40,7 +40,7 @@
 #include "Message.hpp"
 #include "SessionAddressedMessage.hpp"
 
-class Card
+class Card123
 {
 public:
 

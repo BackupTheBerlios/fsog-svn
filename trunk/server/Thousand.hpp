@@ -34,24 +34,57 @@
 */
 
 
-#include <algorithm>
+#pragma once
+
+#include <stdint.h>
+#include <vector>
 #include "Game.hpp"
+#include "ThousandProtocol.hpp"
+#include "CardUtilities.hpp"
 
-void TurnGame::toOthers(const std::vector<char>& message,
-                        std::list<PlayerAddressedMessage>& moveMessages)
-  const throw()
-{
-  for(Player player = 0; player < this->numberOfPlayers; player++)
-    if(player!=turn){
-      moveMessages.push_back(PlayerAddressedMessage(player));
-      moveMessages.back().message = message;
-    }
-}
+enum Stage
+  {
+    BIDDING,
+    SELECTING_FIRST,
+    SELECTING_SECOND,
+    PLAYING_FIRST,
+    PLAYING_SECOND,
+    PLAYING_THIRD
+  };
 
-/*
-void Game::shuffleNicks() throw()
+class Thousand : public TurnGame
 {
-  std::random_shuffle(this->nicks.begin(),
-                      this->nicks.end());
-}
-*/
+private:
+
+  Stage stage;
+  static std::vector<int8_t> deck;
+
+  CardSet24 must;
+  std::vector<CardSet24> cards;
+
+  std::vector<int8_t> bids10;
+  int8_t minimumNextBid10;
+
+  
+
+  void deal() throw();
+  int8_t maxBid10() const throw();
+
+public:
+
+  Thousand(const Player numberOfPlayers) throw()
+    :TurnGame(numberOfPlayers),
+     stage(BIDDING),
+     must(),
+     cards(3)
+  {}
+
+  ~Thousand() throw() {}
+
+  bool initialize(std::list<PlayerAddressedMessage>& initialMessages) throw();
+
+  MoveResult move(const std::vector<char>& move,
+                  std::list<PlayerAddressedMessage>& moveMessages,
+                  std::list<std::set<Player> >& endResult) throw();
+
+};

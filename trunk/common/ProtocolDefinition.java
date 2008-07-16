@@ -652,7 +652,9 @@ public class ProtocolDefinition{
         //Java deserializer takes form of constructor and
         //throws exception if deserialization failed for
         //clarity reasons.
-        if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
+        if(messageDefinition.create.contains(Create.CPP_DESERIALIZER)){
+
+            //Deserialize into one object:
             hppWrite("  static bool deserialize_"
                      +this.protocolVersion+"_"
                      +messageDefinition.name+"(const std::vector<char>&inputMessage"
@@ -685,7 +687,75 @@ public class ProtocolDefinition{
                      +"    //Deserialize pieces:\n\n"
                      );
 
-        if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER))
+            for(PieceDefinition pieceDefinition
+                    : messageDefinition.pieceDefinitions){
+                hppWrite("    //Deserialize "+pieceDefinition.name+":\n"
+                         +"    if(!Message::"
+                         +pieceDefinition.type.getReader(this.flagSetDefinitions)
+                         +"(it,messageEnd,output."
+                         +pieceDefinition.name+"))\n"
+                         +"      return false;\n");
+            }
+
+            hppWrite("    return true;\n"
+                     +"  }\n\n");
+            //End deserialize into single object.
+
+            if(messageDefinition.pieceDefinitions.length>0){
+                //Deserialize into multiple objects:
+                hppWrite("  static bool deserialize_"
+                         +this.protocolVersion+"_"
+                         +messageDefinition.name
+                         +"(const std::vector<char>&inputMessage");
+
+                for(PieceDefinition pieceDefinition
+                        :messageDefinition.pieceDefinitions)
+                    hppWrite(",\n        "
+                             +pieceDefinition.type.toCppType(this.flagSetDefinitions)
+                             +"& "+pieceDefinition.name);
+
+                hppWrite
+                    (")\n"
+                     +"  throw()\n"
+                     +"  {\n"
+                     +"    std::vector<char>::const_iterator it\n"
+                     +"     = inputMessage.begin();\n"
+                     +"    const std::vector<char>::const_iterator messageEnd\n"
+                     +"     = inputMessage.end();\n"
+                     +"    \n"
+                     +"    //Check protocol version:\n"
+                     +"    char protocolVersion=0;\n"
+                     +"    if(!Message::read1Byte(it,messageEnd,protocolVersion))\n"
+                     +"      return false;\n"
+                     +"    if(protocolVersion!="+protocolVersion+")\n"
+                     +"      return false;\n"
+                     +"    \n"
+                     +"    //Check message kind:\n"
+                     +"    char messageKind=0;\n"
+                     +"    if(!Message::read1Byte(it,messageEnd,messageKind))\n"
+                     +"      return false;\n"
+                     +"    if(messageKind!="+messageDefinition.identifier+")\n"
+                     +"      return false;\n\n"
+                     +"    //Deserialize pieces:\n\n"
+                     );
+                
+                for(PieceDefinition pieceDefinition
+                        : messageDefinition.pieceDefinitions){
+                    hppWrite("    //Deserialize "+pieceDefinition.name+":\n"
+                             +"    if(!Message::"
+                             +pieceDefinition.type.getReader(this.flagSetDefinitions)
+                             +"(it,messageEnd,"
+                             +pieceDefinition.name+"))\n"
+                             +"      return false;\n");
+                }
+
+                hppWrite("    return true;\n"
+                         +"  }\n\n");
+                //End deserialize into multiple objects.
+            }
+        }
+
+        if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER)){
             javaWrite("    public Deserialized_"
                       +this.protocolVersion+"_"
                       +messageDefinition.name+"(final Vector<Byte> inputMessage)\n"
@@ -701,37 +771,21 @@ public class ProtocolDefinition{
                       +messageDefinition.identifier+")\n"
                       +"          throw new MessageDeserializationException();\n\n");
         
-        for(int i=0;i<messageDefinition.pieceDefinitions.length;i++){
-            
-            final PieceDefinition pieceDefinition
-                = messageDefinition.pieceDefinitions[i];
-
-            if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
-                hppWrite("    //Deserialize "+pieceDefinition.name+":\n"
-                         +"    if(!Message::"
-                         +pieceDefinition.type.getReader(this.flagSetDefinitions)
-                         +"(it,messageEnd,output."
-                         +pieceDefinition.name+"))\n"
-                         +"      return false;\n");
-            if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER))
+            for(PieceDefinition pieceDefinition
+                    : messageDefinition.pieceDefinitions){
                 javaWrite("    //Deserialize "+pieceDefinition.name+":\n"
                           +"      this."+pieceDefinition.name
                           +" = Message."
                           +pieceDefinition.type.getReader(this.flagSetDefinitions)
                           +"(iterator);\n");
-        }
+            }
         
-        if(messageDefinition.create.contains(Create.CPP_DESERIALIZER))
-            hppWrite("    return true;\n"
-                     +"  }\n\n");
-
-        if(messageDefinition.create.contains(Create.JAVA_DESERIALIZER))
             javaWrite("      }catch(NoSuchElementException e){\n"
                       +"        throw new MessageDeserializationException(e);\n"
                       +"      }\n"
                       +"    }\n"
                       +"  }\n\n");
-
+        }
         //End of deserialization.
     }
 
