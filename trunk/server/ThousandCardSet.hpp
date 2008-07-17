@@ -34,6 +34,7 @@
 */
 
 #include "Card.hpp"
+#include "ThousandProtocol.hpp"
 
 /**
    Space-efficient representation of card set for 24-card deck in
@@ -50,13 +51,17 @@
  */
 class ThousandCardSet
 {
-public:
-
   int32_t value;
+public:
 
   ThousandCardSet()
     :value(0)
   {
+  }
+
+  const int32_t& getValue() const throw()
+  {
+    return value;
   }
 
   void setEmpty() throw()
@@ -69,13 +74,26 @@ public:
     value|=(1<<shift);
   }
 
+  void addAll(const ThousandCardSet& other) throw()
+  {
+    value|=other.value;
+  }
+
+  bool containsShift(const int8_t shift) const throw()
+  {
+    return (value & (1<<shift));
+  }
+
+  /*
   bool containsCard(const char card) const throw()
   {
     return (value & (1<<shift(card)))!=0;
   }
+  */
 
   //For each card assigns what shift apply to 1 to represents presence
   //of that card. The shift is between 0 and 23.
+  /*
   static int8_t shift(const char card) throw()
   {
     const int8_t value = card & Card::VALUE_MASK;
@@ -99,11 +117,17 @@ public:
       }
     return shift;
   }
+  */
+
+  void removeShift(const int8_t shift) throw()
+  {
+    value &= (~(1<<shift));
+  }
 
   /** Remove a shift from this set. In the game of thousand, you have
       to put a higher card of the same color, if you have it.
   */
-  bool removefirstShift(const int8_t shift,
+  bool removeFirstShift(const int8_t shift,
                         int8_t& trumpShift) throw()
   {
     //Did the player have the card?
@@ -111,8 +135,10 @@ public:
       {
         value &= (~(1<<shift));
         //Shall we set new trump?
-        if((shift%6)==ThousandProtocol::QUEEN_SHIFT
-           && ((1<<(shift+1)) & value))
+        if(((shift%6)==ThousandProtocol::QUEEN_SHIFT
+            && ((1<<(shift+1)) & value))
+           ||((shift%6)==ThousandProtocol::KING_SHIFT
+              && ((1<<(shift-1)) & value)))
           trumpShift = 6*(shift/6);
         return true;
       }
@@ -131,8 +157,8 @@ public:
     //Remove the card:
     value &= (~(1<<secondShift));
     
-    const int8_t firstValueShift = first%6;
-    const int8_t firstSuitShift = 6*(first/6);
+    const int8_t firstValueShift = firstShift%6;
+    const int8_t firstSuitShift = 6*(firstShift/6);
     //const int8_t secondSuitShift = 6*(shift/6);
     if((firstShift/6)==(secondShift/6))
       {//Same suit
@@ -142,16 +168,18 @@ public:
         else
           {//Lower card was played. It's a valid move, if there was no
            //higher.
-            // 000100 000000 - Queen of clubs played first (shift 6+2)
-            // 000000 111111 - 0x3f
-            // 000000 000111 - 0x3f >> 2+1
-            // 111000 000000 - All higher in same suit
-            return value
-              & ((0x3F>>(firstValueShift+1))<<(firstShift+1));
+           // 000100 000000 - Queen of clubs played first (shift 6+2)
+           // 000000 111111 - 0x3f
+           // 000000 000111 - 0x3f >> 2+1
+           // 111000 000000 - All higher in same suit
+            return !(value & ((0x3F>>(firstValueShift+1))<<(firstShift+1)));
           }
       }
     else
       {//Different suit was played.
+        //If the player has cards of first card suit, move is invalid.
+        if(value & (0x3F<<firstSuitShift))
+          return false;
         //Was trump played?
         if(secondShift & (0x3F<<trumpShift))
           {//Trump on non--trump was played, so it's OK.

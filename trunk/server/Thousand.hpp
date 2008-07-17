@@ -40,13 +40,14 @@
 #include <vector>
 #include "Game.hpp"
 #include "ThousandProtocol.hpp"
-#include "CardUtilities.hpp"
+#include "ThousandCardSet.hpp"
 
 enum Stage
   {
     BIDDING,
     SELECTING_FIRST,
     SELECTING_SECOND,
+    CONTRACTING,
     PLAYING_FIRST,
     PLAYING_SECOND,
     PLAYING_THIRD
@@ -59,8 +60,8 @@ private:
   Stage stage;
   static std::vector<int8_t> deck;
 
-  CardSet24 must;
-  std::vector<CardSet24> cards;
+  ThousandCardSet must;
+  std::vector<ThousandCardSet> cards;
 
   std::vector<int8_t> bids10;
   int8_t minimumNextBid10;

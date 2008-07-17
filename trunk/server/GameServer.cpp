@@ -297,7 +297,8 @@ bool GameServer::handle_1_JOIN_TABLE_TO_PLAY
           it != initialMessages.end();
           it++)
         {
-          if(it->player >= table.turnGamePlayerToTablePlayerPointer.size()
+          if(static_cast<std::vector<TablePlayer*>::size_type>(it->player)
+             >= table.turnGamePlayerToTablePlayerPointer.size()
              || it->player < 0)
             {
               std::cout<<"TurnGame wanted to send message to player"
@@ -439,7 +440,8 @@ bool GameServer::handle_1_MAKE_MOVE
       it != moveMessages.end();
       it++)
     {
-      if(it->player >= table.turnGamePlayerToTablePlayerPointer.size()
+      if(static_cast<std::vector<TablePlayer*>::size_type>(it->player)
+         >= table.turnGamePlayerToTablePlayerPointer.size()
          || it->player < 0)
         {
           std::cout<<"TurnGame wanted to send message to player"

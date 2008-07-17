@@ -37,12 +37,24 @@
 #include <algorithm>
 #include "Game.hpp"
 
-void TurnGame::toOthers(const std::vector<char>& message,
-                        std::list<PlayerAddressedMessage>& moveMessages)
+void TurnGame::sendToOthers(const std::vector<char>& message,
+                            std::list<PlayerAddressedMessage>& moveMessages)
   const throw()
 {
   for(Player player = 0; player < this->numberOfPlayers; player++)
-    if(player!=turn){
+    if(player!=turn)
+      {
+        moveMessages.push_back(PlayerAddressedMessage(player));
+        moveMessages.back().message = message;
+      }
+}
+
+void TurnGame::sendToAll(const std::vector<char>& message,
+                         std::list<PlayerAddressedMessage>& moveMessages)
+  const throw()
+{
+  for(Player player = 0; player < this->numberOfPlayers; player++)
+    {
       moveMessages.push_back(PlayerAddressedMessage(player));
       moveMessages.back().message = message;
     }
