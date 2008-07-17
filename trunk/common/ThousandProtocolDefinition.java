@@ -98,7 +98,7 @@ public class ThousandProtocolDefinition{
         */
 
         //One card is encoded as 8-bit integer:
-        final PieceType CARD = PieceType.INT8;
+        final PieceType SHIFT = PieceType.INT8;
 
         //We'll send card sets in 24-card deck using 3 bytes:
         final PieceType CARD_SET_24 = PieceType.INT24;
@@ -136,6 +136,34 @@ public class ThousandProtocolDefinition{
              EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(CARD_SET_24,"must","Set of cards."));
                 
+        protocol.defineMessage
+            ("SELECT",
+             "Message sent by the client when selecting a card."
+             +", which is given to opponent. The same message is"
+             +" sent to opponent from the server.",
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER,
+                        Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
+             new PieceDefinition(SHIFT,"shift","Shift of selected card."));
+
+        protocol.defineMessage
+            ("SELECT_HIDDEN",
+             "Message sent by the server when selecting a card."
+             +", which is given to some opponent. This message is"
+             +" sent to player who should not see the card.",
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER,
+                        Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER));
+
+        protocol.defineMessage
+            ("CONTRACT",
+             "The message sent by client when decided on how much to play."
+             +" Also sent by server when contract was made.",
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER,
+                        Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
+             new PieceDefinition(PieceType.INT8,"contract10",
+                                 "This is actually 10% of the contract."
+                                 +" Multiply by 10 to get the real value."));
+
+
         protocol.write();
     }
 }
