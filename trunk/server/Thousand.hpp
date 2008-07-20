@@ -58,18 +58,29 @@ class Thousand : public TurnGame
 private:
 
   Stage stage;
-  static std::vector<int8_t> deck;
+
+  Player startsBidding;
+
+  Player biddingWinner;
 
   ThousandCardSet must;
   std::vector<ThousandCardSet> cards;
 
-  std::vector<int8_t> bids10;
-  int8_t minimumNextBid10;
+  std::vector<int_fast8_t> bids10;
+  int_fast8_t minimumNextBid10;
 
+  int_fast8_t contract10;
   
+  int_fast8_t trumpShift;
+  int_fast8_t firstShift;
+  int_fast8_t secondShift;
+  int_fast8_t thirdShift;
+
+  std::vector<int_fast16_t> smallPoints;
+  std::vector<int_fast32_t> bigPoints10;
 
   void deal() throw();
-  int8_t maxBid10() const throw();
+  int_fast8_t maxBid10() const throw();
 
 public:
 

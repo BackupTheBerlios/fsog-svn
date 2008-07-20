@@ -33,7 +33,6 @@
   Denmark
 */
 
-#include "Card.hpp"
 #include "ThousandProtocol.hpp"
 
 /**
@@ -69,7 +68,12 @@ public:
     value = 0;
   }
 
-  void addShift(const int8_t shift) throw()
+  bool isEmpty() const throw()
+  {
+    return value == 0;
+  }
+
+  void addShift(const int_fast8_t shift) throw()
   {
     value|=(1<<shift);
   }
@@ -79,7 +83,7 @@ public:
     value|=other.value;
   }
 
-  bool containsShift(const int8_t shift) const throw()
+  bool containsShift(const int_fast8_t shift) const throw()
   {
     return (value & (1<<shift));
   }
@@ -94,11 +98,11 @@ public:
   //For each card assigns what shift apply to 1 to represents presence
   //of that card. The shift is between 0 and 23.
   /*
-  static int8_t shift(const char card) throw()
+  static int_fast8_t shift(const char card) throw()
   {
-    const int8_t value = card & Card::VALUE_MASK;
-    const int8_t suit = card & Card::SUIT_MASK;
-    int8_t shift = 0;
+    const int_fast8_t value = card & Card::VALUE_MASK;
+    const int_fast8_t suit = card & Card::SUIT_MASK;
+    int_fast8_t shift = 0;
     switch(suit)
       {
       case Card::HEART: shift+=ThousandProtocol::HEART_SHIFT; break;
@@ -119,7 +123,7 @@ public:
   }
   */
 
-  void removeShift(const int8_t shift) throw()
+  void removeShift(const int_fast8_t shift) throw()
   {
     value &= (~(1<<shift));
   }
@@ -127,69 +131,29 @@ public:
   /** Remove a shift from this set. In the game of thousand, you have
       to put a higher card of the same color, if you have it.
   */
-  bool removeFirstShift(const int8_t shift,
-                        int8_t& trumpShift) throw()
-  {
-    //Did the player have the card?
-    if(value & (1<<shift))
-      {
-        value &= (~(1<<shift));
-        //Shall we set new trump?
-        if(((shift%6)==ThousandProtocol::QUEEN_SHIFT
-            && ((1<<(shift+1)) & value))
-           ||((shift%6)==ThousandProtocol::KING_SHIFT
-              && ((1<<(shift-1)) & value)))
-          trumpShift = 6*(shift/6);
-        return true;
-      }
-    else
-      return false;
-  }
+  bool removeFirstShift(const int_fast8_t shift,
+                        int_fast8_t& trumpShift,
+                        int_fast16_t& firstSmallPoints) throw();
 
-  bool removeSecondShift(const int8_t firstShift,
-                         const int8_t secondShift,
-                         const int8_t trumpShift) throw()
-  {
-    //If there's no such card, return false.
-    if(!(value & (1<<secondShift)))
-      return false;
+  /**
+     Remove a card from this set. Checks validity of the move.
 
-    //Remove the card:
-    value &= (~(1<<secondShift));
-    
-    const int8_t firstValueShift = firstShift%6;
-    const int8_t firstSuitShift = 6*(firstShift/6);
-    //const int8_t secondSuitShift = 6*(shift/6);
-    if((firstShift/6)==(secondShift/6))
-      {//Same suit
-        //If higher card was played, it's a valid move.
-        if(secondShift>firstShift)
-          return true;
-        else
-          {//Lower card was played. It's a valid move, if there was no
-           //higher.
-           // 000100 000000 - Queen of clubs played first (shift 6+2)
-           // 000000 111111 - 0x3f
-           // 000000 000111 - 0x3f >> 2+1
-           // 111000 000000 - All higher in same suit
-            return !(value & ((0x3F>>(firstValueShift+1))<<(firstShift+1)));
-          }
-      }
-    else
-      {//Different suit was played.
-        //If the player has cards of first card suit, move is invalid.
-        if(value & (0x3F<<firstSuitShift))
-          return false;
-        //Was trump played?
-        if(secondShift & (0x3F<<trumpShift))
-          {//Trump on non--trump was played, so it's OK.
-            return true;
-          }
-        else
-          {//Non--trump played. It's OK if we don't have a trump.
-            return (value & (0x3F<<trumpShift))==0;
-          }
-      }
-  }
+     @param firstShift -- shift of the card that was played as the first card.
 
+     @param secondShift shift of the card played now. This card is
+     removed from this set by this function.
+
+     @param trumpShift specifies what's the current trump suit.
+  */
+  bool removeSecondShift(const int_fast8_t firstShift,
+                         const int_fast8_t secondShift,
+                         const int_fast8_t trumpShift) throw();
+
+  bool removeThirdShift(const int_fast8_t firstShift,
+                        const int_fast8_t secondShift,
+                        const int_fast8_t thirdShift,
+                        const int_fast8_t trumpShift,
+                        int_fast16_t&firstSmallPoints,
+                        int_fast16_t&secondSmallPoints,
+                        int_fast16_t&thirdSmallPoints) throw();
 };

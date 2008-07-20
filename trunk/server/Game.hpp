@@ -67,6 +67,9 @@ public:
   void setNextPlayer(const Player increment = 1) throw()
   {turn=(turn+increment)%numberOfPlayers;}
 
+  Player getPreviousPlayer(const Player decrement = 1) throw()
+  {return (turn+numberOfPlayers-decrement)%numberOfPlayers;}
+
   //Sends message to all people except current player.
   void sendToOthers(const std::vector<char>& message,
                     std::list<PlayerAddressedMessage>& moveMessages)
