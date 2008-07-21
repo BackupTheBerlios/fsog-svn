@@ -114,7 +114,11 @@ public class JThousandBoard
     }
 
     private void bid(final byte bid10){
-        Output.d("I bid "+(int)bid10);
+        final Vector<Byte> move
+            = ThousandProtocol.serialize_1_BID(bid10);
+
+        this.moveListener.handle_1_MOVE_MADE(move);
+        Sender.send(GeneralProtocol.serialize_1_MAKE_MOVE(move));
     }
 
     private static class JRunnableButton extends JButton implements ActionListener{

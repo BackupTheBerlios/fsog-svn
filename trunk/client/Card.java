@@ -32,7 +32,7 @@
 
 import java.util.*;
 
-public class Card123{
+public class Card{
 
 
   //Constants:

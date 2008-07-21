@@ -1009,9 +1009,9 @@ public abstract class JCardBoard
         }
     }
 
-    //Look at S class to see how we represent svg.
+    //Look at Shapes class to see how we represent svg.
     private GeneralPath svg2path(final float[] svg){
-
+    
         float x=0F;//current location
         float y=0F;
         float x1=0F;//first control point
@@ -1027,11 +1027,11 @@ public abstract class JCardBoard
             final float command
                 =svg[i++];
 
-            if(command==S.M){
+            if(command==Shapes.M){
                 x=svg[i++];
                 y=svg[i++];
                 path.moveTo(x,y);
-            }else if(command==S.c){
+            }else if(command==Shapes.c){
 
                 x1=x+svg[i++];
                 y1=y+svg[i++];
@@ -1042,7 +1042,7 @@ public abstract class JCardBoard
                 path.curveTo(x1,y1,
                              x2,y2,
                              x,y);
-            }else if(command==S.s){
+            }else if(command==Shapes.s){
                 x1=x+(x-x2);
                 y1=y+(y-y2);
 		
@@ -1054,7 +1054,7 @@ public abstract class JCardBoard
                 path.curveTo(x1,y1,
                              x2,y2,
                              x,y);
-            }else if(command==S.z){
+            }else if(command==Shapes.z){
                 path.closePath();
             }else{
                 //System.err.println("Invalid: "+command);
