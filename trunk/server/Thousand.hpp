@@ -57,6 +57,8 @@ class Thousand : public TurnGame
 {
 private:
 
+  static int_fast8_t deck[24];
+
   Stage stage;
 
   Player startsBidding;

@@ -35,10 +35,15 @@
 
 #include "ThousandProtocol.hpp"
 
+/** WARNING!!!!!!!!!!!!  This class is rewritten to Java, to be used
+    on the client side. If you change anything here, you need to
+    modify the Java version as well.
+*/
+
 /**
-   Space-efficient representation of card set for 24-card deck in
+   Space-efficient representation of card set for 24--card deck in
    game of Thousand. Each card's presence is specified by one bit in
-   a 32-bit int value.
+   a 32--bit int value.
    
    The bits are used as follows:
    [31,24]:unused [23,18]:HEARTS [17,12]:DIAMONDS [11,6]:CLUBS [5,0]:SPADES
@@ -50,43 +55,34 @@
  */
 class ThousandCardSet
 {
-  int32_t value;
+  static int_fast8_t points[24];
+  static int_fast8_t marriagePoints[24];
+
+  static inline int_fast8_t valueShift(const int_fast8_t shift) throw();
+  static inline int_fast8_t suitShift(const int_fast8_t shift) throw();
+  inline bool hasAnyOf(const int_fast32_t set) const throw();
 public:
 
-  ThousandCardSet()
-    :value(0)
-  {
-  }
+  //Representation of this set as a 32--bit integer. Can be
+  //used for serializing.
+  int_fast32_t value;
 
-  const int32_t& getValue() const throw()
-  {
-    return value;
-  }
+  ThousandCardSet() throw();
 
-  void setEmpty() throw()
-  {
-    value = 0;
-  }
+  //Removes all cards from this set, thus leaving it empty.
+  void setEmpty() throw();
 
-  bool isEmpty() const throw()
-  {
-    return value == 0;
-  }
+  //Used to check whether any cards are present in this set.
+  bool isEmpty() const throw();
 
-  void addShift(const int_fast8_t shift) throw()
-  {
-    value|=(1<<shift);
-  }
+  //Adds a card to this set. Card is specified by its shift value.
+  void addShift(const int_fast8_t shift) throw();
 
-  void addAll(const ThousandCardSet& other) throw()
-  {
-    value|=other.value;
-  }
+  //Adds all cards from other set to this set.
+  void addAll(const ThousandCardSet& other) throw();
 
-  bool containsShift(const int_fast8_t shift) const throw()
-  {
-    return (value & (1<<shift));
-  }
+  //Check whether a given card is present in this set.
+  bool containsShift(const int_fast8_t shift) const throw();
 
   /*
   bool containsCard(const char card) const throw()
@@ -123,10 +119,7 @@ public:
   }
   */
 
-  void removeShift(const int_fast8_t shift) throw()
-  {
-    value &= (~(1<<shift));
-  }
+  void removeShift(const int_fast8_t shift) throw();
 
   /** Remove a shift from this set. In the game of thousand, you have
       to put a higher card of the same color, if you have it.

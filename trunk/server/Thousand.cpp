@@ -38,11 +38,10 @@
 #include <iostream>
 #include "CommandLine.hpp"
 
-int_fast8_t deck[24] = {23,22,21,20,19,18,
-                        17,16,15,14,13,12,
-                        11,10,9,8,7,6,
-                        5,4,3,2,1,0};
-
+int_fast8_t Thousand::deck[24] = {23,22,21,20,19,18,
+                                  17,16,15,14,13,12,
+                                  11,10,9,8,7,6,
+                                  5,4,3,2,1,0};
 void Thousand::deal() throw()
 {
   //Randomize global deck:
@@ -122,15 +121,15 @@ bool Thousand::initialize(std::list<PlayerAddressedMessage>& messages) throw()
 
   //Send messages to clients with info about what's their cards:
   messages.push_back(PlayerAddressedMessage(0));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[0].getValue(),
+  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[0].value,
                                              messages.back().message);
   
   messages.push_back(PlayerAddressedMessage(1));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[1].getValue(),
+  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[1].value,
                                              messages.back().message);
 
   messages.push_back(PlayerAddressedMessage(2));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[2].getValue(),
+  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[2].value,
                                              messages.back().message);
 
   //Ready for playing! After this function returns server will send
@@ -188,7 +187,7 @@ MoveResult Thousand::move(const std::vector<char>& move,
           //Shall we show must?
           if(bids10[biddingWinner]>10)
             {//We show must.
-              ThousandProtocol::serialize_1_BID_END_SHOW_MUST(must.getValue(),
+              ThousandProtocol::serialize_1_BID_END_SHOW_MUST(must.value,
                                                               message);
               sendToAll(message,moveMessages);
             }
@@ -198,7 +197,7 @@ MoveResult Thousand::move(const std::vector<char>& move,
               sendToOthers(message,moveMessages);
               moveMessages.push_back(PlayerAddressedMessage(biddingWinner));
               ThousandProtocol::serialize_1_BID_END_SHOW_MUST
-                (must.getValue(),moveMessages.back().message);
+                (must.value,moveMessages.back().message);
             }
           turn = biddingWinner;
           stage = SELECTING_FIRST;
@@ -320,7 +319,7 @@ MoveResult Thousand::move(const std::vector<char>& move,
           std::cout<<"!cards[turn].removeFirstShift(firstShift,trumpShift)"
                    <<" firstShift=="
                    <<static_cast<int>(firstShift)<<" cards[turn].value=="
-                   <<cards[turn].getValue()<<" trumpShift=="<<trumpShift
+                   <<cards[turn].value<<" trumpShift=="<<trumpShift
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
@@ -352,7 +351,7 @@ MoveResult Thousand::move(const std::vector<char>& move,
             <<"!cards[turn].removeSecondShift(firstShift,secondShift,"
             <<"trumpShift) firstShift=="<<static_cast<int>(firstShift)
             <<" secondShift=="<<static_cast<int>(secondShift)
-            <<" cards[turn].value=="<<cards[turn].getValue()
+            <<" cards[turn].value=="<<cards[turn].value
             <<" trumpShift=="<<trumpShift
             <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
@@ -385,7 +384,7 @@ MoveResult Thousand::move(const std::vector<char>& move,
             <<"thirdShift,trumpShift) firstShift=="<<static_cast<int>(firstShift)
             <<" secondShift=="<<static_cast<int>(secondShift)
             <<" thirdShift=="<<static_cast<int>(thirdShift)
-            <<" cards[turn].value=="<<cards[turn].getValue()
+            <<" cards[turn].value=="<<cards[turn].value
             <<" trumpShift=="<<trumpShift
             <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
