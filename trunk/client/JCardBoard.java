@@ -123,7 +123,7 @@ public abstract class JCardBoard
         //What cards are at hand:
         public final Vector<HandCard> cards;
         //Label for this hand (e.g. player's name)
-        public final String label;
+        public String label;
         //Location -- between 0f and 1f specifying where to draw
         //the hand:
         public final float x;
@@ -352,15 +352,15 @@ public abstract class JCardBoard
     protected void paintComponent(final Graphics g) {
 
         //System.out.println("paintComponent");
-        final long before = System.nanoTime();
+        //final long before = System.nanoTime();
         final Graphics2D g2d = (Graphics2D)g.create();
 
         this.paintMe(g2d);
 
         g2d.dispose();
-        final long duration = System.nanoTime()-before;
-        Output.d("Painting took "
-                 +(duration/1000000)+"ms.");
+        //final long duration = System.nanoTime()-before;
+        //Output.d("Painting took "
+        //         +(duration/1000000)+"ms.");
     }
 
     /** @param everything When a card is fully visible, set everything

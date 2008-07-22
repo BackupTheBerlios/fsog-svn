@@ -36,6 +36,7 @@
 #include "Thousand.hpp"
 #include <set>
 #include <iostream>
+#include "Out.hpp"
 #include "CommandLine.hpp"
 
 int_fast8_t Thousand::deck[24] = {23,22,21,20,19,18,
@@ -52,30 +53,32 @@ void Thousand::deal() throw()
   for(uint_fast8_t i=0;i<3;i++)
     must.addShift(deck[i]);
 
-  cards[0].setEmpty();
+  sets[0].setEmpty();
   for(uint_fast8_t i=3;i<10;i++)
-    cards[0].addShift(deck[i]);
+    sets[0].addShift(deck[i]);
   
-  cards[1].setEmpty();
+  sets[1].setEmpty();
   for(uint_fast8_t i=10;i<17;i++)
-    cards[1].addShift(deck[i]);
+    sets[1].addShift(deck[i]);
 
-  cards[2].setEmpty();
+  sets[2].setEmpty();
   for(uint_fast8_t i=17;i<24;i++)
-    cards[2].addShift(deck[i]); 
+    sets[2].addShift(deck[i]); 
 
+  bids10.clear();
   bids10.resize(3,10);
   minimumNextBid10=11;
 
   trumpShift = ThousandProtocol::NO_TRUMP_SHIFT;
 
+  smallPoints.clear();
   smallPoints.resize(3,0);
 }
 
 int_fast8_t Thousand::maxBid10() const throw()
 {
   const int_fast8_t absoluteMaximum = 12+10+8+6+4;
-  const ThousandCardSet& set = cards[turn];
+  const ThousandCardSet& set = sets[turn];
   //TODO: precompute sets and check intersection.
   if(set.containsShift(ThousandProtocol::QUEEN_SHIFT
                        +ThousandProtocol::HEART_SHIFT)
@@ -110,26 +113,27 @@ bool Thousand::initialize(std::list<PlayerAddressedMessage>& messages) throw()
   //We expect move only from the first player:
   setFirstPlayer();
 
-  deal();
-
   //Game starts with bidding:
   stage = BIDDING;
   //Player 0 will start bidding:
   startsBidding = turn;
 
+  deal();
+
+  bigPoints10.clear();
   bigPoints10.resize(3,0);
 
   //Send messages to clients with info about what's their cards:
   messages.push_back(PlayerAddressedMessage(0));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[0].value,
+  ThousandProtocol::serialize_1_DEAL_7_CARDS(sets[0].value,
                                              messages.back().message);
   
   messages.push_back(PlayerAddressedMessage(1));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[1].value,
+  ThousandProtocol::serialize_1_DEAL_7_CARDS(sets[1].value,
                                              messages.back().message);
 
   messages.push_back(PlayerAddressedMessage(2));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(cards[2].value,
+  ThousandProtocol::serialize_1_DEAL_7_CARDS(sets[2].value,
                                              messages.back().message);
 
   //Ready for playing! After this function returns server will send
@@ -144,45 +148,49 @@ MoveResult Thousand::move(const std::vector<char>& move,
   throw()
 {
   if(CommandLine::printNetworkPackets())
-    std::cout<<"T::MV "
+    std::cout<<"T:MV "
              <<ThousandProtocol::messageToString(move);
 
   //Are we still biding?
   if(stage==BIDDING)
     {
-      int_fast8_t bid10;
+      Out::d<<"BIDDING"<<std::endl;
       //First we deserialize the move. If deserialization fails, current
       //player sent invalid move.
-      if(!ThousandProtocol::deserialize_1_BID(move,bid10))
+      if(!ThousandProtocol::deserialize_1_BID(move,bids10[turn]))
         {
           std::cout<<"deserialize_1_BID failed."
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
       //Let's see whether the move is valid:
-      if(bid10>maxBid10() || (bid10!=0 && bid10<minimumNextBid10))
+      if(bids10[turn]>maxBid10()
+         || (bids10[turn]!=0 && bids10[turn]<minimumNextBid10))
         {
-          std::cout<<"Incorrect bid: bid10=="<<static_cast<int>(bid10)
+          std::cout<<"Incorrect bid: bid10=="<<static_cast<int>(bids10[turn])
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
       
       //OK, move is valid. Let's introduce game state change.
 
-      bids10[turn]=bid10;
-      if(bid10!=0)
-        minimumNextBid10=bid10+1;
+      if(bids10[turn]!=0)
+        minimumNextBid10=bids10[turn]+1;
     
       //Shall bidding end? Yes if two passes.
-      biddingWinner =((bids10[0]==0 && bids10[1]==0)?2
-               :((bids10[1]==0 && bids10[2]==0)?0
-                 :((bids10[2]==0 && bids10[0]==0)?1
-                   :-1)));
+      biddingWinner = ((bids10[0]==0 && bids10[1]==0)?2
+                       :((bids10[1]==0 && bids10[2]==0)?0
+                         :((bids10[2]==0 && bids10[0]==0)?1
+                           :-1)));
 
       if(biddingWinner!=-1)
-        {//Bidding is over.
+        {
+          Out::d<<"Bidding is over."<<std::endl;
+
+          turn = biddingWinner;
+
           //Add must cards to the person with highest bid:
-          cards[biddingWinner].addAll(must);
+          sets[biddingWinner].addAll(must);
           std::vector<char> message;
           //Shall we show must?
           if(bids10[biddingWinner]>10)
@@ -199,12 +207,12 @@ MoveResult Thousand::move(const std::vector<char>& move,
               ThousandProtocol::serialize_1_BID_END_SHOW_MUST
                 (must.value,moveMessages.back().message);
             }
-          turn = biddingWinner;
           stage = SELECTING_FIRST;
           return VALID|CONTINUE;
         }
       else
-        {//Bidding is not over yet.
+        {
+          Out::d<<"Bidding is not over yet."<<std::endl;
           //Send a message to all other people:
           sendToOthers(move,moveMessages);
           
@@ -226,16 +234,16 @@ MoveResult Thousand::move(const std::vector<char>& move,
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
-      if(!cards[turn].containsShift(shift))
+      if(!sets[turn].containsShift(shift))
         {
-          std::cout<<"!cards[turn].containsShift(shift)"
+          std::cout<<"!sets[turn].containsShift(shift)"
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
       
       //Pass the selected card to first opponent:
-      cards[turn].removeShift(shift);
-      cards[getNextPlayer()].addShift(shift);
+      sets[turn].removeShift(shift);
+      sets[getNextPlayer()].addShift(shift);
       //Let the receiver of the card know which is it:
       moveMessages.push_back(PlayerAddressedMessage(getNextPlayer()));
       moveMessages.back().message = move;
@@ -257,16 +265,16 @@ MoveResult Thousand::move(const std::vector<char>& move,
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
-      if(!cards[turn].containsShift(shift))
+      if(!sets[turn].containsShift(shift))
         {
-          std::cout<<"!cards[turn].containsShift(shift)"
+          std::cout<<"!sets[turn].containsShift(shift)"
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
       
       //Pass the selected card to second opponent:
-      cards[turn].removeShift(shift);
-      cards[getNextPlayer(2)].addShift(shift);
+      sets[turn].removeShift(shift);
+      sets[getNextPlayer(2)].addShift(shift);
       //Let the receiver of the card know which is it:
       moveMessages.push_back(PlayerAddressedMessage(getNextPlayer(2)));
       moveMessages.back().message = move;
@@ -279,10 +287,11 @@ MoveResult Thousand::move(const std::vector<char>& move,
       //It's the same player making the move again.
       return VALID|CONTINUE;
     }
-  if(stage==CONTRACTING)
+  else if(stage==CONTRACTING)
     {
       //First we deserialize the move. If deserialization fails, current
       //player sent invalid move.
+      int_fast8_t contract10;
       if(!ThousandProtocol::deserialize_1_CONTRACT(move,contract10))
         {
           std::cout<<"deserialize_1_CONTRACT failed."
@@ -296,7 +305,7 @@ MoveResult Thousand::move(const std::vector<char>& move,
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
-      
+      bids10[turn]=contract10;
       sendToOthers(move,moveMessages);
       stage = PLAYING_FIRST;
       return VALID|CONTINUE;
@@ -312,14 +321,14 @@ MoveResult Thousand::move(const std::vector<char>& move,
 
       const int_fast8_t oldTrumpShift = trumpShift;
       
-      if(!cards[turn].removeFirstShift(firstShift,
+      if(!sets[turn].removeFirstShift(firstShift,
                                        trumpShift,
                                        smallPoints[turn]))
         {
-          std::cout<<"!cards[turn].removeFirstShift(firstShift,trumpShift)"
+          std::cout<<"!sets[turn].removeFirstShift(firstShift,trumpShift)"
                    <<" firstShift=="
-                   <<static_cast<int>(firstShift)<<" cards[turn].value=="
-                   <<cards[turn].value<<" trumpShift=="<<trumpShift
+                   <<static_cast<int>(firstShift)<<" sets[turn].value=="
+                   <<sets[turn].value<<" trumpShift=="<<trumpShift
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
@@ -345,13 +354,13 @@ MoveResult Thousand::move(const std::vector<char>& move,
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
-      if(!cards[turn].removeSecondShift(firstShift,secondShift,trumpShift))
+      if(!sets[turn].removeSecondShift(firstShift,secondShift,trumpShift))
         {
           std::cout
-            <<"!cards[turn].removeSecondShift(firstShift,secondShift,"
+            <<"!sets[turn].removeSecondShift(firstShift,secondShift,"
             <<"trumpShift) firstShift=="<<static_cast<int>(firstShift)
             <<" secondShift=="<<static_cast<int>(secondShift)
-            <<" cards[turn].value=="<<cards[turn].value
+            <<" sets[turn].value=="<<sets[turn].value
             <<" trumpShift=="<<trumpShift
             <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
@@ -371,55 +380,61 @@ MoveResult Thousand::move(const std::vector<char>& move,
                    <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
-      if(!cards[turn].removeThirdShift(firstShift,
-                                       secondShift,
-                                       thirdShift,
-                                       trumpShift,
-                                       smallPoints[getPreviousPlayer(2)],
-                                       smallPoints[getPreviousPlayer()],
-                                       smallPoints[turn]))
+      int_fast8_t turnIncrement;
+      if(!sets[turn].removeThirdShift(firstShift,
+                                      secondShift,
+                                      thirdShift,
+                                      trumpShift,
+                                      smallPoints[getPreviousPlayer(2)],
+                                      smallPoints[getPreviousPlayer()],
+                                      smallPoints[turn],
+                                      turnIncrement))
         {
           std::cout
-            <<"!cards[turn].removeThirdShift(firstShift,secondShift,"
-            <<"thirdShift,trumpShift) firstShift=="<<static_cast<int>(firstShift)
+            <<"!sets[turn].removeThirdShift(firstShift,secondShift,"
+            <<"thirdShift,trumpShift,...)"
+            <<" firstShift=="<<static_cast<int>(firstShift)
             <<" secondShift=="<<static_cast<int>(secondShift)
             <<" thirdShift=="<<static_cast<int>(thirdShift)
-            <<" cards[turn].value=="<<cards[turn].value
-            <<" trumpShift=="<<trumpShift
+            <<" sets[turn].value=="<<sets[turn].value
+            <<" trumpShift=="<<static_cast<int>(trumpShift)
             <<" @"<<__func__<<"@"<<__FILE__<<":"<<__LINE__<<std::endl;
           return INVALID|END;
         }
 
       sendToOthers(move,moveMessages);
 
-      if(cards[turn].isEmpty())
+      if(sets[turn].isEmpty())
         {//No more cards
           //Add points for each player:
           for(Player p = 0; p<numberOfPlayers; p++)
             {
               if(p==biddingWinner)
                 {
-                  if(smallPoints[p]>=10*contract10)
-                    bigPoints10[p] += contract10;
+                  if(smallPoints[p]>=10*bids10[biddingWinner])
+                    bigPoints10[p] += bids10[biddingWinner];
                   else                  
-                    bigPoints10[p] -= contract10;
+                    bigPoints10[p] -= bids10[biddingWinner];
                 }
               else
                 bigPoints10[p] += (smallPoints[p]+4)/10;
             }
           //The end?
           if(bigPoints10[biddingWinner]>=100)
-            return VALID|END;
+            {
+              stage = ENDED;
+              return VALID|END;
+            }
 
           stage = BIDDING;
           startsBidding = (startsBidding+1)%numberOfPlayers;
-          deal();
           turn = startsBidding;
+          deal();
         }
       else
         {//Still some cards in the set.
           stage = PLAYING_FIRST;
-          setNextPlayer();
+          setNextPlayer(turnIncrement);
         }
       return VALID|CONTINUE;
     }

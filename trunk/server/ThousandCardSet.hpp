@@ -58,10 +58,11 @@ class ThousandCardSet
   static int_fast8_t points[24];
   static int_fast8_t marriagePoints[24];
 
-  static inline int_fast8_t valueShift(const int_fast8_t shift) throw();
-  static inline int_fast8_t suitShift(const int_fast8_t shift) throw();
-  inline bool hasAnyOf(const int_fast32_t set) const throw();
+  bool hasAnyOf(const int_fast32_t set) const throw();
 public:
+
+  static int_fast8_t valueShift(const int_fast8_t shift) throw();
+  static int_fast8_t suitShift(const int_fast8_t shift) throw();
 
   //Representation of this set as a 32--bit integer. Can be
   //used for serializing.
@@ -146,7 +147,8 @@ public:
                         const int_fast8_t secondShift,
                         const int_fast8_t thirdShift,
                         const int_fast8_t trumpShift,
-                        int_fast16_t&firstSmallPoints,
-                        int_fast16_t&secondSmallPoints,
-                        int_fast16_t&thirdSmallPoints) throw();
+                        int_fast16_t& firstSmallPoints,
+                        int_fast16_t& secondSmallPoints,
+                        int_fast16_t& thirdSmallPoints,
+                        int_fast8_t& turnIncrement) throw();
 };

@@ -34,6 +34,8 @@
     modify the C++ version as well.
 */
 
+import java.util.*;
+
 public class ThousandCardSet{
 
     private static byte points[] = {11,10,4,3,2,0,
@@ -46,11 +48,12 @@ public class ThousandCardSet{
                                             0,0,60,60,0,0,
                                             0,0,40,40,0,0};
 
-    private static byte valueShift(final byte shift){
+
+    public static byte valueShift(final byte shift){
         return (byte)(shift%6);
     }
 
-    private static byte suitShift(final byte shift){
+    public static byte suitShift(final byte shift){
         return (byte)(6*(shift/6));
     }
 
@@ -58,7 +61,7 @@ public class ThousandCardSet{
         return (value&set)!=0;
     }
 
-    private int value;
+    public int value;
 
     public ThousandCardSet(){
         value = 0;
@@ -170,7 +173,8 @@ public class ThousandCardSet{
                                     final byte trumpShift,
                                     S firstSmallPoints,
                                     S secondSmallPoints,
-                                    S thirdSmallPoints)
+                                    S thirdSmallPoints,
+                                    B turnIncrement)
     {
         //If there's no such card, return false.
         if(!containsShift(thirdShift))
@@ -197,6 +201,7 @@ public class ThousandCardSet{
                 if(secondSuitShift==trumpShift && secondSuitShift!=firstSuitShift)
                     {
                         secondSmallPoints.value+=sum;
+                        turnIncrement.value=2;
                         return true;
                     }
                 //Second was not trump (or all are trumps). Which card should be beaten?
@@ -209,6 +214,7 @@ public class ThousandCardSet{
                 if(thirdShift>maxShift)
                     {
                         thirdSmallPoints.value+=sum;
+                        turnIncrement.value=0;
                         return true;
                     }
                 else
@@ -219,9 +225,15 @@ public class ThousandCardSet{
                         // 000000 000111 - 0x3f >> 2+1
                         // 111000 000000 - All higher in same suit
                         if(secondWins)
-                            secondSmallPoints.value+=sum;
+                            {
+                                secondSmallPoints.value+=sum;
+                                turnIncrement.value=2;
+                            }
                         else
-                            firstSmallPoints.value+=sum;
+                            {
+                                firstSmallPoints.value+=sum;
+                                turnIncrement.value=1;
+                            }
                         return !hasAnyOf((0x3F>>(maxValueShift+1))
                                          <<(maxShift+1));
                     }
@@ -241,12 +253,14 @@ public class ThousandCardSet{
                                 if(thirdShift>secondShift)
                                     {
                                         thirdSmallPoints.value+=sum;
+                                        turnIncrement.value=0;
                                         return true;
                                     }
                                 else
                                     {//Lower card was played. It's a valid move, if there was no
                                         //higher.
                                         secondSmallPoints.value+=sum;
+                                        turnIncrement.value=2;
                                         //For how this is calculated, read above.
                                         return !hasAnyOf((0x3F>>(secondValueShift+1))
                                                          <<(secondShift+1));
@@ -255,6 +269,7 @@ public class ThousandCardSet{
                         else
                             {//1:non--trump 2:non--trump 3:trump
                                 thirdSmallPoints.value+=sum;
+                                turnIncrement.value=0;
                                 return true;
                             }
                     }
@@ -262,9 +277,15 @@ public class ThousandCardSet{
                     {//1:non--trump 3:non--trump
                         if(secondSuitShift==trumpShift
                            ||(secondSuitShift==firstSuitShift && secondShift>firstShift))
-                            secondSmallPoints.value+=sum;
+                            {
+                                secondSmallPoints.value+=sum;
+                                turnIncrement.value=2;
+                            }
                         else
-                            firstSmallPoints.value+=sum;
+                            {
+                                firstSmallPoints.value+=sum;
+                                turnIncrement.value=1;
+                            }
                         //Non--trump played. It's OK if we don't have a trump.
                         return !hasAnyOf(0x3F<<trumpShift);
                     }

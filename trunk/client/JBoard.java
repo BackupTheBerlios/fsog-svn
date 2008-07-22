@@ -95,6 +95,41 @@ public abstract class JBoard extends JPanel{
         this.turn++;
         this.turn %= this.numberOfPlayers;
     }
+
+    protected void setNextPlayer(final int increment){
+        this.turn += increment;
+        this.turn %= this.numberOfPlayers;
+    }
+
+    protected byte getNextPlayer(){
+        byte result = this.turn;
+        result++;
+        result %= this.numberOfPlayers;
+        return result;
+    }
+    
+    protected byte getNextPlayer(final byte increment){
+        byte result = this.turn;
+        result += increment;
+        result %= this.numberOfPlayers;
+        return result;
+    }
+    
+    protected byte getPreviousPlayer(){
+        byte result = this.turn;
+        result += this.numberOfPlayers;
+        result -= 1;
+        result %= this.numberOfPlayers;
+        return result;
+    }
+
+    protected byte getPreviousPlayer(final int decrement){
+        byte result = this.turn;
+        result += this.numberOfPlayers;
+        result -= decrement;
+        result %= this.numberOfPlayers;
+        return result;
+    }
     
     //TODO: change boolean return to exception
     /** @param  initialMessage Can  be null  if no  initialMessage was

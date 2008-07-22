@@ -81,7 +81,7 @@ public class TableJoiner{
                                   final String screenName) {
 
         //Create and set up the window.
-        final JFrame frame = new JFrame("FSOG");
+        final JFrame frame = new JFrame("FSOG - "+screenName);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Add contents to the window.

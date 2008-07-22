@@ -42,20 +42,21 @@
 #include "ThousandProtocol.hpp"
 #include "ThousandCardSet.hpp"
 
-enum Stage
-  {
-    BIDDING,
-    SELECTING_FIRST,
-    SELECTING_SECOND,
-    CONTRACTING,
-    PLAYING_FIRST,
-    PLAYING_SECOND,
-    PLAYING_THIRD
-  };
-
 class Thousand : public TurnGame
 {
 private:
+
+  enum Stage
+    {
+      BIDDING,
+      SELECTING_FIRST,
+      SELECTING_SECOND,
+      CONTRACTING,
+      PLAYING_FIRST,
+      PLAYING_SECOND,
+      PLAYING_THIRD,
+      ENDED
+    };
 
   static int_fast8_t deck[24];
 
@@ -66,13 +67,11 @@ private:
   Player biddingWinner;
 
   ThousandCardSet must;
-  std::vector<ThousandCardSet> cards;
+  std::vector<ThousandCardSet> sets;
 
   std::vector<int_fast8_t> bids10;
   int_fast8_t minimumNextBid10;
 
-  int_fast8_t contract10;
-  
   int_fast8_t trumpShift;
   int_fast8_t firstShift;
   int_fast8_t secondShift;
@@ -90,7 +89,7 @@ public:
     :TurnGame(numberOfPlayers),
      stage(BIDDING),
      must(),
-     cards(3)
+     sets(3)
   {}
 
   ~Thousand() throw() {}

@@ -108,7 +108,7 @@ public class ThousandProtocolDefinition{
              "Everybody pressed start, so let's deal the cards."
              +" The cards sent are not sorted in any way.",
              EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(CARD_SET_24,"cardSet24","Set of cards."));
+             new PieceDefinition(CARD_SET_24,"thousandCardSet","Set of cards."));
 
         protocol.defineMessage
             ("BID",
@@ -134,7 +134,8 @@ public class ThousandProtocolDefinition{
              "Message sent by the server to let players know that"
              +" bidding is over. 'Must' is shown.",
              EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(CARD_SET_24,"must","Set of cards."));
+             new PieceDefinition(CARD_SET_24,"must",
+                                 "Set of cards represented as ThousandCardSet."));
                 
         protocol.defineMessage
             ("SELECT",
@@ -163,6 +164,21 @@ public class ThousandProtocolDefinition{
                                  "This is actually 10% of the contract."
                                  +" Multiply by 10 to get the real value."));
 
+        protocol.defineMessage
+            ("PLAY",
+             "Message sent by the client when playing a card."
+             +" Also sent by server back to clients, but not when new"
+             +" trump is set.",
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER,
+                        Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
+             new PieceDefinition(SHIFT,"shift","Shift of played card."));
+
+        protocol.defineMessage
+            ("PLAY_NEW_TRUMP",
+             "Message sent by server back to clients, when new"
+             +" trump is set.",
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
+             new PieceDefinition(SHIFT,"shift","Shift of played card."));
 
         protocol.write();
     }

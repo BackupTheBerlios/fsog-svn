@@ -70,7 +70,12 @@ public class Table {
     /**
        @param which 0 -- myself, 1 -- first opponent, etc...
     */
-    public TablePlayer getOpponent(final int which){
+    public byte getMyOpponentTurnGamePlayer(final int which){
+        return (byte)((myTurnGamePlayer+which)
+                      %turnGamePlayerToTablePlayerId.size());
+    }
+
+    public TablePlayer getMyOpponent(final int which){
         final byte opponentTurnGamePlayer
             = (byte)((myTurnGamePlayer+which)
                      %turnGamePlayerToTablePlayerId.size());
@@ -79,12 +84,16 @@ public class Table {
             (turnGamePlayerToTablePlayerId.get(opponentTurnGamePlayer));
     }
 
-    public TablePlayer getFirstOpponent(){
-        return this.getOpponent(1);
+    public TablePlayer getMe(){
+        return this.getMyOpponent(0);
     }
 
-    public TablePlayer getSecondOpponent(){
-        return this.getOpponent(2);
+    public TablePlayer getMyFirstOpponent(){
+        return this.getMyOpponent(1);
+    }
+
+    public TablePlayer getMySecondOpponent(){
+        return this.getMyOpponent(2);
     }
 
     public void addMe(final Byte tablePlayerId,
