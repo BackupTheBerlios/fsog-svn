@@ -104,11 +104,12 @@ public class ThousandProtocolDefinition{
         final PieceType CARD_SET_24 = PieceType.INT24;
 
         protocol.defineMessage
-            ("DEAL_7_CARDS",
+            ("DEAL",
              "Everybody pressed start, so let's deal the cards."
-             +" The cards sent are not sorted in any way.",
+             +" Seven cards are represented as 3--byte thousandCardSet.",
              EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
-             new PieceDefinition(CARD_SET_24,"thousandCardSet","Set of cards."));
+             new PieceDefinition(CARD_SET_24,"thousandCardSet",
+                                 "Set of dealt cards."));
 
         protocol.defineMessage
             ("BID",
@@ -167,8 +168,14 @@ public class ThousandProtocolDefinition{
         protocol.defineMessage
             ("PLAY",
              "Message sent by the client when playing a card."
-             +" Also sent by server back to clients, but not when new"
-             +" trump is set.",
+             +" Also sometimes sent by server back to clients. There's"
+             +" 24 cards to be played."
+             +" On cards 1-23 this message is sent by client to server"
+             +" and the server sends some message back to other people,"
+             +" but not the one who played it."
+             +" On card 24 (that is when one round finishes)"
+             +" some message is sent to all people, including"
+             +" the one who played the last card.",
              EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER,
                         Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(SHIFT,"shift","Shift of played card."));
@@ -179,6 +186,16 @@ public class ThousandProtocolDefinition{
              +" trump is set.",
              EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(SHIFT,"shift","Shift of played card."));
+
+        protocol.defineMessage
+            ("PLAY_AND_DEAL",
+             "Message sent by server back to clients, when last"
+             +" card was played and new cards are dealt."
+             +" Seven cards are represented as 3--byte thousandCardSet.",
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
+             new PieceDefinition(SHIFT,"shift","Shift of played card."),
+             new PieceDefinition(CARD_SET_24,"thousandCardSet",
+                                 "Set of dealt cards."));
 
         protocol.write();
     }
