@@ -48,43 +48,50 @@ public class TableCreator{
             if(arguments.length>=3 && arguments[2].equals("-d"))
                 printDebug = true;
 
-            d("Debug mode enabled.");
+            final String host = arguments[0];
+            final int port = Integer.parseInt(arguments[1]);
 
-            d("Creating socket...");
-            final Socket socket
-                = new Socket(arguments[0],
-                             Integer.parseInt(arguments[1]));
-
-            d("Socket created: "+socket);
-            d("Serializing message...");
-            final Vector<Byte> query
-                = GeneralProtocol.serialize_1_CREATE_THOUSAND_TABLE();
-
-            d("Message serialized: "+query);
-
-            d("Sending message...");
-            TransportProtocol.send(query,socket);
-
-            d("Query sent: "+query);
-
-            d("Awaiting response...");
-            //Receive response:
-            final Vector<Byte> response
-                = TransportProtocol.receive(socket);
-            
-            d("Response: "+response);
-
-            final GeneralProtocol.Deserialized_1_TABLE_CREATED deserialized
-                = new GeneralProtocol.Deserialized_1_TABLE_CREATED(response);
-
-            socket.close();
-
-            System.out.println(""+deserialized.id);
-            
+            System.out.println(""+createTable(host,port));
         }catch(final Exception e){
             System.err.println("Exception: "+e);
             System.err.println("Stack trace:");
             e.printStackTrace();
         }
+    }
+
+    public static long createTable(final String host,
+                                   final int port) throws Exception{
+
+        d("Debug mode enabled.");
+
+        d("Creating socket...");
+        final Socket socket
+            = new Socket(host,port);
+
+        d("Socket created: "+socket);
+        d("Serializing message...");
+        final Vector<Byte> query
+            = GeneralProtocol.serialize_1_CREATE_THOUSAND_TABLE();
+
+        d("Message serialized: "+query);
+
+        d("Sending message...");
+        TransportProtocol.send(query,socket);
+
+        d("Query sent: "+query);
+
+        d("Awaiting response...");
+        //Receive response:
+        final Vector<Byte> response
+            = TransportProtocol.receive(socket);
+        
+        d("Response: "+response);
+        
+        final GeneralProtocol.Deserialized_1_TABLE_CREATED deserialized
+            = new GeneralProtocol.Deserialized_1_TABLE_CREATED(response);
+
+        socket.close();
+
+        return deserialized.id;
     }
 }

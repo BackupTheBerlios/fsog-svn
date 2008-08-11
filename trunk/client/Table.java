@@ -67,6 +67,11 @@ public class Table {
     }
     */
 
+    public TablePlayer getPlayer(final int turnGamePlayer){
+        return this.tablePlayerIdToTablePlayer.get
+            (turnGamePlayerToTablePlayerId.get(turnGamePlayer));
+    }
+
     /**
        @param which 0 -- myself, 1 -- first opponent, etc...
     */

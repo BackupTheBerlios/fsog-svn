@@ -40,9 +40,10 @@ import java.awt.image.*;
 import java.util.*;
 import java.awt.geom.*;
 import java.awt.font.*;
+import javax.swing.table.*;
 
 public class JThousandBoard
-    extends JCardBoard{
+    extends JBoard{
     
     private static enum Stage
     {
@@ -95,19 +96,24 @@ public class JThousandBoard
     private final byte[] bids10;
     private byte minimumNextBid10;
 
-    private byte trumpShift;
+    private final B trumpShift;
     private byte firstShift;
     private byte secondShift;
     private byte thirdShift;
 
     private final S[] smallPoints;
     private final int[] bigPoints10;
+    private final Vector<Vector<Integer>> savedPoints;
 
     //GUI stuff:
-    private Hand myHand;
-    private Hand mustHand;
-    private Hand firstOpponentHand;
-    private Hand secondOpponentHand;
+    private final JCards jCards;
+    private final JCards jLastTrick;
+    private JCards.Hand myHand;
+    private JCards.Hand mustHand;
+    private JCards.Hand firstOpponentHand;
+    private JCards.Hand secondOpponentHand;
+    private AbstractTableModel pointsTableModel;
+    private JTable pointsTable;
 
     public JThousandBoard(final byte numberOfPlayers,
                           final Table table,
@@ -118,11 +124,31 @@ public class JThousandBoard
               moveListener,
               jTabbedPane);
         this.must = new ThousandCardSet();
-        this.sets = new ThousandCardSet[]
-            {new ThousandCardSet(),new ThousandCardSet(),new ThousandCardSet()};
+        this.sets = new ThousandCardSet[]{new ThousandCardSet(),
+                                          new ThousandCardSet(),
+                                          new ThousandCardSet()};
         this.bids10 = new byte[]{0,0,0};
+        this.trumpShift = new B();
         this.smallPoints = new S[]{new S(),new S(),new S()};
         this.bigPoints10 = new int[]{0,0,0};
+        this.savedPoints = new Vector<Vector<Integer>>();
+
+        final JThousandBoard me = this;
+
+        this.jCards = new JCards(){
+                public void cardClicked(final int virtualColor){
+                    me.cardClicked(virtualColor);
+                }
+            };
+
+        this.jLastTrick = new JCards(){
+                public void cardClicked(final int virtualColor){}
+            };
+
+        this.add(jCards);
+
+        this.pointsTableModel = null;
+        this.pointsTable = null;
     }
 
     private String makeStateString(){
@@ -131,12 +157,43 @@ public class JThousandBoard
             + " biddingWinner="+(int)biddingWinner
             + " bids10={"+bids10[0]+"," +bids10[1]+"," +bids10[2]+"}"
             + " minimumNextBid10="+(int)minimumNextBid10
-            + " trumpShift="+(int)trumpShift
+            + " trumpShift="+(int)trumpShift.value
             + " firstShift="+(int)firstShift
-            + " secondShif=t"+(int)secondShift
+            + " secondShift="+(int)secondShift
             + " thirdShift="+(int)thirdShift
             + " smallPoints={"+smallPoints[0]+"," +smallPoints[1]+"," +smallPoints[2]+"}"
             + " bigPoints10={"+bigPoints10[0]+"," +bigPoints10[1]+"," +bigPoints10[2]+"}";
+    }
+
+    private void addPointsTableRow(){
+        if(pointsTableModel==null){
+            this.pointsTableModel
+                = new AbstractTableModel() {
+                        public String getColumnName(final int c) {
+                            return table.getPlayer(c).getScreenName();
+                        }
+                        public int getRowCount() { return savedPoints.size(); }
+                        public int getColumnCount() { return 3; }
+                        public Object getValueAt(final int r, final int c) {
+                            return savedPoints.get(r).get(c);
+                        }
+                        //public boolean isCellEditable(int row, int col){return false;}
+                        //public void setValueAt(Object value, int row, int col){}
+                    };
+            this.pointsTable = new JTable(pointsTableModel);
+
+            this.jTabbedPane.addTab("Score", null,
+                                    new JScrollPane(pointsTable),
+                                    "Score in the game of Thousand");
+            final int index = this.jTabbedPane.getTabCount()-1;
+            this.jTabbedPane.setMnemonicAt(index, KeyEvent.VK_S);
+        }
+        final Vector<Integer> row = new Vector<Integer>();
+        for(byte p=0;p<3;p++)
+            row.add(10*bigPoints10[p]);
+        final int temp = savedPoints.size();
+        this.savedPoints.add(row);
+        this.pointsTableModel.fireTableRowsInserted(temp,temp);
     }
 
     private void deal(){
@@ -152,7 +209,7 @@ public class JThousandBoard
 
         minimumNextBid10=11;
 
-        trumpShift = ThousandProtocol.NO_TRUMP_SHIFT;
+        trumpShift.value = ThousandProtocol.NO_TRUMP_SHIFT;
 
         smallPoints[0].value=0;
         smallPoints[1].value=0;
@@ -161,30 +218,30 @@ public class JThousandBoard
 
     private byte maxBid10()
     {
-        final byte absoluteMaximum = 12+10+8+6+4;
+        byte result = 12;
         final ThousandCardSet set = sets[turn];
         //TODO: precompute sets and check intersection.
         if(set.containsShift(ThousandProtocol.QUEEN_SHIFT
                              +ThousandProtocol.HEART_SHIFT)
            && set.containsShift(ThousandProtocol.KING_SHIFT
                                 +ThousandProtocol.HEART_SHIFT))
-            return absoluteMaximum;
+            result+=10;
         if(set.containsShift(ThousandProtocol.QUEEN_SHIFT
                              +ThousandProtocol.DIAMOND_SHIFT)
            && set.containsShift(ThousandProtocol.KING_SHIFT
                                 +ThousandProtocol.DIAMOND_SHIFT))
-            return absoluteMaximum;
+            result+=8;
         if(set.containsShift(ThousandProtocol.QUEEN_SHIFT
                              +ThousandProtocol.CLUB_SHIFT)
            && set.containsShift(ThousandProtocol.KING_SHIFT
                                 +ThousandProtocol.CLUB_SHIFT))
-            return absoluteMaximum;
+            result+=6;
         if(set.containsShift(ThousandProtocol.QUEEN_SHIFT
                              +ThousandProtocol.SPADE_SHIFT)
            && set.containsShift(ThousandProtocol.KING_SHIFT
                                 +ThousandProtocol.SPADE_SHIFT))
-            return absoluteMaximum;
-        return 12;
+            result+=4;
+        return result;
     }
 
     private String makeBidString(final byte player){
@@ -223,6 +280,48 @@ public class JThousandBoard
             + makeBidString(table.getMyOpponentTurnGamePlayer(2));
     }
 
+    public void initializeHands(){
+        myHand = new JCards.Hand("Me",0.5f,0.75f,0.5f);
+
+        for(byte shift=0;shift<24;shift++)
+            if(sets[table.myTurnGamePlayer].containsShift(shift))
+                myHand.cards.insertElementAt
+                    (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                  JCards.UNCLICKABLE),
+                     0);
+
+        mustHand = new JCards.Hand(null,0.5f,0.1f,0.15f);
+
+        for(int i=0; i<3; i++)
+            mustHand.cards.add(new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
+
+        firstOpponentHand
+            = new JCards.Hand(this.table.getMyFirstOpponent().getScreenName(),
+                       0.1f,0.05f,0.15f);
+
+        secondOpponentHand
+            = new JCards.Hand(this.table.getMySecondOpponent().getScreenName(),
+                       0.8f,0.05f,0.15f);
+
+        for(int i=0; i<7; i++){
+            firstOpponentHand.cards.add(new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
+            secondOpponentHand.cards.add(new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
+        }
+            
+        this.jCards.hands.clear();
+        this.jCards.hands.add(myHand);
+        this.jCards.hands.add(mustHand);
+        this.jCards.hands.add(firstOpponentHand);
+        this.jCards.hands.add(secondOpponentHand);
+
+        this.setArrows();
+
+        if(this.myTurn())
+            showBidding(false);
+
+        this.repaint();
+    }
+
     public boolean initialize(final java.util.Vector<Byte> initialMessage){
 
         try{
@@ -244,51 +343,18 @@ public class JThousandBoard
 
             //Handle message with what cards we have:
 
-            final ThousandProtocol.Deserialized_1_DEAL_7_CARDS deserialized
-                = new ThousandProtocol.Deserialized_1_DEAL_7_CARDS(initialMessage);
+            final ThousandProtocol.Deserialized_1_DEAL deserialized
+                = new ThousandProtocol.Deserialized_1_DEAL(initialMessage);
 
             Output.d("cardSet24: "+deserialized.thousandCardSet);
 
             sets[table.myTurnGamePlayer].value = deserialized.thousandCardSet;
 
-            myHand = new Hand("Me",0.5f,0.75f,0.5f);
+            this.initializeHands();
 
-            for(byte shift=0;shift<24;shift++)
-                if(sets[table.myTurnGamePlayer].containsShift(shift))
-                    myHand.cards.insertElementAt
-                        (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
-                                      NO_CARD),
-                         0);
+            //Insert row of zeros into the table:
+            addPointsTableRow();
 
-            mustHand = new Hand(null,0.5f,0.1f,0.15f);
-
-            for(int i=0; i<3; i++)
-                mustHand.cards.add(new HandCard(Card.UNKNOWN,NO_CARD));
-
-            firstOpponentHand
-                = new Hand(this.table.getMyFirstOpponent().getScreenName(),
-                           0.1f,0.05f,0.15f);
-
-            secondOpponentHand
-                = new Hand(this.table.getMySecondOpponent().getScreenName(),
-                           0.8f,0.05f,0.15f);
-
-            for(int i=0; i<7; i++){
-                firstOpponentHand.cards.add(new HandCard(Card.UNKNOWN,NO_CARD));
-                secondOpponentHand.cards.add(new HandCard(Card.UNKNOWN,NO_CARD));
-            }
-            
-            this.setArrows();
-            this.hands.clear();
-            this.hands.add(myHand);
-            this.hands.add(mustHand);
-            this.hands.add(firstOpponentHand);
-            this.hands.add(secondOpponentHand);
-
-            if(this.myTurn())
-                showBidding(false);
-
-            this.repaint();
             return true;
         }catch(MessageDeserializationException e){
             Output.p("Problem: "+e);
@@ -342,36 +408,51 @@ public class JThousandBoard
         //In case player bids 130, but later throws away a queen by mistake:
         if(maxBid10<bids10[turn])
             maxBid10=bids10[turn];
-        final JPanel biddingPanel = new JPanel();
+        final Box biddingPanel = Box.createVerticalBox();
+        final JScrollPane biddingScrollPane = new JScrollPane(biddingPanel);
         final JThousandBoard me = this;
-        if(!contracting)
-            biddingPanel.add(new JRunnableButton
-                             ("Pass",
-                              new Runnable(){
-                                  public void run(){
-                                      me.bid((byte)0);
-                                      me.jTabbedPane.remove(biddingPanel);
-                                  }
-                              }));
+        final JLabel label = new JLabel("Select your "
+                                        +(contracting?"contract":"bid")+":");
+        label.setAlignmentX(0.5f);
+        biddingPanel.add(label);
+
+        if(!contracting){
+            final JRunnableButton button
+                = new JRunnableButton
+                ("Pass",
+                 new Runnable(){
+                     public void run(){
+                         me.bid((byte)0);
+                         me.jTabbedPane.remove(biddingScrollPane);
+                     }
+                 });
+            button.setAlignmentX(0.5f);
+            biddingPanel.add(button);
+        }
+
         for(byte i=minBid10; i<=maxBid10; i++){
             final byte bid10 = i;
-            biddingPanel.add(new JRunnableButton
-                             (""+10*((int)i),
-                              new Runnable(){
-                                  public void run(){
-                                      me.bid(bid10);
-                                      me.jTabbedPane.remove(biddingPanel);
-                                  }
-                              }));
+            final JRunnableButton button
+                = new JRunnableButton
+                (""+10*((int)i),
+                 new Runnable(){
+                     public void run(){
+                         me.bid(bid10);
+                         me.jTabbedPane.remove(biddingScrollPane);
+                     }
+                 });
+            button.setAlignmentX(0.5f);
+            biddingPanel.add(button);
         }
-        this.jTabbedPane.addTab("Bidding", null, biddingPanel,
+
+        this.jTabbedPane.addTab("Bidding", null, biddingScrollPane,
                                 "Bidding in the game of Thousand");
         final int index = this.jTabbedPane.getTabCount()-1;
         this.jTabbedPane.setMnemonicAt(index, KeyEvent.VK_B);
         this.jTabbedPane.setSelectedIndex(index);
     }
 
-    public void cardClicked(final int virtualColor){
+    private void cardClicked(final int virtualColor){
         if(stage == Stage.SELECTING_FIRST
            || stage == Stage.SELECTING_SECOND){
             final byte shift = (byte)virtualColor;
@@ -382,27 +463,27 @@ public class JThousandBoard
         }else if(stage == Stage.PLAYING_FIRST
                  || stage == Stage.PLAYING_SECOND
                  || stage == Stage.PLAYING_THIRD){
+            //We play a card! Let's see which one:
             final byte shift = (byte)virtualColor;
+
+            //We send the move to the server.
+
             final Vector<Byte> move
                 = ThousandProtocol.serialize_1_PLAY(shift);
             Sender.send(GeneralProtocol.serialize_1_MAKE_MOVE(move));
-            this.moveListener.handle_1_MOVE_MADE(move);
+
+            //To save bandwidth, server will not send the move back,
+            //so we pretend it's sent by invoking this.moveListener's
+            //method. However, we can only do it, if we really know
+            //what the server would send us. In one case we don't
+            //know, when new cards are dealt.
+            if(!(stage == Stage.PLAYING_THIRD && myHand.cards.size()==1))
+                this.moveListener.handle_1_MOVE_MADE(move);
         }else{
-            Output.p("ERROR! JTB::cC("+virtualColor+") called in stage "+stage);
+            Output.p("ERROR! JTB::cC("+virtualColor
+                     +") called in stage "+stage);
         }
-
-        /*
-        final byte card = this.hands.get(0).removeCard(virtualColor);
-
-        this.cardsAtTable.add
-            (new CardAtTable(card,
-                             0f,//(float)Math.random()-0.5f,
-                             0f,//(float)Math.random()-0.5f,
-                             0.0,//Math.PI*Math.random(),
-                             NO_CARD));
-        */
     }
-
     
     public int moveMade(final Vector<Byte> move,
                         final int[] endResult){
@@ -466,12 +547,12 @@ public class JThousandBoard
                     //I take cards from must.
                     sets[turn].addAll(must);
 
-                    hands.remove(mustHand);
+                    jCards.hands.remove(mustHand);
                     myHand.cards.clear();
                     for(byte shift=0;shift<24;shift++)
                         if(sets[turn].containsShift(shift))
                             myHand.cards.insertElementAt
-                                (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
                                               shift),
                                  0);
                 }else{
@@ -482,23 +563,23 @@ public class JThousandBoard
                         for(byte shift=0;shift<24;shift++)
                             if(must.containsShift(shift))
                                 mustHand.cards.insertElementAt
-                                    (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
-                                                  NO_CARD),
+                                    (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                                  JCards.UNCLICKABLE),
                                      0);
                     }else{
                         //Must not shown.
-                        hands.remove(mustHand);
+                        jCards.hands.remove(mustHand);
                     }
 
                     //Add 3 cards to the must taker.
                     if(opponentsTurn(1))
                         for(int i=0;i<3;i++)
                             firstOpponentHand.cards.add
-                                (new HandCard(Card.UNKNOWN,NO_CARD));
+                                (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
                     if(opponentsTurn(2))
                         for(int i=0;i<3;i++)
                             secondOpponentHand.cards.add
-                                (new HandCard(Card.UNKNOWN,NO_CARD));
+                                (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
                 }
 
                 stage = Stage.SELECTING_FIRST;
@@ -537,8 +618,8 @@ public class JThousandBoard
                     for(byte shift=0;shift<24;shift++)
                         if(sets[table.myTurnGamePlayer].containsShift(shift))
                             myHand.cards.insertElementAt
-                                (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
-                                              NO_CARD),
+                                (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                              JCards.UNCLICKABLE),
                                  0);
                 }else{
                     //My turn. I selected a card for someone.
@@ -556,19 +637,19 @@ public class JThousandBoard
                     for(byte shift=0;shift<24;shift++)
                         if(sets[table.myTurnGamePlayer].containsShift(shift))
                             myHand.cards.insertElementAt
-                                (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
                                               (stage==Stage.SELECTING_FIRST
                                                ?shift
-                                               :NO_CARD)),
+                                               :JCards.UNCLICKABLE)),
                                  0);
 
                     //Who did I select a card for?
                     if(stage == Stage.SELECTING_FIRST){
                         firstOpponentHand.cards.add
-                            (new HandCard(Card.UNKNOWN,NO_CARD));
+                            (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
                     }else{
                         secondOpponentHand.cards.add
-                            (new HandCard(Card.UNKNOWN,NO_CARD));
+                            (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
                     }
                 }
                 break;
@@ -588,12 +669,12 @@ public class JThousandBoard
                     firstOpponentHand.cards.remove
                         (firstOpponentHand.cards.lastElement());
                     secondOpponentHand.cards.add
-                        (new HandCard(Card.UNKNOWN,NO_CARD));
+                        (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
                 }else{
                     secondOpponentHand.cards.remove
                         (secondOpponentHand.cards.lastElement());
                     firstOpponentHand.cards.add
-                        (new HandCard(Card.UNKNOWN,NO_CARD));
+                        (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
                 }
                 break;
             default:
@@ -625,14 +706,15 @@ public class JThousandBoard
                 for(byte shift=0;shift<24;shift++)
                     if(sets[turn].containsShift(shift))
                         myHand.cards.insertElementAt
-                            (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                            (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
                                           shift),
                              0);
             }
             stage = Stage.PLAYING_FIRST;
         }else if(stage == Stage.PLAYING_FIRST){
 
-            final byte oldTrumpShift = trumpShift;
+            //final byte oldTrumpShift = trumpShift;
+            boolean trumpChanges = false;
 
             switch(ThousandProtocol.lookupMessageType(move)){
             case PLAY_NEW_TRUMP_1:
@@ -640,7 +722,7 @@ public class JThousandBoard
                     ThousandProtocol.Deserialized_1_PLAY_NEW_TRUMP deserialized
                         = new ThousandProtocol.Deserialized_1_PLAY_NEW_TRUMP(move);
                     firstShift = deserialized.shift;
-                    trumpShift = ThousandCardSet.suitShift(deserialized.shift);
+                    trumpChanges = true;
                 }catch(MessageDeserializationException e){
                     Output.p("Deserialized_1_PLAY_NEW_TRUMP failed.");
                     return INVALID|END;
@@ -661,28 +743,35 @@ public class JThousandBoard
                 return INVALID|END;
             }
 
-            this.cardsAtTable.clear();
-            this.cardsAtTable.add
-                (new CardAtTable(THOUSAND_SHIFT_TO_CARD[firstShift],
-                                 0f,//(float)Math.random()-0.5f,
-                                 0f,//(float)Math.random()-0.5f,
+            mustHand.cards.clear();
+
+            this.jCards.cardsAtTable.clear();
+            this.jCards.cardsAtTable.add
+                (new JCards.CardAtTable(THOUSAND_SHIFT_TO_CARD[firstShift],
+                                 (opponentsTurn(1)
+                                  ?-0.25f:(opponentsTurn(2)
+                                           ?0.25f
+                                           :0f)),
+                                 (opponentsTurn(1)
+                                  ?-0.25f:(opponentsTurn(2)
+                                           ?-0.25f
+                                           :0.25f)),
                                  (opponentsTurn(1)
                                   ?-Math.PI/4:(opponentsTurn(2)
                                                ?Math.PI/4
                                                :0.0)),
-                                 NO_CARD));
+                                 JCards.UNCLICKABLE));
             
             if(myTurn()){
-                final B dummyB = new B();
                 sets[turn].removeFirstShift(firstShift,
-                                            dummyB,
+                                            trumpShift,
                                             smallPoints[turn]);
                 myHand.cards.clear();
                 for(byte shift=0;shift<24;shift++)
                     if(sets[turn].containsShift(shift))
                         myHand.cards.insertElementAt
-                            (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
-                                          NO_CARD),
+                            (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                          JCards.UNCLICKABLE),
                                  0);
             }else{
                 //Not my turn.
@@ -693,14 +782,13 @@ public class JThousandBoard
                 //card.
                 final ThousandCardSet set = new ThousandCardSet();
                 set.addShift(firstShift);
-                //If trump changed, we need to add king (or quuen) to
+                //If trump changed, we need to add king (or queen) to
                 //the set. We do it by adding all cards:
-                if(trumpShift!=oldTrumpShift)
+                if(trumpChanges)
                     set.value = 0xFFFFFF;
 
-                final B dummyB = new B();
                 set.removeFirstShift(firstShift,
-                                     dummyB,
+                                     trumpShift,
                                      smallPoints[turn]);
 
                 if(opponentsTurn(1)){
@@ -718,12 +806,13 @@ public class JThousandBoard
                     if(sets[turn].containsShift(shift)){
                         final ThousandCardSet copy = new ThousandCardSet();
                         copy.value = sets[turn].value;
-                        final boolean valid = copy.removeSecondShift(firstShift,
-                                                                     shift,
-                                                                     trumpShift);
+                        final boolean valid
+                            = copy.removeSecondShift(firstShift,
+                                                     shift,
+                                                     trumpShift.value);
                         myHand.cards.insertElementAt
-                            (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
-                                          (valid?shift:NO_CARD)),
+                            (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                          (valid?shift:JCards.UNCLICKABLE)),
                              0);
                     }
             }
@@ -738,15 +827,15 @@ public class JThousandBoard
                 return INVALID|END;
             }
 
-            this.cardsAtTable.add
-                (new CardAtTable(THOUSAND_SHIFT_TO_CARD[secondShift],
+            this.jCards.cardsAtTable.add
+                (new JCards.CardAtTable(THOUSAND_SHIFT_TO_CARD[secondShift],
                                  0f,//(float)Math.random()-0.5f,
                                  0f,//(float)Math.random()-0.5f,
                                  (opponentsTurn(1)
                                   ?-Math.PI/4:(opponentsTurn(2)
                                                ?Math.PI/4
                                                :0.0)),
-                                 NO_CARD));
+                                 JCards.UNCLICKABLE));
 
             if(myTurn()){
                 sets[turn].removeShift(secondShift);
@@ -754,8 +843,8 @@ public class JThousandBoard
                 for(byte shift=0;shift<24;shift++)
                     if(sets[turn].containsShift(shift))
                         myHand.cards.insertElementAt
-                            (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
-                                          NO_CARD),
+                            (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                          JCards.UNCLICKABLE),
                              0);
             }else if(opponentsTurn(1)){
                 firstOpponentHand.cards.remove
@@ -773,28 +862,52 @@ public class JThousandBoard
                         copy.value = sets[turn].value;
                         final S dummyS = new S();
                         final B dummyB = new B();
-                        final boolean valid = copy.removeThirdShift(firstShift,
-                                                                    secondShift,
-                                                                    shift,
-                                                                    trumpShift,
-                                                                    dummyS,
-                                                                    dummyS,
-                                                                    dummyS,
-                                                                    dummyB);
+                        final boolean valid
+                            = copy.removeThirdShift(firstShift,
+                                                    secondShift,
+                                                    shift,
+                                                    trumpShift.value,
+                                                    dummyS,
+                                                    dummyS,
+                                                    dummyS,
+                                                    dummyB);
                         myHand.cards.insertElementAt
-                            (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
-                                          (valid?shift:NO_CARD)),
+                            (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                          (valid?shift:JCards.UNCLICKABLE)),
                              0);
                     }
             }
             stage = Stage.PLAYING_THIRD;
         }else if(stage == Stage.PLAYING_THIRD){
-            try{
-                ThousandProtocol.Deserialized_1_PLAY deserialized
-                    = new ThousandProtocol.Deserialized_1_PLAY(move);
-                thirdShift = deserialized.shift;
-            }catch(MessageDeserializationException e){
-                Output.p("Deserialized_1_PLAY failed.");
+
+            ThousandCardSet newCards = null;
+
+            switch(ThousandProtocol.lookupMessageType(move)){
+            case PLAY_1:
+                try{
+                    final ThousandProtocol.Deserialized_1_PLAY deserialized
+                        = new ThousandProtocol.Deserialized_1_PLAY(move);
+                    thirdShift = deserialized.shift;
+                }catch(MessageDeserializationException e){
+                    Output.p("Deserialized_1_PLAY failed.");
+                    return INVALID|END;
+                }
+                break;
+            case PLAY_AND_DEAL_1:
+                try{
+                    final ThousandProtocol.Deserialized_1_PLAY_AND_DEAL d
+                        = new ThousandProtocol.Deserialized_1_PLAY_AND_DEAL
+                        (move);
+                    thirdShift = d.shift;
+                    newCards = new ThousandCardSet();
+                    newCards.value = d.thousandCardSet;
+                }catch(MessageDeserializationException e){
+                    Output.p("Deserialized_1_PLAY_AND_DEAL failed.");
+                    return INVALID|END;
+                }
+                break;
+            default:
+                Output.p("UNEXPECTED message type in stage "+stage+"!");
                 return INVALID|END;
             }
 
@@ -808,21 +921,21 @@ public class JThousandBoard
             set.removeThirdShift(firstShift,
                                  secondShift,
                                  thirdShift,
-                                 trumpShift,
+                                 trumpShift.value,
                                  smallPoints[getPreviousPlayer(2)],
                                  smallPoints[getPreviousPlayer()],
                                  smallPoints[turn],
                                  turnIncrement);
 
-            this.cardsAtTable.add
-                (new CardAtTable(THOUSAND_SHIFT_TO_CARD[thirdShift],
+            this.jCards.cardsAtTable.add
+                (new JCards.CardAtTable(THOUSAND_SHIFT_TO_CARD[thirdShift],
                                  0f,//(float)Math.random()-0.5f,
                                  0f,//(float)Math.random()-0.5f,
                                  (opponentsTurn(1)
                                   ?-Math.PI/4:(opponentsTurn(2)
                                                ?Math.PI/4
                                                :0.0)),
-                                 NO_CARD));
+                                 JCards.UNCLICKABLE));
 
             if(myTurn())
                 sets[turn].removeShift(thirdShift);
@@ -832,19 +945,22 @@ public class JThousandBoard
                 //Add points for each player:
                 for(byte p = 0; p<numberOfPlayers; p++){
                     if(p==biddingWinner){
-                        if(smallPoints[p].value>=10*bids10[biddingWinner])
-                            bigPoints10[p] += bids10[biddingWinner];
-                        else                  
-                            bigPoints10[p] -= bids10[biddingWinner];
+                        if(smallPoints[p].value >= 10*bids10[p])
+                            bigPoints10[p] += bids10[p];
+                        else
+                            bigPoints10[p] -= bids10[p];
+                    }else{
+                        if(bigPoints10[p] < 80)
+                            bigPoints10[p] += (smallPoints[p].value+4)/10;
                     }
-                    else
-                        bigPoints10[p] += (smallPoints[p].value+4)/10;
                 }
+
+                addPointsTableRow();
 
                 //The end?
                 if(bigPoints10[biddingWinner]>=100){
                     stage = Stage.ENDED;
-                    hands.clear();
+                    jCards.hands.clear();
                     setArrows();
                     this.repaint();
                     Output.d("AFTER: "+makeStateString());
@@ -855,6 +971,8 @@ public class JThousandBoard
                     startsBidding = (byte)((startsBidding+1)%numberOfPlayers);
                     turn = startsBidding;
                     deal();
+                    sets[table.myTurnGamePlayer].value = newCards.value;
+                    initializeHands();
                 }
             }
             else{
@@ -865,8 +983,8 @@ public class JThousandBoard
                     for(byte shift=0;shift<24;shift++)
                         if(sets[turn].containsShift(shift))
                             myHand.cards.insertElementAt
-                                (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
-                                              NO_CARD),
+                                (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                              JCards.UNCLICKABLE),
                                  0);
                 }else if(opponentsTurn(1)){
                     firstOpponentHand.cards.remove
@@ -881,7 +999,7 @@ public class JThousandBoard
                     for(byte shift=0;shift<24;shift++)
                         if(sets[turn].containsShift(shift)){
                             myHand.cards.insertElementAt
-                                (new HandCard(THOUSAND_SHIFT_TO_CARD[shift],
+                                (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
                                               shift),
                                  0);
                         }

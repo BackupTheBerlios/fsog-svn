@@ -80,11 +80,10 @@ public class JTablePanel
 
         tabbedPane.setBorder(BorderFactory.createMatteBorder(1,1,1,1,Color.black));
         //tabbedPane.setPreferredSize(new Dimension(200, 300));
-        JScrollPane tableInfoScrollPane = new JScrollPane(tabbedPane);
 
         this.splitPane0 = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
                                          tablePlayerListScrollPane,
-                                         tableInfoScrollPane);
+                                         tabbedPane);
         splitPane0.setOneTouchExpandable(true);
         splitPane0.setDividerLocation(150);
 

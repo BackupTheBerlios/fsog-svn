@@ -38,22 +38,22 @@ import java.util.*;
 
 public class ThousandCardSet{
 
-    private static byte points[] = {11,10,4,3,2,0,
-                                    11,10,4,3,2,0,
-                                    11,10,4,3,2,0,
-                                    11,10,4,3,2,0};
+    private static byte points[] = {0,2,3,4,10,11,
+                                    0,2,3,4,10,11,
+                                    0,2,3,4,10,11,
+                                    0,2,3,4,10,11,};
 
-    private static byte marriagePoints[] = {0,0,100,100,0,0,
-                                            0,0,80,80,0,0,
+    private static byte marriagePoints[] = {0,0,40,40,0,0,
                                             0,0,60,60,0,0,
-                                            0,0,40,40,0,0};
+                                            0,0,80,80,0,0,
+                                            0,0,100,100,0,0};
 
 
-    public static byte valueShift(final byte shift){
+    private static byte valueShift(final byte shift){
         return (byte)(shift%6);
     }
 
-    public static byte suitShift(final byte shift){
+    private static byte suitShift(final byte shift){
         return (byte)(6*(shift/6));
     }
 
@@ -274,8 +274,8 @@ public class ThousandCardSet{
                             }
                     }
                 else
-                    {//1:non--trump 3:non--trump
-                        if(secondSuitShift==trumpShift
+                    {//1:X 3:Y, where Y is non--trump and X!=Y
+                        if(firstSuitShift!=trumpShift && secondSuitShift==trumpShift
                            ||(secondSuitShift==firstSuitShift && secondShift>firstShift))
                             {
                                 secondSmallPoints.value+=sum;
