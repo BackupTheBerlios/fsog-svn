@@ -35,15 +35,15 @@
 
 #include "ThousandCardSet.hpp"
 
-int_fast8_t ThousandCardSet::points[24] = {11,10,4,3,2,0,
-                                           11,10,4,3,2,0,
-                                           11,10,4,3,2,0,
-                                           11,10,4,3,2,0};
+int_fast8_t ThousandCardSet::points[24] = {0,2,3,4,10,11,
+                                           0,2,3,4,10,11,
+                                           0,2,3,4,10,11,
+                                           0,2,3,4,10,11};
 
-int_fast8_t ThousandCardSet::marriagePoints[24] = {0,0,100,100,0,0,
-                                                   0,0,80,80,0,0,
+int_fast8_t ThousandCardSet::marriagePoints[24] = {0,0,40,40,0,0,
                                                    0,0,60,60,0,0,
-                                                   0,0,40,40,0,0};
+                                                   0,0,80,80,0,0,
+                                                   0,0,100,100,0,0};
 
 int_fast8_t ThousandCardSet::valueShift(const int_fast8_t shift) throw()
 {
@@ -272,8 +272,8 @@ bool ThousandCardSet::removeThirdShift(const int_fast8_t firstShift,
             }
         }
       else
-        {//1:non--trump 3:non--trump
-          if(secondSuitShift==trumpShift
+        {//1:X 3:Y, where Y is non--trump and X!=Y                        
+          if(firstSuitShift!=trumpShift && secondSuitShift==trumpShift
              ||(secondSuitShift==firstSuitShift && secondShift>firstShift))
             {
               secondSmallPoints+=sum;

@@ -58,11 +58,11 @@ class ThousandCardSet
   static int_fast8_t points[24];
   static int_fast8_t marriagePoints[24];
 
-  bool hasAnyOf(const int_fast32_t set) const throw();
-public:
-
   static int_fast8_t valueShift(const int_fast8_t shift) throw();
   static int_fast8_t suitShift(const int_fast8_t shift) throw();
+
+  bool hasAnyOf(const int_fast32_t set) const throw();
+public:
 
   //Representation of this set as a 32--bit integer. Can be
   //used for serializing.

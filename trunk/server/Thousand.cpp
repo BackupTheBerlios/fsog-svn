@@ -77,32 +77,31 @@ void Thousand::deal() throw()
 
 int_fast8_t Thousand::maxBid10() const throw()
 {
-  const int_fast8_t absoluteMaximum = 12+10+8+6+4;
+  int_fast8_t result = 12;
   const ThousandCardSet& set = sets[turn];
   //TODO: precompute sets and check intersection.
   if(set.containsShift(ThousandProtocol::QUEEN_SHIFT
                        +ThousandProtocol::HEART_SHIFT)
      && set.containsShift(ThousandProtocol::KING_SHIFT
                           +ThousandProtocol::HEART_SHIFT))
-    return absoluteMaximum;
+    result+=10;
   if(set.containsShift(ThousandProtocol::QUEEN_SHIFT
                        +ThousandProtocol::DIAMOND_SHIFT)
      && set.containsShift(ThousandProtocol::KING_SHIFT
                           +ThousandProtocol::DIAMOND_SHIFT))
-    return absoluteMaximum;
+    result+=8;
   if(set.containsShift(ThousandProtocol::QUEEN_SHIFT
                        +ThousandProtocol::CLUB_SHIFT)
      && set.containsShift(ThousandProtocol::KING_SHIFT
                           +ThousandProtocol::CLUB_SHIFT))
-    return absoluteMaximum;
+    result+=6;
   if(set.containsShift(ThousandProtocol::QUEEN_SHIFT
                        +ThousandProtocol::SPADE_SHIFT)
      && set.containsShift(ThousandProtocol::KING_SHIFT
                           +ThousandProtocol::SPADE_SHIFT))
-    return absoluteMaximum;
-  return 12;
+    result+=4;
+  return result;
 }
-
 
 bool Thousand::initialize(std::list<PlayerAddressedMessage>& messages) throw()
 {
@@ -124,17 +123,12 @@ bool Thousand::initialize(std::list<PlayerAddressedMessage>& messages) throw()
   bigPoints10.resize(3,0);
 
   //Send messages to clients with info about what's their cards:
-  messages.push_back(PlayerAddressedMessage(0));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(sets[0].value,
-                                             messages.back().message);
-  
-  messages.push_back(PlayerAddressedMessage(1));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(sets[1].value,
-                                             messages.back().message);
-
-  messages.push_back(PlayerAddressedMessage(2));
-  ThousandProtocol::serialize_1_DEAL_7_CARDS(sets[2].value,
-                                             messages.back().message);
+  for(Player p=0; p<3; p++)
+    {
+      messages.push_back(PlayerAddressedMessage(p));
+      ThousandProtocol::serialize_1_DEAL(sets[p].value,
+                                         messages.back().message);
+    }
 
   //Ready for playing! After this function returns server will send
   //initial information to clients and will await move from the
@@ -402,8 +396,6 @@ MoveResult Thousand::move(const std::vector<char>& move,
           return INVALID|END;
         }
 
-      sendToOthers(move,moveMessages);
-
       if(sets[turn].isEmpty())
         {//No more cards
           //Add points for each player:
@@ -417,11 +409,17 @@ MoveResult Thousand::move(const std::vector<char>& move,
                     bigPoints10[p] -= bids10[biddingWinner];
                 }
               else
-                bigPoints10[p] += (smallPoints[p]+4)/10;
+                {
+                  if(bigPoints10[p] < 80)
+                    bigPoints10[p] += (smallPoints[p]+4)/10;
+                }
             }
           //The end?
           if(bigPoints10[biddingWinner]>=100)
             {
+              //Send PLAY message to all.
+              sendToAll(move,moveMessages);
+
               stage = ENDED;
               return VALID|END;
             }
@@ -430,9 +428,22 @@ MoveResult Thousand::move(const std::vector<char>& move,
           startsBidding = (startsBidding+1)%numberOfPlayers;
           turn = startsBidding;
           deal();
+
+          //Send messages to clients with info about what's their cards:
+          for(Player p=0; p<3; p++)
+            {
+              moveMessages.push_back(PlayerAddressedMessage(p));
+              ThousandProtocol::serialize_1_PLAY_AND_DEAL
+                (thirdShift,
+                 sets[p].value,
+                 moveMessages.back().message);
+            }
         }
       else
         {//Still some cards in the set.
+          //Send PLAY message to others:
+          sendToOthers(move,moveMessages);
+      
           stage = PLAYING_FIRST;
           setNextPlayer(turnIncrement);
         }
