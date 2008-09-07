@@ -35,23 +35,54 @@
 
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.*;
 
-public class TableCreator{
+public abstract class TableCreator implements GeneralProtocol.GeneralHandler{
 
-    private static boolean printDebug = false;
-    private static void d(final String s){
-        if(printDebug) System.out.println(s);
+    final Socket socket;
+    final Sender sender;
+    final Receiver receiver;
+    final BlockingQueue<Long> queue;
+
+    public TableCreator(final Socket socket){
+        this.socket = socket;
+        final TableCreator me = this;
+        this.sender = new Sender(socket,""){
+                public void d(final String s){me.d(s);}
+                public void e(final String s,final Throwable t){me.e(s,t);}
+            };
+        this.receiver = new Receiver(socket,this,""){
+                public void d(final String s){me.d(s);}
+                public void e(final String s,final Throwable t){me.e(s,t);}
+            };
+        this.queue = new LinkedBlockingQueue<Long>();
     }
+    
+    public abstract void d(final String s);
+    public abstract void e(final String s,final Throwable t);
 
     public static void main(final String[] arguments){
         try{
-            if(arguments.length>=3 && arguments[2].equals("-d"))
-                printDebug = true;
-
             final String host = arguments[0];
             final int port = Integer.parseInt(arguments[1]);
 
-            System.out.println(""+createTable(host,port));
+            final TableCreator tableCreator
+                = new TableCreator(new Socket(host,port)){
+                        public void d(final String s){
+                            System.err.println(s);
+                        }
+                        public void e(final String s,final Throwable t){
+                            System.err.println(s);
+                            t.printStackTrace();
+                        }
+                    };
+
+            final long tableId = tableCreator.createTable();
+
+            System.out.println(""+tableId);
+
+            tableCreator.quitAndJoin();
+
         }catch(final Exception e){
             System.err.println("Exception: "+e);
             System.err.println("Stack trace:");
@@ -59,16 +90,10 @@ public class TableCreator{
         }
     }
 
-    public static long createTable(final String host,
-                                   final int port) throws Exception{
+    public long createTable() throws Exception{
 
         d("Debug mode enabled.");
 
-        d("Creating socket...");
-        final Socket socket
-            = new Socket(host,port);
-
-        d("Socket created: "+socket);
         d("Serializing message...");
         final Vector<Byte> query
             = GeneralProtocol.serialize_1_CREATE_THOUSAND_TABLE();
@@ -76,22 +101,38 @@ public class TableCreator{
         d("Message serialized: "+query);
 
         d("Sending message...");
-        TransportProtocol.send(query,socket);
+        sender.send(query);
 
         d("Query sent: "+query);
 
         d("Awaiting response...");
-        //Receive response:
-        final Vector<Byte> response
-            = TransportProtocol.receive(socket);
+        final Long tableId = this.queue.take();
+        d("Response: "+tableId);
         
-        d("Response: "+response);
-        
-        final GeneralProtocol.Deserialized_1_TABLE_CREATED deserialized
-            = new GeneralProtocol.Deserialized_1_TABLE_CREATED(response);
-
-        socket.close();
-
-        return deserialized.id;
+        return tableId;
     }
+
+    public void quitAndJoin()throws Exception{
+        sender.quit();
+        socket.close();
+        sender.join();
+        receiver.join();
+    }
+
+    public boolean handle_1_TABLE_CREATED(final long id){
+        this.queue.offer(new Long(id));
+        return true;
+    }
+
+    public boolean handle_1_SAID(final byte tablePlayerId,
+                                 final java.util.Vector<Byte> text_UTF8){return false;}
+    public boolean handle_1_YOU_JOINED_TABLE(final byte tablePlayerId){return false;}
+    public boolean handle_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(){return false;}
+    public boolean handle_1_NEW_PLAYER_JOINED_TABLE(final String screenName,
+                                                    final byte tablePlayerId){return false;}
+    public boolean handle_1_PLAYER_LEFT_TABLE(final byte tablePlayerId){return false;}
+    public boolean handle_1_GAME_STARTED_WITHOUT_INITIAL_MESSAGE(final java.util.Vector<Byte> turnGamePlayerToTablePlayerId){return false;}
+    public boolean handle_1_GAME_STARTED_WITH_INITIAL_MESSAGE(final java.util.Vector<Byte> turnGamePlayerToTablePlayerId,
+                                                              final java.util.Vector<Byte> initialMessage){return false;}
+    public boolean handle_1_MOVE_MADE(final java.util.Vector<Byte> gameMove){return false;}
 }

@@ -33,36 +33,31 @@
         Denmark
 */
 
-import java.net.Socket;
+import java.net.*;
 import java.util.*;
 
-public class Sender extends Thread{
+public abstract class Sender extends Thread{
 
-    private Socket socket;
+    private final Socket socket;
     private final LinkedList< Vector<Byte> > messages;
 
-    private static Sender instance = new Sender();
-
-    private Sender(){
-        this.socket = null;
+    public Sender(final Socket socket,
+                  final String nameSuffix){
+        super("SND "+nameSuffix);
+        this.socket = socket;
         this.messages = new LinkedList< Vector<Byte> >();
         this.start();
     }
 
-    public static void setSocket(final Socket socket){
-        Sender.instance.socket(socket);
-    }        
+    public abstract void d(final String message);
+    public abstract void e(final String message,final Throwable t);
 
-    public static void send(final Vector<Byte> message){
-        Sender.instance.queue(message);
-    }
-
-    public synchronized void socket(final Socket socket){
-        this.socket = socket;
+    public synchronized void quit(){
+        this.messages.addFirst(null);
         this.notify();
     }
 
-    public synchronized void queue(final Vector<Byte> message){
+    public synchronized void send(final Vector<Byte> message){
         this.messages.addLast(message);
         this.notify();
     }
@@ -76,20 +71,42 @@ public class Sender extends Thread{
     public void run(){
 
         try{
-            while(true){
-                final Vector<Byte> message
-                    = this.get();
-                
-                TransportProtocol.send(message,
-                                       this.socket);
+            Vector<Byte> message;
+            while((message = this.get())!=null){
+                this.transportSend(message,this.socket);
             }
+            d("Normal loop termination.");
         }catch(final InterruptedException e){
-            //Thread interrupted, so we exit the loop.
+            d("Thread interrupted, so we exit the loop.");
+        }catch(final SocketException e){
+            d("Socket closed, so we exit the loop.");
         }catch(final Exception e){
-            System.err.println("Exception: "+e);
-            System.err.println("Stack trace:");
-            e.printStackTrace();
+            e("Unexpected problem.",e);
             //TODO: Terminate program?
         }
+        d("Sender terminated.");
+    }
+
+    public void transportSend(final Vector<Byte> message,
+                              final Socket socket)
+        throws java.io.IOException
+    {
+        d("TP.snd "+GeneralProtocol.lookupMessageType(message)
+          +" "+Message.toString(message));
+
+        final Vector<Byte> bytes
+            = message;
+        
+        final java.io.OutputStream stream
+            = socket.getOutputStream();
+        
+        //Two first bytes transferred represent the length of the message.
+        final int length = bytes.size();
+        stream.write(0xFF&(length>>8));
+        stream.write(0xFF&length);
+        for(int i=0;i<length;i++)
+            stream.write(bytes.get(i));
+        //TODO: Is it OK to do it?
+        stream.flush();
     }
 }

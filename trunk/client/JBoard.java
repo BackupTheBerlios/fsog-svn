@@ -53,11 +53,17 @@ public abstract class JBoard extends JPanel{
            final Table table,
            final MoveListener moveListener,
            final JTabbedPane jTabbedPane){
+        super(new BorderLayout());
         this.numberOfPlayers = numberOfPlayers;
         this.table = table;
         this.moveListener = moveListener;
         this.jTabbedPane = jTabbedPane;
     }
+
+    public abstract void sendMove(final Vector<Byte> move);
+
+    public abstract void d(final String message);
+    public abstract void p(final String message);
 
     /** 
      @return Returns number of players playing.

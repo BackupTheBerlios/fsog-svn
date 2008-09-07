@@ -33,20 +33,27 @@
         Denmark
 */
 
-import java.net.Socket;
+import java.net.*;
 import java.util.*;
 import javax.swing.*;
 
-public class Receiver extends Thread{
+public abstract class Receiver extends Thread{
 
     private final Socket socket;
     private final GeneralProtocol.GeneralHandler generalHandler;
 
     public Receiver(final Socket socket,
-                    final GeneralProtocol.GeneralHandler generalHandler){
+                    final GeneralProtocol.GeneralHandler generalHandler,
+                    final String nameSuffix){
+        super("RCV "+nameSuffix);
         this.socket = socket;
         this.generalHandler = generalHandler;
+        if(socket != null)
+            this.start();
     }
+
+    public abstract void d(final String message);
+    public abstract void e(final String message,final Throwable t);
 
     public void run(){
 
@@ -57,7 +64,7 @@ public class Receiver extends Thread{
                 //TODO: Is Socket's buffer long enough for storing,
                 //say, 100 messages if handling takes a long time?
                 final Vector<Byte> message
-                    = TransportProtocol.receive(this.socket);
+                    = transportReceive(this.socket);
 
                 //TODO: What if called twice before runnable invoked? What's
                 //the order?
@@ -65,20 +72,52 @@ public class Receiver extends Thread{
                         public void run() {
                             if(!GeneralProtocol.handle(message,
                                                        generalHandler)){
-                                System.err.println("Message handling failed. Message type:"
-                                                   +GeneralProtocol.lookupMessageType(message));
-                                System.err.println("Message:");
-                                System.err.println(Message.toString(message));
-
+                                d("Message handling failed. Message type:"
+                                  +GeneralProtocol.lookupMessageType(message));
+                                d("Message:");
+                                d(Message.toString(message));
                             }
                         }
                     });
             }
+        }catch(final SocketException e){
+            d("Socket closed.");
         }catch(final Exception e){
-            System.err.println("Exception: "+e);
-            System.err.println("Stack trace:");
-            e.printStackTrace();
+            e("Unexpected problem.",e);
             //TODO: Maybe this.socket.close()?
         }
+        d("Thread terminated.");
     }
+
+    private Vector<Byte> transportReceive(final Socket socket)
+        throws Exception
+    {
+        final java.io.InputStream stream
+            = socket.getInputStream();
+
+        final int firstByte = stream.read();
+        if(firstByte==-1)
+            throw new Exception("TransportProtocol.receive(...) EOF problem.");
+
+        final int secondByte = stream.read();
+        if(secondByte==-1)
+            throw new Exception("TransportProtocol.receive(...) EOF problem.");
+
+        final int incomingMessageLength
+            = (firstByte<<8)|secondByte;
+
+        final Vector<Byte> message = new Vector<Byte>();
+
+        for(int i=0;i<incomingMessageLength;i++){
+            final int b = stream.read();
+            if(b==-1)
+                throw new Exception("TransportProtocol.receive(...) EOF problem.");
+            message.add((byte)b);
+        }
+
+        d("TP.rcv "+GeneralProtocol.lookupMessageType(message)
+          +" "+Message.toString(message));
+        return message;
+    }
+
 }

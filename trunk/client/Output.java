@@ -32,21 +32,3 @@
         2740 Skovlunde
         Denmark
 */
-
-public class Output{
-
-    private static boolean printDebug = false;
-    public static void enableDebug(){
-        printDebug = true;
-    }
-
-    //What should be printed always:
-    public static void p(final String s){
-        System.out.println(s);
-    }
-
-    //What should be printed during debugging:
-    public static void d(final String s){
-        if(printDebug) System.out.println(s);
-    }
-}

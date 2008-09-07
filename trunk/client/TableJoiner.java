@@ -33,7 +33,6 @@
         Denmark
 */
 
-import java.net.Socket;
 import javax.swing.*;
 
 public class TableJoiner{
@@ -44,24 +43,13 @@ public class TableJoiner{
             final int serverPort = Integer.parseInt(arguments[1]);
             final long tableId = Long.parseLong(arguments[2]);
             final String screenName = arguments[3];
-            if(arguments.length>=5 && arguments[4].equals("-d"))
-                Output.enableDebug();
-
-            Output.d("Debug mode enabled.");
-
-            Output.d("Creating socket...");
-            final Socket socket
-                = new Socket(serverHost,
-                             serverPort);
-            Output.d("Socket created: "+socket);
-
-            Sender.setSocket(socket);
 
             SwingUtilities.invokeLater(new Runnable(){
                     public void run() {
-                        createGUI(socket,
-                                  tableId,
-                                  screenName);
+                        createGUI(serverHost,
+                                  serverPort,
+                                  screenName,
+                                  tableId);
                     }
                 });
 
@@ -76,31 +64,24 @@ public class TableJoiner{
      * Create the GUI. For thread safety, this method should
      * be invoked from the event-dispatching thread.
      */
-    private static void createGUI(final Socket socket,
-                                  final Long tableId,
-                                  final String screenName) {
+    private static void createGUI(final String serverHost,
+                                  final int serverPort,
+                                  final String screenName,
+                                  final long tableId) {
 
         //Create and set up the window.
         final JFrame frame = new JFrame("FSOG - "+screenName);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Add contents to the window.
-        final JTablePanel jTablePanel = new JTablePanel();
+        final JTablePanel jTablePanel = new JTablePanel(serverHost,
+                                                        serverPort,
+                                                        screenName,
+                                                        tableId);
         frame.add(jTablePanel);
 
         //Display the window.
         frame.pack();
         frame.setVisible(true);
-
-        final Receiver receiver = new Receiver(socket,
-                                               jTablePanel);
-        receiver.start();
-
-        //TODO: tableId could be null.
-        Sender.send
-            (GeneralProtocol.serialize_1_JOIN_TABLE_TO_PLAY(tableId,
-                                                            screenName));
-
     }
-
 }

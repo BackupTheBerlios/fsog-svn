@@ -37,19 +37,34 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.net.Socket;
 
 public class JTablePanel
     extends JSplitPane
     implements GeneralProtocol.GeneralHandler, MoveListener
 {
+    private final JOutputConsole jOutputConsole;
     private final Table table;
-    private JTabbedPane tabbedPane;
+    private JTabbedPane jSmallTabbedPane;
+    private JTabbedPane jBigTabbedPane;
     private final JChatPanel jChatPanel;
     private final JSplitPane splitPane0;
     private final JBoard jBoard;
+    public final Socket socket;
+    public final Sender sender;
+    public final Receiver receiver;
 
-    public JTablePanel(){
+    public JTablePanel(final String serverHost,
+                       final int serverPort,
+                       final String screenName,
+                       final long tableId){
+
         super(JSplitPane.HORIZONTAL_SPLIT);
+
+        //We initialize it first, as it's used for debug output.
+        this.jOutputConsole = new JOutputConsole();
+
+        final JTablePanel me = this;
 
         this.table = new Table();
 
@@ -58,51 +73,154 @@ public class JTablePanel
             = new JScrollPane(makeTablePlayerListPanel(this.table));
 
         //Tabbed pane:
-        this.tabbedPane = new JTabbedPane();
+        this.jSmallTabbedPane = new JTabbedPane();
 
         final ImageIcon icon = null;
 
-        this.jChatPanel = new JChatPanel();
-        tabbedPane.addTab("Chat",icon,this.jChatPanel,"Chat window");
-        tabbedPane.setMnemonicAt(0, KeyEvent.VK_C);
+        this.jChatPanel = new JChatPanel(){
+                public void say(){
+                    byte[] text;
+                    try{
+                        text = this.jTextField.getText().getBytes("UTF8");
+                    }catch(final java.io.UnsupportedEncodingException e){
+                        me.e("Can't convert text to UTF8.",e);
+                        text = new byte[0];
+                    }
 
-        JComponent panel4 = new JPanel();
-        //panel4.setPreferredSize(new Dimension(410, 50));
-        tabbedPane.addTab("Players", icon, panel4,
-                          "List of players");
-        tabbedPane.setMnemonicAt(1, KeyEvent.VK_L);
+                    sender.send(GeneralProtocol.serialize_1_SAY(Message.toVector(text)));
+                }
+            };
 
+        jSmallTabbedPane.addTab("Chat",icon,this.jChatPanel,"Chat window");
+        jSmallTabbedPane.setMnemonicAt(jSmallTabbedPane.getTabCount()-1, KeyEvent.VK_C);
+
+        //JComponent panel4 = new JPanel();
+        ////panel4.setPreferredSize(new Dimension(410, 50));
+        //jSmallTabbedPane.addTab("Players", icon, panel4,
+        //                  "List of players");
+        //jSmallTabbedPane.setMnemonicAt(jSmallTabbedPane.getTabCount()-1, KeyEvent.VK_L);
+
+        /*
         JComponent panel5 = new JPanel();
         //panel4.setPreferredSize(new Dimension(410, 50));
-        tabbedPane.addTab("Settings", icon, panel5,
+        jSmallTabbedPane.addTab("Settings", icon, panel5,
                           "Current game settings");
-        tabbedPane.setMnemonicAt(2, KeyEvent.VK_S);
+        jSmallTabbedPane.setMnemonicAt(jSmallTabbedPane.getTabCount()-1,
+                                 KeyEvent.VK_S);
+        */
 
-        tabbedPane.setBorder(BorderFactory.createMatteBorder(1,1,1,1,Color.black));
-        //tabbedPane.setPreferredSize(new Dimension(200, 300));
+        jSmallTabbedPane.setBorder(BorderFactory.createMatteBorder(1,1,1,1,Color.black));
+        //jSmallTabbedPane.setPreferredSize(new Dimension(200, 300));
 
         this.splitPane0 = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
                                          tablePlayerListScrollPane,
-                                         tabbedPane);
+                                         jSmallTabbedPane);
         splitPane0.setOneTouchExpandable(true);
         splitPane0.setDividerLocation(150);
+
+        this.jBigTabbedPane = new JTabbedPane();
 
         this.jBoard
             = new JThousandBoard((byte)3,this.table,
                                  this,
-                                 this.tabbedPane);
+                                 this.jSmallTabbedPane){
+                    public void sendMove(final Vector<Byte> m){
+                        sender.send(GeneralProtocol.serialize_1_MAKE_MOVE(m));
+                    }
+                    public void p(final String s){me.p(s);}
+                    public void d(final String s){me.d(s);}
+                };
         //= new JTicTacToeBoard(this.table,this);
 
         //JLabel label2 = new JLabel("TWO");
         //label2.setHorizontalAlignment(JLabel.CENTER);
         //label2.setBorder(BorderFactory.createMatteBorder(1,1,1,1,Color.black));
         //label2.setPreferredSize(new Dimension(500, 500));
-        JScrollPane playAreaScrollPane = new JScrollPane(this.jBoard);
+        final JScrollPane jPlayAreaScrollPane = new JScrollPane(this.jBoard);
+
+        jBigTabbedPane.addTab("Thousand",null,jPlayAreaScrollPane,
+                              "Game of Thousand");
+
+        jBigTabbedPane.addTab("Console",null,jOutputConsole,
+                              "Output/Debug console");
 
         this.setLeftComponent(splitPane0);
-        this.setRightComponent(playAreaScrollPane);
+        this.setRightComponent(jBigTabbedPane);
         this.setOneTouchExpandable(true);
         this.setDividerLocation(220);
+
+        //GUI created. Set up communication:
+
+        {
+            Socket temporarySocket = null;
+
+            try{
+                d("Creating socket...");
+                temporarySocket = new Socket(serverHost,serverPort);
+                d("Socket created: "+temporarySocket);
+            }catch(final Exception e){
+                e("Can't connect to the server.",e);
+            }
+
+            this.socket = temporarySocket;
+        }
+
+        this.sender = new Sender(socket,screenName){
+                public void d(final String s){me.d(s);}
+                public void e(final String s,final Throwable t){me.e(s,t);}
+            };
+
+        this.receiver = new Receiver(socket,this,screenName){
+                public void d(final String s){me.d(s);}
+                public void e(final String s,final Throwable t){me.e(s,t);}
+            };
+
+        this.sender.send
+            (GeneralProtocol.serialize_1_JOIN_TABLE_TO_PLAY(tableId,
+                                                            screenName));
+    }
+
+    private final void p(final String message){
+        this.jOutputConsole.p(message);
+    }
+
+    private final void d(final String message){
+        this.jOutputConsole.d(message);
+    }
+
+    //TODO: Make all code use this method.
+    private final void e(final String message,final Throwable t){
+
+        final String output
+            = "Ooops! An error has occured.\n"
+            + "Something strange happened and you won't be able "
+            + "to continue playing normally. We are sorry.\n"
+            + "Here's what went wrong:\n"
+            + message + "\n"
+            + "\n"
+            + "Feel free to submit a bug report at:\n"
+            + "http://fsog.berlios.de/";
+
+        p(output);
+        if(t==null)
+            p("No Throwable is a cause for this error.");
+        else{
+            p(""+t);
+            p("Stack trace:");
+            for(StackTraceElement element : t.getStackTrace())
+                p("    "+element);
+        }
+        //TODO: equivalent of printStackTrace().
+        //TODO: maybe label instead of text area?
+        final JTextArea jTextArea = new JTextArea();
+        jTextArea.setEditable(false);
+        jTextArea.setText(output);
+        final JScrollPane jScrollPane
+            = new JScrollPane(jTextArea);
+        //TODO: show console automatically.  TODO: prevent later tabs
+        //from getting focus. Error should stay as the selected tab.
+        jBigTabbedPane.addTab("Error",null,jScrollPane,
+                              "Error description");
     }
 
     private void redrawTablePlayerList(){
@@ -165,7 +283,7 @@ public class JTablePanel
             }
         }
 
-        Output.d("Preferred height: "+ preferredHeight);
+        d("Preferred height: "+ preferredHeight);
         tablePlayerListPanel.setPreferredSize(new Dimension(206,preferredHeight));
         return tablePlayerListPanel;
     }
@@ -196,9 +314,7 @@ public class JTablePanel
     }
 
     public boolean handle_1_JOINING_TABLE_FAILED_INCORRECT_TABLE_ID(){
-        this.jChatPanel.appendLine("Couldn't join table!"
-                                   +" Perhaps the table expired.");
-        //TODO: Maybe some big message.
+        this.e("Couldn't join table! Perhaps the table expired.",null);
         return true;
     }
 
@@ -221,8 +337,7 @@ public class JTablePanel
 
     public boolean handle_1_PLAYER_LEFT_TABLE(final byte tablePlayerId){
         final TablePlayer leaver
-            = //this.table.tablePlayerIdToTablePlayer.get(tablePlayerId);
-        this.table.tablePlayerIdToTablePlayer.remove(tablePlayerId);
+            = this.table.tablePlayerIdToTablePlayer.remove(tablePlayerId);
         this.table.gameOn=false;
         redrawTablePlayerList();
         this.jChatPanel.appendLine(""+leaver+" left table.");
@@ -242,8 +357,7 @@ public class JTablePanel
                                        +new String(Message.toArray(text_UTF8),
                                                    "UTF8"));
         }catch(final java.io.UnsupportedEncodingException e){
-            System.out.println("Couldn't understand chat text: "+e);
-            e.printStackTrace();
+            e("Couldn't understand chat text.",e);
             return false;
         }
         return true;
@@ -290,7 +404,7 @@ public class JTablePanel
                                               endResult);
         //Move was invalid:
         if((moveResult&JBoard.VALIDITY_MASK)!=JBoard.VALID){
-            Output.d("(moveResult&JBoard.VALIDITY_MASK)!=JBoard.VALID");
+            d("(moveResult&JBoard.VALIDITY_MASK)!=JBoard.VALID");
             this.table.gameOn=false;
             this.redrawTablePlayerList();
             return false;

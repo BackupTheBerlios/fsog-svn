@@ -70,10 +70,6 @@ public abstract class JCards
     private int selected;
     protected static final int UNCLICKABLE = 127;
 
-    //If card is selected, we only have to redraw cards (no
-    //background, etc.).
-    private boolean repaintOnlyCardsAtHand;
-
     protected JCards(){
         this.clipRectangle = new Rectangle();
         this.backgroundImage = null;
@@ -82,7 +78,6 @@ public abstract class JCards
         this.hands = new Vector<Hand>();
         this.cardsAtTable = new Vector<CardAtTable>();
         this.selected = UNCLICKABLE;
-        this.repaintOnlyCardsAtHand = false;
 
         this.setBorder(BorderFactory.createEmptyBorder());
         this.setOpaque(true);
@@ -126,6 +121,10 @@ public abstract class JCards
         //For printing arrows that indicate player's turn.
         public boolean hasArrowAbove;
         public boolean hasArrowBelow;
+
+        /**
+           @param label Can be null to indicate no label.
+        */
 
         public Hand(final String label,
                     final float x,
@@ -192,8 +191,9 @@ public abstract class JCards
 
         if(virtualColor != this.selected){
             this.selected = virtualColor;
-            //TODO: more fine-grained "repaint only" mechanism.
-            this.repaintOnlyCardsAtHand = true;
+            //TODO: Some fine-grained "repaint only" mechanism, not to
+            //repaint everything each time, especially when only a
+            //card is hovered.
             this.repaint();
             //System.out.println("("+e.getX()+","+e.getY()+"): "+virtualColor);
         }
@@ -762,8 +762,6 @@ public abstract class JCards
            ||this.virtualImage.getWidth()<width
            ||this.virtualImage.getHeight()<height){
 
-            this.repaintOnlyCardsAtHand = false;
-
             this.initializeVirtualImage();
             this.initializeBackgroundImage();
         }
@@ -777,63 +775,54 @@ public abstract class JCards
 
         final Graphics2D vg = this.virtualImage.createGraphics();
 
-        if(!repaintOnlyCardsAtHand){
+        vg.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                            RenderingHints.VALUE_ANTIALIAS_OFF);
+        vg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                            RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+        vg.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
+                            RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 
-            vg.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                                RenderingHints.VALUE_ANTIALIAS_OFF);
-            vg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                                RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-            vg.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
-                                RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+        //GeneralPath heart=svg2path(S.heart);
 
-            //GeneralPath heart=svg2path(S.heart);
+        g.getClipBounds(clipRectangle);
 
-            g.getClipBounds(clipRectangle);
+        //Paste background:
+        g.drawImage(this.backgroundImage.getSubimage(clipRectangle.x,
+                                                     clipRectangle.y,
+                                                     clipRectangle.width,
+                                                     clipRectangle.height),
+                    clipRectangle.x,
+                    clipRectangle.y,
+                    null);
 
-            //Paste background:
-            g.drawImage(this.backgroundImage.getSubimage(clipRectangle.x,
-                                                         clipRectangle.y,
-                                                         clipRectangle.width,
-                                                         clipRectangle.height),
-                        clipRectangle.x,
-                        clipRectangle.y,
-                        null);
-
-            //g.setRenderingHint(RenderingHints.KEY_RENDERING,
-            //		   RenderingHints.VALUE_RENDER_QUALITY);
-
-            // Get the current transform
-            final AffineTransform originalTransform = g.getTransform();
-            final AffineTransform originalVirtualTransform = vg.getTransform();
-
-            final float cardsAtTableStartX
-                = 0.5f*width - 0.5f*cardAtTableWidth;
-            final float cardsAtTableStartY
-                = 0.5f*height - 0.5f*cardAtTableHeight;
-
-            g.translate(cardsAtTableStartX,cardsAtTableStartY);
-            vg.translate(cardsAtTableStartX,cardsAtTableStartY);
-
-            paintCardsAtTable(g,vg,cardAtTableShape);
-
-            // Restore original transform
-            g.setTransform(originalTransform);
-            vg.setTransform(originalVirtualTransform);
-        }
+        //g.setRenderingHint(RenderingHints.KEY_RENDERING,
+        //		   RenderingHints.VALUE_RENDER_QUALITY);
         
         // Get the current transform
         final AffineTransform originalTransform = g.getTransform();
         final AffineTransform originalVirtualTransform = vg.getTransform();
+        
+        final float cardsAtTableStartX
+            = 0.5f*width - 0.5f*cardAtTableWidth;
+        final float cardsAtTableStartY
+            = 0.5f*height - 0.5f*cardAtTableHeight;
 
+        g.translate(cardsAtTableStartX,cardsAtTableStartY);
+        vg.translate(cardsAtTableStartX,cardsAtTableStartY);
+
+        paintCardsAtTable(g,vg,cardAtTableShape);
+
+        // Restore original transform
+        g.setTransform(originalTransform);
+        vg.setTransform(originalVirtualTransform);
+        
         final Font font = new Font("Lucida Sans",Font.BOLD,10)
             .deriveFont(0.025f*height);
 
         for(Hand hand : this.hands){
 
             g.translate(hand.x*width,hand.y*height);
-            if(!repaintOnlyCardsAtHand){
-                vg.translate(hand.x*width,hand.y*height);
-            }
+            vg.translate(hand.x*width,hand.y*height);
 
             paintHand(g,vg,hand);
 
@@ -842,7 +831,6 @@ public abstract class JCards
             vg.setTransform(originalVirtualTransform);
         }
 
-        this.repaintOnlyCardsAtHand = false;
     }
 
     private void paintHand(final Graphics2D g,
@@ -880,10 +868,8 @@ public abstract class JCards
 
         g.rotate(-singleRotation*0.5f*(numberOfCardsAtHand-1),0,
                  rotationRadius);
-        if(!repaintOnlyCardsAtHand){
-            vg.rotate(-singleRotation*0.5f*(numberOfCardsAtHand-1),0,
-                      rotationRadius);
-        }
+        vg.rotate(-singleRotation*0.5f*(numberOfCardsAtHand-1),0,
+                  rotationRadius);
 
         for(int i=0;i<numberOfCardsAtHand;i++){
 
@@ -895,22 +881,16 @@ public abstract class JCards
                      i==numberOfCardsAtHand-1,
                      handCard.upsidedown);
 
-            if(!repaintOnlyCardsAtHand){
-                vg.setColor(new Color(0,0,handCard.virtualColor));
-                vg.fill(shape);
-            }
+            vg.setColor(new Color(0,0,handCard.virtualColor));
+            vg.fill(shape);
 
             //We need more rotation for 10:
             if((card & Card.VALUE_MASK)==Card.TEN){
                 g.rotate(1.5f*singleRotation,0,rotationRadius);
-                if(!repaintOnlyCardsAtHand){
-                    vg.rotate(1.5f*singleRotation,0,rotationRadius);
-                }
+                vg.rotate(1.5f*singleRotation,0,rotationRadius);
             }else{
                 g.rotate(singleRotation,0,rotationRadius);
-                if(!repaintOnlyCardsAtHand){
-                    vg.rotate(singleRotation,0,rotationRadius);
-                }
+                vg.rotate(singleRotation,0,rotationRadius);
             }
         }
         

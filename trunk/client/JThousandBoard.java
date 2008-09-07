@@ -42,7 +42,7 @@ import java.awt.geom.*;
 import java.awt.font.*;
 import javax.swing.table.*;
 
-public class JThousandBoard
+public abstract class JThousandBoard
     extends JBoard{
     
     private static enum Stage
@@ -107,11 +107,14 @@ public class JThousandBoard
 
     //GUI stuff:
     private final JCards jCards;
+    private final JLabel jLabel;
     private final JCards jLastTrick;
+    private final JLabel jLastTrickLabel;
     private JCards.Hand myHand;
     private JCards.Hand mustHand;
     private JCards.Hand firstOpponentHand;
     private JCards.Hand secondOpponentHand;
+    private final JCards.Hand lastTrickHand;
     private AbstractTableModel pointsTableModel;
     private JTable pointsTable;
 
@@ -141,11 +144,31 @@ public class JThousandBoard
                 }
             };
 
+        this.add(jCards,BorderLayout.CENTER);
+
+        this.jLastTrickLabel = new JLabel("Last trick");
+
         this.jLastTrick = new JCards(){
                 public void cardClicked(final int virtualColor){}
             };
 
-        this.add(jCards);
+        this.lastTrickHand = new JCards.Hand(null,0.5f,0.01f,1.5f);
+        for(int i=0; i<3; i++)
+            this.lastTrickHand.cards.add
+                (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
+        jLastTrick.hands.add(lastTrickHand);
+
+        final JPanel jLastTrickPanel = new JPanel(new BorderLayout());
+        jLastTrickPanel.add(jLastTrickLabel,BorderLayout.PAGE_START);
+        jLastTrickPanel.add(jLastTrick,BorderLayout.CENTER);
+        
+        this.jTabbedPane.addTab("Last trick", null, jLastTrickPanel,
+                                "Last trick or must in the game of Thousand");
+        this.jTabbedPane.setMnemonicAt(this.jTabbedPane.getTabCount()-1,
+                                       KeyEvent.VK_L);
+
+        this.jLabel = new JLabel("Game has not started yet.");
+        this.add(jLabel,BorderLayout.PAGE_END);
 
         this.pointsTableModel = null;
         this.pointsTable = null;
@@ -205,7 +228,7 @@ public class JThousandBoard
         bids10[turn]=-1;
         bids10[getPreviousPlayer()]=10;
         bids10[getNextPlayer()]=-1;
-        Output.d("bids10: {"+bids10[0]+"," +bids10[1]+"," +bids10[2]+"}");
+        d("bids10: {"+bids10[0]+"," +bids10[1]+"," +bids10[2]+"}");
 
         minimumNextBid10=11;
 
@@ -290,18 +313,18 @@ public class JThousandBoard
                                   JCards.UNCLICKABLE),
                      0);
 
-        mustHand = new JCards.Hand(null,0.5f,0.1f,0.15f);
+        mustHand = new JCards.Hand("Must",0.4f,0.05f,0.2f);
 
         for(int i=0; i<3; i++)
             mustHand.cards.add(new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
 
         firstOpponentHand
             = new JCards.Hand(this.table.getMyFirstOpponent().getScreenName(),
-                       0.1f,0.05f,0.15f);
+                       0.1f,0.05f,0.1f);
 
         secondOpponentHand
             = new JCards.Hand(this.table.getMySecondOpponent().getScreenName(),
-                       0.8f,0.05f,0.15f);
+                       0.8f,0.05f,0.1f);
 
         for(int i=0; i<7; i++){
             firstOpponentHand.cards.add(new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
@@ -346,7 +369,7 @@ public class JThousandBoard
             final ThousandProtocol.Deserialized_1_DEAL deserialized
                 = new ThousandProtocol.Deserialized_1_DEAL(initialMessage);
 
-            Output.d("cardSet24: "+deserialized.thousandCardSet);
+            d("cardSet24: "+deserialized.thousandCardSet);
 
             sets[table.myTurnGamePlayer].value = deserialized.thousandCardSet;
 
@@ -355,9 +378,22 @@ public class JThousandBoard
             //Insert row of zeros into the table:
             addPointsTableRow();
 
+            //TODO: Finish displaying info in all states.
+            if(myTurn()){
+                this.jLabel.setText("It's your turn to bid.");
+            }else if(opponentsTurn(1)){
+                this.jLabel.setText
+                    ("It's "+this.table.getMyFirstOpponent().getScreenName()
+                     +"'s turn to bid.");
+            }else{
+                this.jLabel.setText
+                    ("It's "+this.table.getMySecondOpponent().getScreenName()
+                     +"'s turn to bid.");
+            }
+
             return true;
         }catch(MessageDeserializationException e){
-            Output.p("Problem: "+e);
+            p("Problem: "+e);
             return false;
         }
     }
@@ -368,7 +404,7 @@ public class JThousandBoard
             final Vector<Byte> move
                 = ThousandProtocol.serialize_1_BID(bid10);
 
-            Sender.send(GeneralProtocol.serialize_1_MAKE_MOVE(move));
+            this.sendMove(move);
             //If it's second pass, we can't send the move to ourselves by
             //invoking moveListener, because instead of BID message we
             //should get BID_END_..._MUST from the server:
@@ -380,25 +416,10 @@ public class JThousandBoard
             final Vector<Byte> move
                 = ThousandProtocol.serialize_1_CONTRACT(bid10);
 
-            Sender.send(GeneralProtocol.serialize_1_MAKE_MOVE(move));
+            this.sendMove(move);
             this.moveListener.handle_1_MOVE_MADE(move);
         }else{
-            Output.p("ERROR! JTB::bid() Can't bid now!");
-        }
-    }
-
-    private static class JRunnableButton extends JButton implements ActionListener{
-        private final Runnable runnable;
-
-        public JRunnableButton(final String label,
-                               final Runnable runnable){
-            super(label);
-            this.runnable = runnable;
-            this.addActionListener(this);
-        }
-
-        public void actionPerformed(ActionEvent e){
-            this.runnable.run();
+            p("ERROR! JTB::bid() Can't bid now!");
         }
     }
 
@@ -418,14 +439,12 @@ public class JThousandBoard
 
         if(!contracting){
             final JRunnableButton button
-                = new JRunnableButton
-                ("Pass",
-                 new Runnable(){
-                     public void run(){
-                         me.bid((byte)0);
-                         me.jTabbedPane.remove(biddingScrollPane);
-                     }
-                 });
+                = new JRunnableButton("Pass"){
+                        public void run(){
+                            me.bid((byte)0);
+                            me.jTabbedPane.remove(biddingScrollPane);
+                        }
+                    };
             button.setAlignmentX(0.5f);
             biddingPanel.add(button);
         }
@@ -433,14 +452,12 @@ public class JThousandBoard
         for(byte i=minBid10; i<=maxBid10; i++){
             final byte bid10 = i;
             final JRunnableButton button
-                = new JRunnableButton
-                (""+10*((int)i),
-                 new Runnable(){
-                     public void run(){
-                         me.bid(bid10);
-                         me.jTabbedPane.remove(biddingScrollPane);
-                     }
-                 });
+                = new JRunnableButton(""+10*((int)i)){
+                        public void run(){
+                            me.bid(bid10);
+                            me.jTabbedPane.remove(biddingScrollPane);
+                        }
+                    };
             button.setAlignmentX(0.5f);
             biddingPanel.add(button);
         }
@@ -458,7 +475,7 @@ public class JThousandBoard
             final byte shift = (byte)virtualColor;
             final Vector<Byte> move
                 = ThousandProtocol.serialize_1_SELECT(shift);
-            Sender.send(GeneralProtocol.serialize_1_MAKE_MOVE(move));
+            this.sendMove(move);
             this.moveListener.handle_1_MOVE_MADE(move);
         }else if(stage == Stage.PLAYING_FIRST
                  || stage == Stage.PLAYING_SECOND
@@ -470,7 +487,7 @@ public class JThousandBoard
 
             final Vector<Byte> move
                 = ThousandProtocol.serialize_1_PLAY(shift);
-            Sender.send(GeneralProtocol.serialize_1_MAKE_MOVE(move));
+            this.sendMove(move);
 
             //To save bandwidth, server will not send the move back,
             //so we pretend it's sent by invoking this.moveListener's
@@ -480,15 +497,33 @@ public class JThousandBoard
             if(!(stage == Stage.PLAYING_THIRD && myHand.cards.size()==1))
                 this.moveListener.handle_1_MOVE_MADE(move);
         }else{
-            Output.p("ERROR! JTB::cC("+virtualColor
+            p("ERROR! JTB::cC("+virtualColor
                      +") called in stage "+stage);
         }
     }
     
+    private void addTableCard(byte shift){
+        this.jCards.cardsAtTable.add
+            (new JCards.CardAtTable(THOUSAND_SHIFT_TO_CARD[shift],
+                                    (opponentsTurn(1)
+                                     ?-0.25f:(opponentsTurn(2)
+                                              ?0.25f
+                                              :0f)),
+                                    (opponentsTurn(1)
+                                     ?-0.25f:(opponentsTurn(2)
+                                              ?-0.25f
+                                              :0.25f)),
+                                    (opponentsTurn(1)
+                                     ?-Math.PI/4:(opponentsTurn(2)
+                                                  ?Math.PI/4
+                                                  :0.0)),
+                                    JCards.UNCLICKABLE));
+    }
+
     public int moveMade(final Vector<Byte> move,
                         final int[] endResult){
-        Output.d("BEFORE: "+makeStateString());
-        Output.d("JTB.MM "+ThousandProtocol.lookupMessageType(move)
+        d("BEFORE: "+makeStateString());
+        d("JTB.MM "+ThousandProtocol.lookupMessageType(move)
                  +" "+Message.toString(move));
 
         //Are we still biding?
@@ -502,7 +537,7 @@ public class JThousandBoard
                         = new ThousandProtocol.Deserialized_1_BID(move);
                     bids10[turn] = deserialized.bid10;
                 }catch(MessageDeserializationException e){
-                    Output.p("Deserialized_1_BID failed.");
+                    p("Deserialized_1_BID failed.");
                     return INVALID|END;
                 }
 
@@ -515,19 +550,31 @@ public class JThousandBoard
                 else
                     setNextPlayer(2);
 
-                if(this.myTurn())
+                if(myTurn()){
                     showBidding(false);
+                    this.jLabel.setText("It's your turn to bid.");
+                }else if(opponentsTurn(1)){
+                    this.jLabel.setText
+                        ("It's "
+                         +this.table.getMyFirstOpponent().getScreenName()
+                         +"'s turn to bid.");
+                }else{
+                    this.jLabel.setText
+                        ("It's "
+                         +this.table.getMySecondOpponent().getScreenName()
+                         +"'s turn to bid.");
+                }
 
                 break;
             case BID_END_SHOW_MUST_1:
 
                 try{
-                    ThousandProtocol.Deserialized_1_BID_END_SHOW_MUST deserialized
+                    ThousandProtocol.Deserialized_1_BID_END_SHOW_MUST d
                         = new ThousandProtocol.Deserialized_1_BID_END_SHOW_MUST
                         (move);
-                    this.must.value = deserialized.must;
+                    this.must.value = d.must;
                 }catch(MessageDeserializationException e){
-                    Output.p("Deserialized_1_BID_END_SHOW_MUST failed.");
+                    p("Deserialized_1_BID_END_SHOW_MUST failed.");
                     return INVALID|END;
                 }
                 
@@ -555,6 +602,9 @@ public class JThousandBoard
                                 (new JCards.HandCard(THOUSAND_SHIFT_TO_CARD[shift],
                                               shift),
                                  0);
+                    this.jLabel.setText
+                        ("It's your turn. Select a card to be passed to "
+                         +this.table.getMyFirstOpponent().getScreenName()+".");
                 }else{
                     //Someone else takes must.
                     if(!must.isEmpty()){
@@ -572,20 +622,28 @@ public class JThousandBoard
                     }
 
                     //Add 3 cards to the must taker.
-                    if(opponentsTurn(1))
+                    if(opponentsTurn(1)){
                         for(int i=0;i<3;i++)
                             firstOpponentHand.cards.add
                                 (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
-                    if(opponentsTurn(2))
+                        this.jLabel.setText
+                            ("It's "+this.table.getMyFirstOpponent().getScreenName()
+                             +"'s turn to pass cards.");
+                    }
+                    if(opponentsTurn(2)){
                         for(int i=0;i<3;i++)
                             secondOpponentHand.cards.add
                                 (new JCards.HandCard(Card.UNKNOWN,JCards.UNCLICKABLE));
+                        this.jLabel.setText
+                            ("It's "+this.table.getMySecondOpponent().getScreenName()
+                             +"'s turn to pass cards.");
+                    }
                 }
 
                 stage = Stage.SELECTING_FIRST;
                 break;
             default:
-                Output.p("UNEXPECTED MESSAGE TYPE!");
+                p("UNEXPECTED MESSAGE TYPE!");
                 return INVALID|END;
             }
         }
@@ -601,7 +659,7 @@ public class JThousandBoard
                             = new ThousandProtocol.Deserialized_1_SELECT(move);
                         sets[table.myTurnGamePlayer].addShift(deserialized.shift);
                     }catch(MessageDeserializationException e){
-                        Output.p("Deserialized_1_SELECT failed.");
+                        p("Deserialized_1_SELECT failed.");
                         return INVALID|END;
                     }
 
@@ -628,7 +686,7 @@ public class JThousandBoard
                             = new ThousandProtocol.Deserialized_1_SELECT(move);
                         sets[table.myTurnGamePlayer].removeShift(deserialized.shift);
                     }catch(MessageDeserializationException e){
-                        Output.p("Deserialized_1_SELECT failed.");
+                        p("Deserialized_1_SELECT failed.");
                         return INVALID|END;
                     }
 
@@ -659,7 +717,7 @@ public class JThousandBoard
                     ThousandProtocol.Deserialized_1_SELECT_HIDDEN deserialized
                         = new ThousandProtocol.Deserialized_1_SELECT_HIDDEN(move);
                 }catch(MessageDeserializationException e){
-                    Output.p("Deserialized_1_SELECT_HIDDEN failed.");
+                    p("Deserialized_1_SELECT_HIDDEN failed.");
                     return INVALID|END;
                 }
 
@@ -678,7 +736,7 @@ public class JThousandBoard
                 }
                 break;
             default:
-                Output.p("UNEXPECTED MESSAGE TYPE!");
+                p("UNEXPECTED MESSAGE TYPE!");
                 return INVALID|END;
             }
             
@@ -695,7 +753,7 @@ public class JThousandBoard
                     = new ThousandProtocol.Deserialized_1_CONTRACT(move);
                 bids10[turn] = deserialized.contract10;
             }catch(MessageDeserializationException e){
-                Output.p("Deserialized_1_CONTRACT failed.");
+                p("Deserialized_1_CONTRACT failed.");
                 return INVALID|END;
             }
                 
@@ -724,7 +782,7 @@ public class JThousandBoard
                     firstShift = deserialized.shift;
                     trumpChanges = true;
                 }catch(MessageDeserializationException e){
-                    Output.p("Deserialized_1_PLAY_NEW_TRUMP failed.");
+                    p("Deserialized_1_PLAY_NEW_TRUMP failed.");
                     return INVALID|END;
                 }
                 break;
@@ -734,33 +792,19 @@ public class JThousandBoard
                         = new ThousandProtocol.Deserialized_1_PLAY(move);
                     firstShift = deserialized.shift;
                 }catch(MessageDeserializationException e){
-                    Output.p("Deserialized_1_PLAY failed.");
+                    p("Deserialized_1_PLAY failed.");
                     return INVALID|END;
                 }
                 break;
             default:
-                Output.p("UNEXPECTED message type in stage "+stage+"!");
+                p("UNEXPECTED message type in stage "+stage+"!");
                 return INVALID|END;
             }
 
             mustHand.cards.clear();
 
             this.jCards.cardsAtTable.clear();
-            this.jCards.cardsAtTable.add
-                (new JCards.CardAtTable(THOUSAND_SHIFT_TO_CARD[firstShift],
-                                 (opponentsTurn(1)
-                                  ?-0.25f:(opponentsTurn(2)
-                                           ?0.25f
-                                           :0f)),
-                                 (opponentsTurn(1)
-                                  ?-0.25f:(opponentsTurn(2)
-                                           ?-0.25f
-                                           :0.25f)),
-                                 (opponentsTurn(1)
-                                  ?-Math.PI/4:(opponentsTurn(2)
-                                               ?Math.PI/4
-                                               :0.0)),
-                                 JCards.UNCLICKABLE));
+            this.addTableCard(firstShift);
             
             if(myTurn()){
                 sets[turn].removeFirstShift(firstShift,
@@ -823,19 +867,11 @@ public class JThousandBoard
                     = new ThousandProtocol.Deserialized_1_PLAY(move);
                 secondShift = deserialized.shift;
             }catch(MessageDeserializationException e){
-                Output.p("Deserialized_1_PLAY failed.");
+                p("Deserialized_1_PLAY failed.");
                 return INVALID|END;
             }
 
-            this.jCards.cardsAtTable.add
-                (new JCards.CardAtTable(THOUSAND_SHIFT_TO_CARD[secondShift],
-                                 0f,//(float)Math.random()-0.5f,
-                                 0f,//(float)Math.random()-0.5f,
-                                 (opponentsTurn(1)
-                                  ?-Math.PI/4:(opponentsTurn(2)
-                                               ?Math.PI/4
-                                               :0.0)),
-                                 JCards.UNCLICKABLE));
+            this.addTableCard(secondShift);
 
             if(myTurn()){
                 sets[turn].removeShift(secondShift);
@@ -889,7 +925,7 @@ public class JThousandBoard
                         = new ThousandProtocol.Deserialized_1_PLAY(move);
                     thirdShift = deserialized.shift;
                 }catch(MessageDeserializationException e){
-                    Output.p("Deserialized_1_PLAY failed.");
+                    p("Deserialized_1_PLAY failed.");
                     return INVALID|END;
                 }
                 break;
@@ -902,12 +938,12 @@ public class JThousandBoard
                     newCards = new ThousandCardSet();
                     newCards.value = d.thousandCardSet;
                 }catch(MessageDeserializationException e){
-                    Output.p("Deserialized_1_PLAY_AND_DEAL failed.");
+                    p("Deserialized_1_PLAY_AND_DEAL failed.");
                     return INVALID|END;
                 }
                 break;
             default:
-                Output.p("UNEXPECTED message type in stage "+stage+"!");
+                p("UNEXPECTED message type in stage "+stage+"!");
                 return INVALID|END;
             }
 
@@ -927,15 +963,7 @@ public class JThousandBoard
                                  smallPoints[turn],
                                  turnIncrement);
 
-            this.jCards.cardsAtTable.add
-                (new JCards.CardAtTable(THOUSAND_SHIFT_TO_CARD[thirdShift],
-                                 0f,//(float)Math.random()-0.5f,
-                                 0f,//(float)Math.random()-0.5f,
-                                 (opponentsTurn(1)
-                                  ?-Math.PI/4:(opponentsTurn(2)
-                                               ?Math.PI/4
-                                               :0.0)),
-                                 JCards.UNCLICKABLE));
+            this.addTableCard(thirdShift);
 
             if(myTurn())
                 sets[turn].removeShift(thirdShift);
@@ -963,7 +991,7 @@ public class JThousandBoard
                     jCards.hands.clear();
                     setArrows();
                     this.repaint();
-                    Output.d("AFTER: "+makeStateString());
+                    d("AFTER: "+makeStateString());
                     return VALID|END;
                 }else{
                     //Not the end, but next bidding.
@@ -1014,14 +1042,14 @@ public class JThousandBoard
       //player sent invalid move.
       if(!ThousandProtocol::deserialize_1_CONTRACT(move,contract10))
         {
-          Output.p("deserialize_1_CONTRACT failed."
+          p("deserialize_1_CONTRACT failed."
                    
           return INVALID|END;
         }
       //Let's see whether the move is valid:
       if(contract10>maxBid10() || contract10<bids10[turn])
         {
-          Output.p("Incorrect contract: contract10=="+(int)(contract10)
+          p("Incorrect contract: contract10=="+(int)(contract10)
                    
           return INVALID|END;
         }
@@ -1034,7 +1062,7 @@ public class JThousandBoard
     {
       if(!ThousandProtocol::deserialize_1_PLAY(move,firstShift))
         {
-          Output.p("deserialize_1_PLAY failed."
+          p("deserialize_1_PLAY failed."
                    
           return INVALID|END;
         }
@@ -1045,7 +1073,7 @@ public class JThousandBoard
                                        trumpShift,
                                        smallPoints[turn]))
         {
-          Output.p("!sets[turn].removeFirstShift(firstShift,trumpShift)"
+          p("!sets[turn].removeFirstShift(firstShift,trumpShift)"
                    <<" firstShift=="
                    +(int)(firstShift)<<" sets[turn].value=="
                    <<sets[turn].value<<" trumpShift=="<<trumpShift
@@ -1070,7 +1098,7 @@ public class JThousandBoard
     {
       if(!ThousandProtocol::deserialize_1_PLAY(move,secondShift))
         {
-          Output.p("deserialize_1_PLAY failed."
+          p("deserialize_1_PLAY failed."
                    
           return INVALID|END;
         }
@@ -1096,7 +1124,7 @@ public class JThousandBoard
     {
       if(!ThousandProtocol::deserialize_1_PLAY(move,thirdShift))
         {
-          Output.p("deserialize_1_PLAY failed."
+          p("deserialize_1_PLAY failed."
                    
           return INVALID|END;
         }
@@ -1157,13 +1185,13 @@ public class JThousandBoard
     }
         */
         else{
-            Output.p("Incorrect stage: "+stage);
+            p("Incorrect stage: "+stage);
             return INVALID|END;
         }
 
         setArrows();
         this.repaint();
-        Output.d("AFTER: "+makeStateString());
+        d("AFTER: "+makeStateString());
         return VALID|CONTINUE;
     }
     

@@ -38,7 +38,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 
-public class JTicTacToeBoard extends JBoard{
+public abstract class JTicTacToeBoard extends JBoard{
 
     private enum Field{EMPTY,X,O}
     private Field[][] board;
@@ -59,11 +59,16 @@ public class JTicTacToeBoard extends JBoard{
         this.buttons = new JMoveButton[3][3];
 
         final JPanel squares = new JPanel(new GridLayout(0,3));
+        final JTicTacToeBoard me = this;
         for(byte row=0; row<3; row++)
             for(byte column=0; column<3; column++){
                 this.board[row][column] = Field.EMPTY;
                 this.buttons[row][column]
-                    = new JMoveButton(row,column,moveListener);
+                    = new JMoveButton(row,column,moveListener){
+                            public void sendMove(final Vector<Byte> move){
+                                me.sendMove(move);
+                            }
+                        };
                 squares.add(this.buttons[row][column]);
             }
         this.add(this.label,BorderLayout.PAGE_START);
@@ -74,7 +79,7 @@ public class JTicTacToeBoard extends JBoard{
         return (turn==0 ? Field.X : Field.O);
     }
 
-    private static class JMoveButton extends JButton implements ActionListener{
+    private static abstract class JMoveButton extends JButton implements ActionListener{
         private final byte row;
         private final byte column;
         private final MoveListener moveListener;
@@ -95,6 +100,8 @@ public class JTicTacToeBoard extends JBoard{
             this.setFont(this.getFont().deriveFont(100.0F));
             this.setMinimumSize(new Dimension(100,100));
         }
+
+        public abstract void sendMove(final Vector<Byte> move);
 
         public void reset(){
             this.field = Field.EMPTY;
@@ -117,7 +124,7 @@ public class JTicTacToeBoard extends JBoard{
                                                                  this.column);
 
             this.moveListener.handle_1_MOVE_MADE(move);
-            Sender.send(GeneralProtocol.serialize_1_MAKE_MOVE(move));
+            sendMove(move);
 
             /*
             this.jBoard.board[this.row][this.column]
@@ -174,7 +181,7 @@ public class JTicTacToeBoard extends JBoard{
             deserialized
                 = new TicTacToeProtocol.Deserialized_1_TIC_TAC_TOE_MOVE(move);
         }catch(final MessageDeserializationException e){
-            Output.d("JTTTB.mM deserizlization failed.");
+            d("JTTTB.mM deserizlization failed.");
             e.printStackTrace();
             return INVALID|END;
         }
@@ -182,7 +189,7 @@ public class JTicTacToeBoard extends JBoard{
         final byte row = deserialized.row;
         final byte column = deserialized.column;
 
-        Output.d("JTTTB.mM row=="+(int)row+" column=="+(int)column
+        d("JTTTB.mM row=="+(int)row+" column=="+(int)column
                  +"board[row][column]=="+board[row][column]);
 
         //Let's see whether the move is valid (both coordinates are within

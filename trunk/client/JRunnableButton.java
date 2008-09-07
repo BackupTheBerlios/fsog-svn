@@ -37,41 +37,17 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public abstract class JChatPanel extends JPanel implements ActionListener {
+public abstract class JRunnableButton extends JButton
+    implements Runnable,ActionListener{
 
-    //Text is displayed in:
-    private final JTextArea jTextArea;
-    //Text is entered in:
-    protected final JTextField jTextField;
-
-    public JChatPanel(){
-        super(new BorderLayout());
-
-        this.jTextArea = new JTextArea(5, 10);
-        this.jTextArea.setEditable(false);
-        final JScrollPane scrollPane
-            = new JScrollPane(jTextArea);
-
-        this.jTextField = new JTextField(10);
-        this.jTextField.addActionListener(this);
-
-        //Add Components to this panel.
-        this.add(scrollPane,BorderLayout.CENTER);
-        this.add(jTextField,BorderLayout.PAGE_END);
+    public JRunnableButton(final String label){
+        super(label);
+        this.addActionListener(this);
     }
 
-    public abstract void say();
+    public abstract void run();
 
-    public void actionPerformed(final ActionEvent evt) {
-        this.say();
-        //Make sure the new text is visible, even if there
-        //was a selection in the text area.
-        jTextField.selectAll();
-    }
-
-    public void appendLine(final String text){
-        //TODO: repaint necessary?
-        jTextArea.append(text + "\n");
-        jTextArea.setCaretPosition(jTextArea.getDocument().getLength());
+    public void actionPerformed(ActionEvent e){
+        this.run();
     }
 }

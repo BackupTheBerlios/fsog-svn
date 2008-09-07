@@ -39,38 +39,168 @@ import java.awt.event.*;
 
 public class JTableApplet extends JApplet{
 
-    protected void loadAppletParameters() {
-        //Get the applet parameters.
-        String at = getParameter("t");
-    }
+    JTablePanel jTablePanel = null;
+
+    //TODO: Should we have a constructor here? Is browser calling it?
 
     /**
      * Create the GUI. For thread safety, this method should
      * be invoked from the event-dispatching thread.
      */
-    private void createGUI() {
-        System.err.println("Creating...");
-        this.add(new JTablePanel());
-        System.err.println("Created...");
+    private void createGUI(){
+
+        int port = 0;
+        long tableId = 0L;
+        
+        try{
+            port = Integer.parseInt(getParameter("p"));
+        }catch(final Exception e){
+        }
+
+        try{
+            tableId = Long.parseLong(getParameter("t"));
+        }catch(final Exception e){
+        }
+
+        this.jTablePanel
+            = new JTablePanel(getCodeBase().getHost(),
+                              port,
+                              getParameter("n"),
+                              tableId);
+        this.add(this.jTablePanel);
+        this.createMenu();
+        this.showStatus("FSOG_Status.");
+    }
+
+    private void createMenu(){
+        /*
+        JMenuItem menuItem;
+        JRadioButtonMenuItem rbMenuItem;
+        JCheckBoxMenuItem cbMenuItem;
+        */
+
+        //Create the menu bar.
+        final JMenuBar jMenuBar = new JMenuBar();
+
+        //Build the first menu.
+        final JMenu jSettingsMenu = new JMenu("Settings");
+        jSettingsMenu.setMnemonic(KeyEvent.VK_S);
+        jSettingsMenu.getAccessibleContext().setAccessibleDescription
+            ("Settings menu");
+        jMenuBar.add(jSettingsMenu);
+
+        //a group of check box menu items
+        final JCheckBoxMenuItem jShowConsoleMenuItem
+            = new JCheckBoxMenuItem("Show debugging console");
+        jShowConsoleMenuItem.setMnemonic(KeyEvent.VK_C);
+        jSettingsMenu.add(jShowConsoleMenuItem);
+
+        /*
+        cbMenuItem = new JCheckBoxMenuItem("Another one");
+        cbMenuItem.setMnemonic(KeyEvent.VK_H);
+        menu.add(cbMenuItem);
+
+        //a group of radio button menu items
+        menu.addSeparator();
+        ButtonGroup group = new ButtonGroup();
+        rbMenuItem = new JRadioButtonMenuItem("A radio button menu item");
+        rbMenuItem.setSelected(true);
+        rbMenuItem.setMnemonic(KeyEvent.VK_R);
+        group.add(rbMenuItem);
+        menu.add(rbMenuItem);
+
+        rbMenuItem = new JRadioButtonMenuItem("Another one");
+        rbMenuItem.setMnemonic(KeyEvent.VK_O);
+        group.add(rbMenuItem);
+        menu.add(rbMenuItem);
+
+        //a submenu
+        menu.addSeparator();
+        submenu = new JMenu("A submenu");
+        submenu.setMnemonic(KeyEvent.VK_S);
+
+        menuItem = new JMenuItem("An item in the submenu");
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(
+                                                       KeyEvent.VK_2, ActionEvent.ALT_MASK));
+        submenu.add(menuItem);
+
+        menuItem = new JMenuItem("Another item");
+        submenu.add(menuItem);
+        menu.add(submenu);
+        */
+
+        //Build second menu in the menu bar.
+        final JMenu jHelpMenu = new JMenu("Help");
+        jHelpMenu.setMnemonic(KeyEvent.VK_N);
+        jHelpMenu.getAccessibleContext().setAccessibleDescription
+            ("Help menu");
+        jMenuBar.add(jHelpMenu);
+        
+        final JMenuItem jAboutMenuItem = new JMenuItem("About",
+                                                       KeyEvent.VK_A);
+        jAboutMenuItem.setAccelerator(KeyStroke.getKeyStroke
+                                      (KeyEvent.VK_1,ActionEvent.ALT_MASK));
+        jAboutMenuItem.getAccessibleContext().setAccessibleDescription
+            ("Displays information about this program");
+        jHelpMenu.add(jAboutMenuItem);
+
+        final JMenuItem jReportBugMenuItem = new JMenuItem("Report bug",
+                                                           KeyEvent.VK_B);
+        jReportBugMenuItem.setAccelerator
+            (KeyStroke.getKeyStroke(KeyEvent.VK_2,ActionEvent.ALT_MASK));
+        jReportBugMenuItem.getAccessibleContext().setAccessibleDescription
+            ("Report bug in this program");
+        jHelpMenu.add(jReportBugMenuItem);
+
+        this.setJMenuBar(jMenuBar);
     }
 
     //Called when this applet is loaded into the browser.
-    public void init() {
-        loadAppletParameters();
-
+    @Override public void init(){
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
                     public void run() {createGUI();}
                 });
-        } catch (Exception e) { 
-            System.err.println("createGUI didn't successfully complete");
+        }catch(final Exception e) {
+            System.err.println("createGUI didn't complete successfully.");
+            e.printStackTrace();
         }
-        System.err.println("init() done.");
     }
 
-    public void start() {
+    @Override public void start(){
     }
 
-    public void stop() {
+    @Override public void stop(){
+    }
+
+    @Override public void destroy(){
+        //TODO: Should we join all the threads?
+        if(this.jTablePanel!=null){
+            this.jTablePanel.sender.quit();
+            try{
+                this.jTablePanel.socket.shutdownInput();
+                this.jTablePanel.socket.shutdownOutput();
+                this.jTablePanel.socket.close();
+            }catch(final Exception e){
+                System.out.println("Can't close socket: "+e);
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override public String getAppletInfo(){
+        //TODO: more info.
+        return "JTableApplet.";
+    }
+
+    @Override public String[][] getParameterInfo(){
+
+        final String parameterInfo[][] = {
+            {"v", "{\"d\"}", "verbosity"},
+            {"p", "int", "server's port"},
+            {"n", "String", "player's screen name"},
+            {"t", "long", "table id"}
+        };
+        return parameterInfo;
     }
 }
