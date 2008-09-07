@@ -421,6 +421,7 @@ MoveResult Thousand::move(const std::vector<char>& move,
               sendToAll(move,moveMessages);
 
               stage = ENDED;
+              //TODO: endResult must be set.
               return VALID|END;
             }
 

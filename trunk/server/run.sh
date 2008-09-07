@@ -8,5 +8,5 @@ if [ "$(whoami)" == "root" ];
 then
     ./fsog_server -p 80 --print-packets
 else
-    ./fsog_server -p 8080 --print-packets
+    ./fsog_server -p 55555 --print-packets
 fi
