@@ -46,6 +46,9 @@
 class GameServer : GeneralHandler
 {
 public:
+
+  virtual ~GameServer() throw() {}
+
   /** message received from client on old or new session. */
   void received(const std::vector<char>& message,
                 const SessionId sessionID,
@@ -92,4 +95,11 @@ private:
                           std::list<SessionAddressedMessage>& toBeSent,
                           TimeMicro& timeout,
                           const std::vector<char>& move) throw();
+
+  //Unused functions:
+  bool handle_1_TABLE_CREATED(const SessionId sessionID,
+                              std::list<SessionAddressedMessage>& toBeSent,
+                              TimeMicro& timeout,
+                              const int64_t id) throw();
+
 };

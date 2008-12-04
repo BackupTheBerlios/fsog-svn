@@ -201,10 +201,21 @@ public:
 
   //Message CREATE_THOUSAND_TABLE:
 
-  //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
+  //This message will create: [CPP_SERIALIZER, CPP_DESERIALIZER, JAVA_SERIALIZER].
 
   //In protocol version 1 this message has id 2.
   //Sent by client when creating a new Thousand table.
+
+  static void serialize_1_CREATE_THOUSAND_TABLE(    std::vector<char>&outputMessage)
+    throw()
+  {
+    outputMessage.resize(0);
+    //Let the receiver know which protocol version this is:
+    Message::append1Byte(1,outputMessage);
+    //Let the receiver know what kind of message this is:
+    Message::append1Byte(2,outputMessage);
+
+  }
 
   class Deserialized_1_CREATE_THOUSAND_TABLE
   {
@@ -240,7 +251,7 @@ public:
 
   //Message TABLE_CREATED:
 
-  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
+  //This message will create: [CPP_SERIALIZER, CPP_DESERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 3.
   //Sent by server after table has been created.
@@ -259,6 +270,75 @@ public:
 
     //Serialize id:
     Message::append8Bytes(id,outputMessage);
+  }
+
+  class Deserialized_1_TABLE_CREATED
+  {
+  public:
+    //ID for newly created table.
+    int64_t id;
+  };
+
+  static bool deserialize_1_TABLE_CREATED(const std::vector<char>&inputMessage,
+        Deserialized_1_TABLE_CREATED&output)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=3)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize id:
+    if(!Message::read8Bytes(it,messageEnd,output.id))
+      return false;
+    return true;
+  }
+
+  static bool deserialize_1_TABLE_CREATED(const std::vector<char>&inputMessage,
+        int64_t& id)
+  throw()
+  {
+    std::vector<char>::const_iterator it
+     = inputMessage.begin();
+    const std::vector<char>::const_iterator messageEnd
+     = inputMessage.end();
+    
+    //Check protocol version:
+    char protocolVersion=0;
+    if(!Message::read1Byte(it,messageEnd,protocolVersion))
+      return false;
+    if(protocolVersion!=1)
+      return false;
+    
+    //Check message kind:
+    char messageKind=0;
+    if(!Message::read1Byte(it,messageEnd,messageKind))
+      return false;
+    if(messageKind!=3)
+      return false;
+
+    //Deserialize pieces:
+
+    //Deserialize id:
+    if(!Message::read8Bytes(it,messageEnd,id))
+      return false;
+    return true;
   }
 
   //Message SAY:
@@ -699,6 +779,7 @@ class GeneralHandler
   private:
   //Objects for temporary deserialization (to avoid creating
   //new ones all the time):
+  GeneralProtocol::Deserialized_1_TABLE_CREATED deserialized_TABLE_CREATED;
   GeneralProtocol::Deserialized_1_SAY deserialized_SAY;
   GeneralProtocol::Deserialized_1_JOIN_TABLE_TO_PLAY deserialized_JOIN_TABLE_TO_PLAY;
   GeneralProtocol::Deserialized_1_MAKE_MOVE deserialized_MAKE_MOVE;
@@ -716,6 +797,10 @@ public:
   virtual bool handle_1_CREATE_THOUSAND_TABLE(const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout) throw() =0;
+  virtual bool handle_1_TABLE_CREATED(const SessionId sessionID,
+                  std::list<SessionAddressedMessage>& toBeSent,
+                  TimeMicro& timeout,
+                  const int64_t id) throw() =0;
   virtual bool handle_1_SAY(const SessionId sessionID,
                   std::list<SessionAddressedMessage>& toBeSent,
                   TimeMicro& timeout,

@@ -36,7 +36,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/epoll.h>
-#include <unistd.h>
+#include <unistd.h> //For daemon()
 #include <fcntl.h>
 #include <errno.h>
 
@@ -97,8 +97,8 @@ EpollServer::~EpollServer() throw()
   if(close(listener)<0)
     perror("close");
 
-  for(std::map<int,Session>::const_iterator it = sessions.begin();
-      it!=sessions.end();
+  for(std::map<int,Session>::const_iterator it = this->sessions.begin();
+      it!=this->sessions.end();
       it++)
     {
       std::cout<<"Closing fd "<<it->first<<"..."<<std::endl;
@@ -132,10 +132,7 @@ void EpollServer::loop() throw(std::exception)
                   perror("accept");
                   continue;
                 }
-              try
-                {
-                  setnonblocking(client);
-                }
+              try{setnonblocking(client);}
               catch(const std::exception& e)
                 {
                   if(close(client)<0)
@@ -152,6 +149,8 @@ void EpollServer::loop() throw(std::exception)
                   if(close(client)<0)
                     perror("close");
                 }
+              //Add new session (operator [] creates an entry):
+              this->sessions[client];
               std::cout<<"New client: "<<client<<std::endl;
             }
           else
@@ -181,11 +180,10 @@ void EpollServer::loop() throw(std::exception)
 
 void EpollServer::do_use_fd(const int fd) throw(std::exception)
 {
-  //TODO: Maybe find(), not to create a new session if one does not
-  //exist?
+  //find(), not to create a new session if one does not exist.
   const std::map<int,Session>::iterator entry
-    = sessions.find(fd);
-  if(entry == sessions.end())
+    = this->sessions.find(fd);
+  if(entry == this->sessions.end())
     {
       std::cout<<"No such session: "<<fd<<std::endl;
       throw Problem(__func__,__FILE__,__LINE__,"No such session.",errno);
@@ -199,17 +197,19 @@ void EpollServer::do_use_fd(const int fd) throw(std::exception)
       //Try writing as much as possible:
       while(true)
         {
+          //TODO: Is this the same as .data()? Is memory contiguous?
+          char * const outputBuffer_data = &outputBuffer[0];
           const ssize_t n
-            = write(fd,outputBuffer.data(),outputBuffer.size());
+            = write(fd,outputBuffer_data,outputBuffer.size());
           const int _errno = errno;
           outputBuffer.erase(outputBuffer.begin(),outputBuffer.begin()+n);
           //TODO: don't use EPOLLET. What if we write everything from
           //our buffer and we don't get EAGAIN?
           if(outputBuffer.empty())
             break;
-          if(n<0 && errno==EAGAIN)
+          if(n<0 && _errno==EAGAIN)
             break;
-          else if(n<0 && errno==EINTR)
+          else if(n<0 && _errno==EINTR)
             continue;
           else if(n<0)
             throw Problem(__func__,__FILE__,__LINE__,"write",_errno);
@@ -225,6 +225,7 @@ void EpollServer::do_use_fd(const int fd) throw(std::exception)
       if(epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event)<0)
         {
           //TODO: handle error!
+          perror("epoll_ctl");
         }
     }
   
@@ -293,7 +294,7 @@ void EpollServer::terminate(const int fd)
 
   if(close(fd)<0)
     perror("close");
-  sessions.erase(fd);
+  this->sessions.erase(fd);
 }
 
 void EpollServer::sendMessages(std::list<SessionAddressedMessage>& toBeSent)
@@ -304,8 +305,8 @@ void EpollServer::sendMessages(std::list<SessionAddressedMessage>& toBeSent)
       it++)
     {
       const std::map<int,Session>::iterator entry = 
-        sessions.find(it->sessionId);
-      if(entry == sessions.end())
+        this->sessions.find(it->sessionId);
+      if(entry == this->sessions.end())
         {
           //TODO: No such session!
           std::cout<<"gameServer mistakenly wants"
@@ -338,14 +339,18 @@ void EpollServer::sendMessages(std::list<SessionAddressedMessage>& toBeSent)
 
 int main(const int argc, const char*const*const argv)
 {
-  if(!CommandLine::parse(argc,argv))
-    return 1;
-
-  std::srand(std::time(0));
-
   try
     {
+      //TODO: parse should throw it's problems.
+      if(!CommandLine::parse(argc,argv))
+        throw Problem(__func__,__FILE__,__LINE__,"parse argv",errno);
+
+      std::srand(std::time(0));
+
       EpollServer epollServer;
+      //TODO: this will redirect stdout to /dev/null. Make log!
+      if(daemon(0,0)!=0)
+        throw Problem(__func__,__FILE__,__LINE__,"daemon",errno);
       epollServer.loop();
     }
   catch(std::exception& e)

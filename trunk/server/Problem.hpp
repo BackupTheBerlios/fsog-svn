@@ -36,43 +36,41 @@
 #pragma once
 #include <exception>
 #include <string>
-#include <map>
-#include <vector>
-#include <list>
+#include <sstream>
 
-#include "SessionAddressedMessage.hpp"
-#include "GameServer.hpp"
-#include "Problem.hpp"
-
-class Session
+/**
+   Objects of this class will be thrown.
+ */
+class Problem : public std::exception
 {
+  const std::string message;
+  virtual const char* what() const throw()
+  {
+    return message.c_str();
+  }
+
+  static std::string make_message(const char*const func,
+                                  const char*const file,
+                                  const int line,
+                                  const std::string& description,
+                                  const int _errno)
+  {
+    std::ostringstream o;
+    o<<"ERROR: In "<<func<<' '<<file<<':'<<line;
+    if(_errno!=0)
+      o<<" [errno "<<_errno<<": "<<strerror(_errno)<<']';
+    o<<": "<<description;
+    return o.str();
+  }
+
 public:
-  std::vector<char> inputBuffer;
-  std::vector<char> outputBuffer;
-};
+  Problem(const char*const func,
+          const char*const file,
+          const int line,
+          const std::string& description,
+          const int _errno) throw()
+    :message(make_message(func,file,line,description,_errno))
+  {}
 
-const short mainBufferSize = 1024;
-const int maxevents = 100;
-
-class EpollServer
-{
-  int listener;
-  int epoll_fd;
-  int client;
-  char mainBuffer[mainBufferSize];
-  epoll_event events[maxevents];
-
-  std::map<int,Session> sessions;
-
-  GameServer gameServer;
-
-  void do_use_fd(const int fd) throw(std::exception);
-  //TODO: what will it throw?
-  void sendMessages(std::list<SessionAddressedMessage>& toBeSent);
-  //TODO: what will it throw?
-  void terminate(const int fd);
-public:
-  EpollServer() throw(std::exception);
-  void loop() throw(std::exception);
-  virtual ~EpollServer() throw();
+  virtual ~Problem() throw(){}
 };

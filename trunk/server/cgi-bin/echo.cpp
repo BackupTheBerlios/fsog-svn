@@ -33,46 +33,51 @@
         Denmark
 */
 
-#pragma once
-#include <exception>
-#include <string>
-#include <map>
+//TODO: Minimize libraries.
+#include <unistd.h>
+#include <errno.h>
+#include <iostream>
 #include <vector>
-#include <list>
+#include <string>
+#include <sstream>
+#include "GeneralProtocol.hpp"
 
-#include "SessionAddressedMessage.hpp"
-#include "GameServer.hpp"
-#include "Problem.hpp"
-
-class Session
+int main(const int argc, const char*const*const argv)
 {
-public:
-  std::vector<char> inputBuffer;
-  std::vector<char> outputBuffer;
-};
+  std::cout
+    <<"Content-type: text/html"<<std::endl
+    <<std::endl;
 
-const short mainBufferSize = 1024;
-const int maxevents = 100;
+  std::cout
+    <<"<html>"<<std::endl
+    <<"  <head>"<<std::endl
+    <<"    <title>FSOG - Echo</title>"<<std::endl
+    <<"  </head>"<<std::endl
+    <<"  <body>"<<std::endl;
 
-class EpollServer
-{
-  int listener;
-  int epoll_fd;
-  int client;
-  char mainBuffer[mainBufferSize];
-  epoll_event events[maxevents];
+  std::cout
+    <<"    <p>Script got "<<argc<<" arguments. These are:</p><ol>";
+  for(int i=0;i<argc;i++)
+    std::cout<<"<li>"<<argv[i]<<"</li>"<<std::endl;
+  std::cout
+    <<"    </ol><p>Environment:<ul>";
+  
+  for(int i=0;environ[i]!=0;i++)
+    std::cout<<"<li>"<<environ[i]<<"</li>"<<std::endl;
 
-  std::map<int,Session> sessions;
+  std::cout
+    <<"</ul><p>Standard input follows:</p><pre>";
 
-  GameServer gameServer;
+  char c;
+  while(std::cin.good())
+    {
+      std::cin.get(c);
+      std::cout<<'\''<<c<<'\''<<' '<<static_cast<int>(c)<<' ';
+    }
 
-  void do_use_fd(const int fd) throw(std::exception);
-  //TODO: what will it throw?
-  void sendMessages(std::list<SessionAddressedMessage>& toBeSent);
-  //TODO: what will it throw?
-  void terminate(const int fd);
-public:
-  EpollServer() throw(std::exception);
-  void loop() throw(std::exception);
-  virtual ~EpollServer() throw();
-};
+  std::cout
+    <<"</pre></body>"<<std::endl
+    <<"</html>"<<std::endl;
+
+  return 0;
+}

@@ -127,6 +127,7 @@ void GameServer::terminated(const SessionId& sessionId,
   if(entry == sessionIdToTablePlayerPointer.end())
     {
       //Strange, session doesn't exist!
+      //TODO: Print something.
       return;
     }
 
@@ -468,4 +469,12 @@ bool GameServer::handle_1_MAKE_MOVE
   table.p_game = 0;
   return true;
   //TODO: Save ranking, etc.
+}
+
+bool GameServer::handle_1_TABLE_CREATED(const SessionId /*sessionID*/,
+                                        std::list<SessionAddressedMessage>& /*toBeSent*/,
+                                        TimeMicro& /*timeout*/,
+                                        const int64_t /*id*/) throw()
+{
+  return false;
 }

@@ -46,6 +46,11 @@
     case GeneralProtocol::CREATE_THOUSAND_TABLE_1:
       return GeneralProtocol::deserialize_1_CREATE_THOUSAND_TABLE(message)
              && this->handle_1_CREATE_THOUSAND_TABLE(sessionID,toBeSent,timeout);
+    case GeneralProtocol::TABLE_CREATED_1:
+      return GeneralProtocol::deserialize_1_TABLE_CREATED(message,
+                              this->deserialized_TABLE_CREATED)
+             && this->handle_1_TABLE_CREATED(sessionID,toBeSent,timeout,
+                      this->deserialized_TABLE_CREATED.id);
     case GeneralProtocol::SAY_1:
       return GeneralProtocol::deserialize_1_SAY(message,
                               this->deserialized_SAY)
