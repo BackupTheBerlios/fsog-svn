@@ -133,7 +133,7 @@ public class GeneralProtocol{
 
   //Message CREATE_THOUSAND_TABLE:
 
-  //This message will create: [CPP_DESERIALIZER, JAVA_SERIALIZER].
+  //This message will create: [CPP_SERIALIZER, CPP_DESERIALIZER, JAVA_SERIALIZER].
 
   //In protocol version 1 this message has id 2.
   //Sent by client when creating a new Thousand table.
@@ -152,7 +152,7 @@ public class GeneralProtocol{
 
   //Message TABLE_CREATED:
 
-  //This message will create: [CPP_SERIALIZER, JAVA_DESERIALIZER].
+  //This message will create: [CPP_SERIALIZER, CPP_DESERIALIZER, JAVA_DESERIALIZER].
 
   //In protocol version 1 this message has id 3.
   //Sent by server after table has been created.

@@ -155,7 +155,7 @@ public class JTablePanel
             Socket temporarySocket = null;
 
             try{
-                d("Creating socket...");
+                d("Creating socket ("+serverHost+","+serverPort+")...");
                 temporarySocket = new Socket(serverHost,serverPort);
                 d("Socket created: "+temporarySocket);
             }catch(final Exception e){
