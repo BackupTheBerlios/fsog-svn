@@ -74,14 +74,12 @@ public class GeneralProtocolDefinition{
         protocol.defineMessage
             ("CREATE_THOUSAND_TABLE",
              "Sent by client when creating a new Thousand table.",
-             EnumSet.of(Create.JAVA_SERIALIZER,
-                        Create.CPP_SERIALIZER,Create.CPP_DESERIALIZER));
+             EnumSet.of(Create.JAVA_SERIALIZER,Create.CPP_DESERIALIZER));
 
         protocol.defineMessage
             ("TABLE_CREATED",
              "Sent by server after table has been created.",
-             EnumSet.of(Create.CPP_SERIALIZER,Create.CPP_DESERIALIZER,
-                        Create.JAVA_DESERIALIZER),
+             EnumSet.of(Create.CPP_SERIALIZER,Create.JAVA_DESERIALIZER),
              new PieceDefinition(PieceType.INT64,"id",
                                  "ID for newly created table."));
 

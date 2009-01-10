@@ -54,14 +54,38 @@ sig
     type message = {name:string,
                     comment:string,
                     elements:element list}
-
-    (*  *)
-    type protocol = {name:string,
-                     version:int,
+    (* TODO: value should be kind-dependent, not string. *)
+    type constant = {name:string,
                      comment:string,
-                     license:string,
-                     messages:message list}
+                     kind:kind,
+                     value:string}
 
-    (* Generate C++ header file for a given protocol *)
-    val hpp : protocol -> string
+    (* One can define the protocol using a definition. *)
+    type protocol_definition = {name:string,
+                                version:int,
+                                comment:string,
+                                license:string,
+                                messages:message list,
+                                constants:constant list}
+
+    type protocol
+
+    exception problem of string
+
+    (* Throws problem. *)
+    val define : protocol_definition -> protocol
+
+    (* Generate C++ header file for a given protocol.
+                
+     [cpp(p,ser,des,hppfile,cppfile)] has the side effect of writing a
+     header file hppfile and implementation file cppfile. They will
+     contain definition of protocol p, with serializers for messages
+     ser and deserializers for messages des.
+     *)
+    val cpp : {protocol : protocol,
+               ser : string list,
+               des : string list,
+               hppfile : string,
+               cppfile : string}
+              -> unit
 end

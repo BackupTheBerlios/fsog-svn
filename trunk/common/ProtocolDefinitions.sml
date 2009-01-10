@@ -38,6 +38,7 @@ open Protocol
 
 (* Define messages: *)
 
+(*
 val GET_STATISTICS : message
   = {name="GET_STATISTICS",
      comment="Client requests statistics.",
@@ -52,6 +53,7 @@ val RETURN_STATISTICS : message
                 comment="Number of games being played in the 'room'."},
                {kind=int32,name="numberOfSearchers",
                 comment="Number of people searching in the 'room'."}]}
+*)
 
 val CREATE_TICTACTOE_TABLE : message
   = {name="CREATE_TICTACTOE_TABLE",
@@ -181,26 +183,176 @@ val agpl3 : string
     ^ "        2740 Skovlunde\n"
     ^ "        Denmark\n"
 
-val general_protocol : protocol
-  = {name="General",
-     version=1,
-     comment="TODO: display this comment in hpp file, etc. and change it!",
-     license=agpl3,
-     messages=[GET_STATISTICS,
-               RETURN_STATISTICS,
-               CREATE_TICTACTOE_TABLE,
-               CREATE_THOUSAND_TABLE,
-               TABLE_CREATED,
-               SAY,
-               SAID,
-               JOIN_TABLE_TO_PLAY,
-               YOU_JOINED_TABLE,
-               JOINING_TABLE_FAILED_INCORRECT_TABLE_ID,
-               NEW_PLAYER_JOINED_TABLE,
-               PLAYER_LEFT_TABLE,
-               GAME_STARTED_WITHOUT_INITIAL_MESSAGE,
-               GAME_STARTED_WITH_INITIAL_MESSAGE,
-               MAKE_MOVE,
-               MOVE_MADE]}
+val general_messages
+  = [(*GET_STATISTICS,
+     RETURN_STATISTICS,
+     *)
+     CREATE_TICTACTOE_TABLE,
+     CREATE_THOUSAND_TABLE,
+     TABLE_CREATED,
+     SAY,
+     SAID,
+     JOIN_TABLE_TO_PLAY,
+     YOU_JOINED_TABLE,
+     JOINING_TABLE_FAILED_INCORRECT_TABLE_ID,
+     NEW_PLAYER_JOINED_TABLE,
+     PLAYER_LEFT_TABLE,
+     GAME_STARTED_WITHOUT_INITIAL_MESSAGE,
+     GAME_STARTED_WITH_INITIAL_MESSAGE,
+     MAKE_MOVE,
+     MOVE_MADE]
 
-val hpp_string = hpp general_protocol
+val thousand_constants:constant list
+  = [{kind=int8,comment="",name="ACE_SHIFT",value="5"},
+     {kind=int8,comment="",name="TEN_SHIFT",value="4"},
+     {kind=int8,comment="",name="KING_SHIFT",value="3"},
+     {kind=int8,comment="",name="QUEEN_SHIFT",value="2"},
+     {kind=int8,comment="",name="JACK_SHIFT",value="1"},
+     {kind=int8,comment="",name="NINE_SHIFT",value="0"},
+     {kind=int8,comment="",name="HEART_SHIFT",value="18"},
+     {kind=int8,comment="",name="DIAMOND_SHIFT",value="12"},
+     {kind=int8,comment="",name="CLUB_SHIFT",value="6"},
+     {kind=int8,comment="",name="SPADE_SHIFT",value="0"},
+     {kind=int8,comment="",name="NO_TRUMP_SHIFT",value="24"}]
+
+val DEAL : message
+  = {name="DEAL",
+     comment="Everybody pressed start, so let's deal the cards."
+             ^ " Seven cards are represented as 3--byte thousandCardSet.",
+     elements=[{kind=int24,name="thousandCardSet",
+                comment="Set of dealt cards."}]}
+
+val BID : message
+  = {name="BID",
+     comment="The message sent by client when placing a bid."
+             ^ " Also sent by server when bid was made.",
+     elements=[{kind=int8,name="bid10",
+                comment = "This is actually 10% of the bid."
+                          ^ " Multiply by 10 to get the real value."
+                          ^ " A bid10 of 0 is 'pass'."
+                          ^ " On the last 'pass', this message is not sent."
+                          ^ " Instead, BID_END_... is sent."}]}
+
+val BID_END_HIDDEN_MUST : message
+  = {name="BID_END_HIDDEN_MUST",
+     comment = "Message sent by the server to let players know that"
+               ^ " bidding is over. 'Must' is not shown.",
+     elements=[]}
+
+val BID_END_SHOW_MUST : message
+  = {name="BID_END_SHOW_MUST",
+     comment = "Message sent by the server to let players know that"
+               ^ " bidding is over. 'Must' is shown.",
+     elements=[{kind=int24,name="must",
+                comment="Set of cards represented as ThousandCardSet."}]}
+
+val SELECT : message
+  = {name="SELECT",
+     comment = "Message sent by the client when selecting a card."
+               ^ ", which is given to opponent. The same message is"
+               ^ " sent to opponent from the server.",
+     elements=[{kind=int8,name="shift",
+                comment="Shift of selected card."}]}
+
+val SELECT_HIDDEN : message
+  = {name="SELECT_HIDDEN",
+     comment = "Message sent by the server when selecting a card."
+               ^ ", which is given to some opponent. This message is"
+               ^ " sent to player who should not see the card.",
+     elements=[]}
+
+val CONTRACT : message
+  = {name="CONTRACT",
+     comment = "The message sent by client when decided on how much to play."
+               ^ " Also sent by server when contract was made.",
+     elements=[{kind=int8,name="contract10",
+                comment = "This is actually 10% of the contract."
+                          ^ " Multiply by 10 to get the real value."}]}
+
+val PLAY : message
+  = {name="PLAY",
+     comment = "Message sent by the client when playing a card."
+               ^ " Also sometimes sent by server back to clients. There's"
+               ^ " 24 cards to be played."
+               ^ " On cards 1-23 this message is sent by client to server"
+               ^ " and the server sends some message back to other people,"
+               ^ " but not the one who played it."
+               ^ " On card 24 (that is when one round finishes)"
+               ^ " some message is sent to all people, including"
+               ^ " the one who played the last card.",
+     elements=[{kind=int8,name="shift",
+                comment="Shift of played card."}]}
+
+val PLAY_NEW_TRUMP : message
+  = {name="PLAY_NEW_TRUMP",
+     comment="Message sent by server back to clients, when new trump is set.",
+     elements=[{kind=int8,name="shift",
+                comment="Shift of played card."}]}
+
+val PLAY_AND_DEAL : message
+  = {name="PLAY_AND_DEAL",
+     comment = "Message sent by server back to clients, when last"
+               ^ " card was played and new cards are dealt."
+               ^ " Seven cards are represented as 3--byte thousandCardSet.",
+     elements=[{kind=int8,name="shift",
+                comment="Shift of played card."},
+               {kind=int24,name="thousandCardSet",
+                comment="Set of dealt cards."}]}
+
+val thousand_messages
+    = [DEAL,
+       BID,
+       BID_END_HIDDEN_MUST,
+       BID_END_SHOW_MUST,
+       SELECT,
+       SELECT_HIDDEN,
+       CONTRACT,
+       PLAY,
+       PLAY_NEW_TRUMP,
+       PLAY_AND_DEAL]
+
+val thousand_protocol : protocol
+  = define {name="Thousand",
+            version=1,
+            comment="TODO: display this comment in hpp file, etc. and change it!",
+            license=agpl3,
+            messages=thousand_messages,
+            constants=thousand_constants
+           }
+
+val general_protocol : protocol
+  = define {name="General",
+            version=1,
+            comment="TODO: display this comment in hpp file, etc. and change it!",
+            license=agpl3,
+            messages=general_messages,
+            constants=[]
+           }
+
+val () = cpp {protocol=general_protocol,
+              ser=["TABLE_CREATED",
+                   "SAID",
+                   "YOU_JOINED_TABLE",
+                   "JOINING_TABLE_FAILED_INCORRECT_TABLE_ID",
+                   "NEW_PLAYER_JOINED_TABLE",
+                   "PLAYER_LEFT_TABLE",
+                   "GAME_STARTED_WITHOUT_INITIAL_MESSAGE",
+                   "GAME_STARTED_WITH_INITIAL_MESSAGE",
+                   "MOVE_MADE"],
+              des=["CREATE_TICTACTOE_TABLE",
+                   "CREATE_THOUSAND_TABLE",
+                   "SAY",
+                   "JOIN_TABLE_TO_PLAY",
+                   "MAKE_MOVE"],
+              hppfile="../server/GeneralProtocol.sml.hpp",
+              cppfile="../server/GeneralProtocol.sml.cpp"}
+
+val () = cpp {protocol=thousand_protocol,
+              ser=["DEAL","BID","BID_END_HIDDEN_MUST","BID_END_SHOW_MUST",
+                   "SELECT","SELECT_HIDDEN","CONTRACT",
+                   "PLAY","PLAY_NEW_TRUMP","PLAY_AND_DEAL"],
+              des=["BID",
+                   "SELECT","SELECT_HIDDEN","CONTRACT",
+                   "PLAY"],
+              hppfile="../server/ThousandProtocol.sml.hpp",
+              cppfile="../server/ThousandProtocol.sml.cpp"}

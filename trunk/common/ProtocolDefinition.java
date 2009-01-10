@@ -515,8 +515,6 @@ public class ProtocolDefinition{
 
         final String s0
             ="  //"+"Message "+messageDefinition.name+":\n\n"
-            +"  //This message will create: "+messageDefinition.create
-            +".\n\n"
             +"  //In protocol version "+protocolVersion
             +" this message has id "+messageDefinition.identifier
             +".\n"

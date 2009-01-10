@@ -63,7 +63,6 @@ public class ThousandProtocolDefinition{
              new ConstantDefinition(null,PieceType.INT8,"NO_TRUMP_SHIFT","24")
              );
 
-        /*
         protocol.defineFlagSet
             ("ThousandFlags",
              "Various booleans used in search for saying"
@@ -95,7 +94,7 @@ public class ThousandProtocolDefinition{
              new FlagDefinition("TIME_20","20 minutes game."),
              new FlagDefinition("TIME_30","30 minutes game.")
              );
-        */
+        //*/
 
         //One card is encoded as 8-bit integer:
         final PieceType SHIFT = PieceType.INT8;
